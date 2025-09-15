@@ -1,6 +1,9 @@
 # Entorno Virtual
 .venv/
 
+# Variables de Entorno
+.env
+
 # Archivos compilados de Python
 *.pyc
 *.pyo
