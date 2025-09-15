@@ -2,11 +2,15 @@
 .venv/
 
 # Archivos compilados de Python
+*.pyc
+*.pyo
 __pycache__/
-*.py[cod]
+*.pyd
 
-# Base de datos local
+# Django
 db.sqlite3
+/staticfiles/
+media/
 
 # Archivos Locales
 *.log
