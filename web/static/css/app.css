@@ -1,0 +1,146 @@
+/* Fondo con degradado tipo bomberos (rojo/naranja-magenta) */
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #ff512f, #dd2476);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+.login-title-app {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 70px;
+    font-weight: 700;
+    color: #ece5e7;
+    margin-bottom: 5px;
+    text-align: center;
+    letter-spacing: 1px;
+}
+
+/* Contenedor principal */
+.login-wrap {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+/* Tarjeta del login */
+.login-card {
+    background: #fff;
+    padding: 40px 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    width: 350px;
+}
+
+/* Avatar circular */
+.login-avatar {
+    margin-bottom: 20px;
+}
+.login-avatar svg {
+    width: 80px;
+    height: 80px;
+}
+
+/* Título */
+.login-card h2 {
+    margin-bottom: 20px;
+    color: #333;
+    font-weight: bold;
+}
+
+/* Inputs */
+.login-card .form-label {
+    display: block;
+    text-align: left;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #444;
+}
+
+.login-card input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+/* Botón con degradado */
+.login-card button {
+    width: 100%;
+    background: linear-gradient(135deg, #ff512f, #f09819);
+    border: none;
+    padding: 12px;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.login-card button:hover {
+    background: linear-gradient(135deg, #f12711, #f5af19);
+}
+
+.footer{color: #ddd;}
+
+/*alertas*/
+
+/* Contenedor */
+.alert-messages {
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+/* Aumentamos especificidad para ganar a Bootstrap */
+.alert-messages .alert {
+  display: inline-block;
+  min-width: 280px;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  margin: 5px auto;
+  border: none;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  animation: fadeIn .4s ease;
+}
+
+/* Tipos */
+.alert-messages .alert.success   { background:#28a745; color:#fff; }
+.alert-messages .alert.error,
+.alert-messages .alert.danger    { background:#dc3545; color:#fff; }
+.alert-messages .alert.info      { background:#0dcaf0; color:#fff; }
+.alert-messages .alert.warning   { background:#ffc107; color:#212529; }
+
+/* Íconos */
+.alert-messages .alert.success::before { content:"✅ "; }
+.alert-messages .alert.error::before,
+.alert-messages .alert.danger::before  { content:"❌ "; }
+.alert-messages .alert.info::before    { content:"ℹ️ "; }
+.alert-messages .alert.warning::before { content:"⚠️ "; }
+
+@keyframes fadeIn { from{opacity:0; transform:translateY(-8px)} to{opacity:1; transform:none} }
+
+.field-error {
+  margin-top: 6px;
+  background: #ffe5e5;
+  border: 1px solid #f5a3a3;
+  color: #d63031; /* rojo fuerte */
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  text-align: center;
+}
+
+
+
+

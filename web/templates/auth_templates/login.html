@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Login{% endblock %}
+{% block content %}
+
+<div class="login-wrap">
+  <div class="login-title-app">SIGVE</div>
+
+  <div class="login-card">
+  
+    <div class="login-avatar">
+      <svg viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="8" r="4" fill="#ffd6e1"/>
+        <path d="M4 20c0-4 3.5-6 8-6s8 2 8 6" fill="#f04a73"/>
+        <circle cx="12" cy="8" r="4" stroke="#f04a73" stroke-width="1.5" fill="transparent"/>
+      </svg>
+    </div>
+
+    <div class="subtitulo-login"><h2> Iniciar sesión</h2></div>
+
+  
+
+   
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+  
+      <div class="mb-3 {% if form.email.errors %}has-error{% endif %}">
+        <label for="id_email" class="form-label">Email</label>
+        {{ form.email }}
+        {% if form.email.errors %}
+          <div class="field-error">
+            {% for error in form.email.errors %}
+              <small>{{ error }}</small>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="mb-3 {% if form.password.errors %}has-error{% endif %}">
+        <label for="id_password" class="form-label">Contraseña</label>
+        {{ form.password }}
+        {% if form.password.errors %}
+          <div class="field-error">
+            {% for error in form.password.errors %}
+              <small>{{ error }}</small>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+
+      <button type="submit">Entrar</button>
+    </form>
+  </div>
+
+</div>
+<script>
+
+  setTimeout(() => {
+    document.querySelectorAll(".field-error, .alert.error").forEach(el => {
+      el.style.transition = "opacity 0.9s ease";
+      el.style.opacity = "0";
+      setTimeout(() => el.remove(), 600);
+    });
+  }, 2000);
+</script>
+
+{% endblock %}
