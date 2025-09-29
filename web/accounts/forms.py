@@ -5,14 +5,14 @@ class LoginForm(forms.Form):
         label="Email",
         error_messages={'invalid': 'Ingresa un correo electrónico válido.'},
         widget=forms.EmailInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'ejemplo@correo.com'
+            'class': 'login-form-input',
+            'placeholder': 'Correo electrónico'
         }),
     )
     password = forms.CharField(
         label="Contraseña",
         widget=forms.PasswordInput(attrs={
-            'class': 'form-control',
+            'class': 'login-form-input',
             'placeholder': 'Ingresa tu contraseña'
         }),
     )
