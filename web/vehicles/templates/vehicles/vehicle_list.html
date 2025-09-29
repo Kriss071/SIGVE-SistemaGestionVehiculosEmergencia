@@ -1,0 +1,19 @@
+<h1>Listado de Vehículos</h1>
+
+<h1>Lista de Vehículos</h1>
+<ul>
+    {% for vehicle in vehicles %}
+        <li style="margin-bottom: 20px;">
+            {% if vehicle.imagen_url %}
+                <img src="{{ vehicle.imagen_url }}" alt="{{ vehicle.marca }} {{ vehicle.modelo }}" width="200" style="display:block; margin-bottom: 5px;">
+            {% endif %}
+            <strong>{{ vehicle.marca }} {{ vehicle.modelo }}</strong><br>
+            Patente: {{ vehicle.patente }}<br>
+            Año: {{ vehicle.anio }}<br>
+            Estado mantención: {{ vehicle.estado_mantencion }}<br>
+            Kilometraje: {{ vehicle.kilometraje_actual }}
+        </li>
+    {% empty %}
+        <li>No hay vehículos registrados.</li>
+    {% endfor %}
+</ul>

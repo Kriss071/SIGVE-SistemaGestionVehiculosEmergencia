@@ -15,7 +15,7 @@ def home_view(request: HttpRequest) -> HttpResponse:
   
 def login_view(request: HttpRequest) -> HttpResponse:
     if request.session.get('sb_access_token'):
-        return redirect('home')
+        return redirect('vehicle_list')
 
     if request.method == 'POST':
         form = LoginForm(request.POST)
@@ -41,7 +41,7 @@ def login_view(request: HttpRequest) -> HttpResponse:
                 request.session.set_expiry(0)  
 
                 messages.success(request, "¡Sesión iniciada!")
-                return redirect('home')
+                return redirect('vehicle_list')
 
             except AuthApiError as e:
                 messages.error(request, f"Error al iniciar sesión: {str(e)}")

@@ -14,7 +14,6 @@ def require_supabase_login(view_func):
         supabase = get_supabase()
         try:
             user_resp = supabase.auth.get_user(token)
-            print(user_resp)
             if not getattr(user_resp, "user", None):
                 request.session.flush()
                 return redirect('login')
