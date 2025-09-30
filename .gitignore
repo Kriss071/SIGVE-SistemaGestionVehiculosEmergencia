@@ -14,25 +14,25 @@ __pycache__/
 
 # Django
 db.sqlite3
-/staticfiles/
+web/staticfiles/
 media/
 
 # Archivos Locales
 *.log
 
 # === Móvil ===
-*.iml
+mobile/*.iml
 .gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+mobile/local.properties
+mobile/.idea/caches
+mobile/.idea/libraries
+mobile/.idea/modules.xml
+mobile/.idea/workspace.xml
+mobile/.idea/navEditor.xml
+mobile/.idea/assetWizardSettings.xml
 .DS_Store
-/build
-/captures
+mobile/build
+mobile/captures
 .externalNativeBuild
 .cxx
 local.properties
