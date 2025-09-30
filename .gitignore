@@ -24,6 +24,7 @@ media/
 mobile/*.iml
 .gradle
 mobile/local.properties
+mobile/.idea/
 mobile/.idea/caches
 mobile/.idea/libraries
 mobile/.idea/modules.xml
