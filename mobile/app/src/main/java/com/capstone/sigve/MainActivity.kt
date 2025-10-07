@@ -7,12 +7,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -38,21 +36,24 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // SACAR CUANDO SE USE INNERPADDING
-    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             val theme by settingsViewModel.theme.collectAsState()
             val color by settingsViewModel.color.collectAsState()
+            val customColors by settingsViewModel.customColors.collectAsState()
 
             SIGVETheme(
                 darkTheme = (theme == AppTheme.DARK),
-                appColor = color
+                appColor = color,
+                customColors = customColors
             ) {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    SettingsScreen(viewModel = settingsViewModel)
+                    SettingsScreen(
+                        viewModel = settingsViewModel,
+                        innerPadding = innerPadding
+                    )
                 }
             }
         }
