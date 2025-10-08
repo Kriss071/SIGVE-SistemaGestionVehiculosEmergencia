@@ -1,9 +1,59 @@
-<h1>Listado de Vehículos</h1>
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
 
-<h1>Lista de Vehículos</h1>
-<ul>
-    {% for vehicle in vehicles %}
-        <li style="margin-bottom: 20px;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehículos</title>
+    <link rel="stylesheet" href="{% static 'css/vehicles.css' %}">
+</head>
+
+<body>
+    <h1>Lista de Vehículos</h1>
+
+    <main class="main-container">
+        <section class="vehicle-list">
+
+        {% for vehicle in vehicles %}
+
+        <article class="vehicle-card">
+            {% if vehicle.imagen_url %}
+            <img src="{{ vehicle.imagen_url }}" class="vehicle-image" alt="{{ vehicle.marca }} {{ vehicle.modelo }}">
+            {% else %}
+            <img src="{% static 'img/img_not_found.jpg' %}" class="vehicle-image" alt="Imagen no disponible">
+            {% endif %}
+            <div class="vehicle-info">
+                <h2 class="vehicle-title">{{ vehicle.patente }}</h2>
+                <p class="vehicle-description">{{ vehicle.marca }} - {{ vehicle.modelo }}</p>
+                <p class="vehicle-description">Año: {{ vehicle.anio }}</p>
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" class="next-icon" viewBox="0 0 42 42">
+                <path fill="currentColor" fill-rule="evenodd" d="M13.933 1L34 21.068L14.431 40.637l-4.933-4.933l14.638-14.636L9 5.933z"/>
+            </svg>
+        </article>
+        {% empty %}
+        <li>No hay vehículos registrados.</li>
+        {% endfor %}
+
+    </section>
+
+    <section class="vehicle-options">
+
+        <button class="vehicle-options-button">
+            + Mantención
+        </button>
+        <button class="vehicle-options-button">
+            + Vehículo
+        </button>
+
+    </section>
+
+    </main>
+
+    
+
+    <!-- <li style="margin-bottom: 20px;">
             {% if vehicle.imagen_url %}
                 <img src="{{ vehicle.imagen_url }}" alt="{{ vehicle.marca }} {{ vehicle.modelo }}" width="200" style="display:block; margin-bottom: 5px;">
             {% endif %}
@@ -12,8 +62,9 @@
             Año: {{ vehicle.anio }}<br>
             Estado mantención: {{ vehicle.estado_mantencion }}<br>
             Kilometraje: {{ vehicle.kilometraje_actual }}
-        </li>
-    {% empty %}
-        <li>No hay vehículos registrados.</li>
-    {% endfor %}
-</ul>
+        </li> -->
+
+
+</body>
+
+</html>
