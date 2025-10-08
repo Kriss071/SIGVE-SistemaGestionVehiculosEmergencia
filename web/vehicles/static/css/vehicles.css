@@ -4,7 +4,7 @@
   padding: 0;
 }
 
-.main-container{
+.main-container {
   display: flex;
 }
 
@@ -73,7 +73,7 @@
   place-content: center;
 }
 
-.vehicle-options-button{
+.vehicle-options-button {
   padding: 1.5rem 4.5rem;
   background-color: #ff2848;
   color: black;
@@ -89,6 +89,50 @@
 .vehicle-options-button:hover {
   background-color: #e0223f;
 }
+
+.vehicle_modal {
+  display: none;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.vehicle_modal_content {
+  background: #fff;
+  margin: 10% auto;
+  padding: 20px;
+  width: 50%;
+  border-radius: 10px;
+}
+
+.close_vehicle_modal {
+  float: right;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+
+/* Toast */
+
+.toast {
+  padding: 10px;
+  margin: 5px;
+  border-radius: 5px;
+  color: #fff;
+}
+
+.toast.success {
+  background: green;
+}
+
+.toast.error {
+  background: red;
+}
+
 
 @media (max-width: 600px) {
   .vehicle-card {

@@ -1,0 +1,11 @@
+<div id="vehicle_modal" class="vehicle_modal">
+    <div class="vehicle_modal_content">
+        <span id="close_vehicle_modal" class="close_vehicle_modal" onclick="closeModal()">&times;</span>
+        <h2>Agregar Vehículo</h2>
+        <form method="POST" action="{% url 'add_vehicle' %}">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="submit_button">Agregar Vehículo</button>
+        </form>
+    </div>
+</div>
