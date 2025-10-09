@@ -12,15 +12,20 @@
 <body>
     <h1>Lista de Vehículos</h1>
 
+    <!-- Toast -->
     {% if messages %}
-    <div id="messages">
+    <div id="messages" class="toast-container">
         {% for message in messages %}
-        <div class="toast {{ message.tags }}">{{ message }}</div>
+        <div class="toast {{ message.tags }}">
+            {{ message }}
+        </div>
         {% endfor %}
     </div>
     {% endif %}
 
     <main class="main-container">
+
+        <!-- Listado de Vehículos -->
         <section class="vehicle-list">
 
             {% for vehicle in vehicles %}
@@ -37,7 +42,7 @@
                     <p class="vehicle-description">{{ vehicle.marca }} - {{ vehicle.modelo }}</p>
                     <p class="vehicle-description">Año: {{ vehicle.anio }}</p>
                 </div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="next-icon" viewBox="0 0 42 42">
+                <svg xmlns="http://www.w3.org/2000/svg" class="vehicle-next-icon" viewBox="0 0 42 42">
                     <path fill="currentColor" fill-rule="evenodd"
                         d="M13.933 1L34 21.068L14.431 40.637l-4.933-4.933l14.638-14.636L9 5.933z" />
                 </svg>
@@ -48,6 +53,7 @@
 
         </section>
 
+        <!-- Botones -->
         <section class="vehicle-options">
 
             <button class="vehicle-options-button">
@@ -58,10 +64,9 @@
             </button>
 
         </section>
-        {{ form.media }}
     </main>
 
-
+    <!--  Formulario para ingresar Vehículos-->
     {% include "form/_vehicle_form.html" %}
 
 </body>

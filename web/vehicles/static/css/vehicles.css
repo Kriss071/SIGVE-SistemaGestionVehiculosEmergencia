@@ -60,7 +60,7 @@
   color: #ff2848;
 }
 
-.next-icon {
+.vehicle-next-icon {
   position: absolute;
   color: gray;
   right: 20px;
@@ -90,6 +90,8 @@
   background-color: #e0223f;
 }
 
+/* Modal para el formulario */
+
 .vehicle_modal {
   display: none;
   position: fixed;
@@ -115,14 +117,33 @@
   cursor: pointer;
 }
 
-
 /* Toast */
 
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+
 .toast {
-  padding: 10px;
+  padding: 10px 16px;
   margin: 5px;
   border-radius: 5px;
   color: #fff;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast.hide {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 
 .toast.success {
@@ -132,7 +153,6 @@
 .toast.error {
   background: red;
 }
-
 
 @media (max-width: 600px) {
   .vehicle-card {
