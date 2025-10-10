@@ -1,10 +1,66 @@
 <div id="vehicle_modal" class="vehicle_modal">
     <div class="vehicle_modal_content">
         <span id="close_vehicle_modal" class="close_vehicle_modal" onclick="closeModal()">&times;</span>
-        <h2>Agregar Vehículo</h2>
-        <form method="POST" action="{% url 'add_vehicle' %}">
+        <form method="POST" action="{% url 'add_vehicle' %}" class="form-vehicle">
+            <h2 class="form-title">Agregar Vehículo</h2>
+            <p class="form-message">Completa el formulario para agregar un nuevo vehículo.</p>
             {% csrf_token %}
-            {{ form.as_p }}
+
+            <label>
+                {{ form.patente }}
+                <span>Patente</span>
+            </label>
+
+            <label>
+                {{ form.estado_mantencion }}
+                <span>Estado de Mantención</span>
+            </label>
+
+            <div class="form-flex">
+                <label>
+                    {{ form.kilometraje_actual }}
+                    <span>Kilometraje Actual</span>
+                </label>
+
+                <label>
+                    {{ form.tipo_vehiculo }}
+                    <span>Tipo de Vehículo</span>
+                </label>
+            </div>
+
+
+            <div class="form-flex">
+                <label>
+                    {{ form.marca }}
+                    <span>Marca</span>
+                </label>
+
+                <label>
+                    {{ form.modelo }}
+                    <span>Modelo</span>
+                </label>
+            </div>
+
+            <div class="form-flex">
+                <label>
+                    {{ form.anio }}
+                    <span>Año</span>
+                </label>
+
+                <label>
+                    {{ form.fecha_ingreso }}
+                    <span>Fecha de Ingreso</span>
+                </label>
+
+            </div>
+
+
+
+            <label>
+                {{ form.observaciones }}
+                <span>Observaciones</span>
+            </label>
+
             <button type="submit" class="submit_button">Agregar Vehículo</button>
         </form>
     </div>
