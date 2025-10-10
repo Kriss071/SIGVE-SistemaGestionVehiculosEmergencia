@@ -1,76 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Vehículos{% endblock %}
+{% block header_title %}Vehículos{% endblock %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vehículos</title>
-    <link rel="stylesheet" href="{% static 'css/vehicles.css' %}">
-</head>
+{% block styles %}
+<link rel="stylesheet" href="{% static 'css/vehicles.css' %}">
+{% endblock %}
 
-<body>
-    <!-- Toast -->
-    {% if messages %}
-    <div id="messages" class="toast-container">
-        {% for message in messages %}
-        <div class="toast {{ message.tags }}">
-            {{ message }}
-        </div>
+{% block content %}
+<main class="main-container">
+
+    <!-- Listado de Vehículos -->
+    <section class="vehicle-list">
+
+        {% for vehicle in vehicles %}
+
+        <article class="vehicle-card">
+            {% if vehicle.imagen_url %}
+            <img src="{{ vehicle.imagen_url }}" class="vehicle-image" alt="{{ vehicle.marca }} {{ vehicle.modelo }}">
+            {% else %}
+            <img src="{% static 'img/img_not_found.jpg' %}" class="vehicle-image" alt="Imagen no disponible">
+            {% endif %}
+            <div class="vehicle-info">
+                <h2 class="vehicle-title">{{ vehicle.patente }}</h2>
+                <p class="vehicle-description">{{ vehicle.marca }} - {{ vehicle.modelo }}</p>
+                <p class="vehicle-description">Año: {{ vehicle.anio }}</p>
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" class="vehicle-next-icon" viewBox="0 0 42 42">
+                <path fill="currentColor" fill-rule="evenodd"
+                    d="M13.933 1L34 21.068L14.431 40.637l-4.933-4.933l14.638-14.636L9 5.933z" />
+            </svg>
+        </article>
+        {% empty %}
+        <li>No hay vehículos registrados.</li>
         {% endfor %}
-    </div>
-    {% endif %}
 
-    <main class="main-container">
+    </section>
 
-        
+    <!-- Botones -->
+    <section class="vehicle-options">
 
-        <!-- Listado de Vehículos -->
-        <section class="vehicle-list">
+        <button class="vehicle-options-button">
+            + Mantención
+        </button>
+        <button class="vehicle-options-button" id="btnAddVehicle">
+            + Vehículo
+        </button>
 
-            {% for vehicle in vehicles %}
+    </section>
+</main>
 
-            <article class="vehicle-card">
-                {% if vehicle.imagen_url %}
-                <img src="{{ vehicle.imagen_url }}" class="vehicle-image"
-                    alt="{{ vehicle.marca }} {{ vehicle.modelo }}">
-                {% else %}
-                <img src="{% static 'img/img_not_found.jpg' %}" class="vehicle-image" alt="Imagen no disponible">
-                {% endif %}
-                <div class="vehicle-info">
-                    <h2 class="vehicle-title">{{ vehicle.patente }}</h2>
-                    <p class="vehicle-description">{{ vehicle.marca }} - {{ vehicle.modelo }}</p>
-                    <p class="vehicle-description">Año: {{ vehicle.anio }}</p>
-                </div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="vehicle-next-icon" viewBox="0 0 42 42">
-                    <path fill="currentColor" fill-rule="evenodd"
-                        d="M13.933 1L34 21.068L14.431 40.637l-4.933-4.933l14.638-14.636L9 5.933z" />
-                </svg>
-            </article>
-            {% empty %}
-            <li>No hay vehículos registrados.</li>
-            {% endfor %}
+<!--  Formulario para ingresar Vehículos-->
+{% include "form/_vehicle_form.html" %}
 
-        </section>
+{% endblock %}
 
-        <!-- Botones -->
-        <section class="vehicle-options">
-
-            <button class="vehicle-options-button">
-                + Mantención
-            </button>
-            <button class="vehicle-options-button" id="btnAddVehicle">
-                + Vehículo
-            </button>
-
-        </section>
-    </main>
-
-    <!--  Formulario para ingresar Vehículos-->
-    {% include "form/_vehicle_form.html" %}
-
-</body>
-
+{% block scripts %}
 <script src="{% static 'js/vehicles.js' %}"></script>
-
-</html>
+{% endblock %}

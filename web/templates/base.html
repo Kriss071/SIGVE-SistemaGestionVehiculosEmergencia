@@ -1,0 +1,49 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    {% block styles %}{% endblock %}
+</head>
+
+<body>
+    <!-- Toast -->
+    {% if messages %}
+    <div id="messages" class="toast-container">
+        {% for message in messages %}
+        <div class="toast {{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <header class="main-header">
+        <!-- <h1>{% block header_title %}{% endblock %}</h1> -->
+        <div class="header-top">
+            <img src="{% static 'img/logo.png' %}" alt="Logo de la empresa" class="header-logo-img">
+            <span class="header-title">Nombre de la Empresa</span>
+        </div>
+        <nav class="header-nav">
+            <ul>
+                <li><a href="" class="active">Inicio</a></li>
+                <li><a href="">Vehículos</a></li>
+                <li><a href="">Mantenciones</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+
+    {% block scripts %}{% endblock %}
+
+</body>
+
+</html>
