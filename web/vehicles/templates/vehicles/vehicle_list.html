@@ -13,6 +13,16 @@
     <!-- Listado de Vehículos -->
     <section class="vehicle-list">
 
+        <div class="vehicle-search-bar-container">
+            <form class="vehicle-search-bar">
+                <input type="text" name="q" placeholder="Buscar vehículo por patente, marca, modelo o año...">
+                <button type="submit">
+                    🔍
+                </button>
+            </form>
+        </div>
+
+
         {% for vehicle in vehicles %}
 
         <article class="vehicle-card">
@@ -39,11 +49,11 @@
 
     <!-- Botones -->
     <section class="vehicle-options">
-        
+
         <p>
             Rol: <strong>{{ user_role|capfirst }}</strong>
         </p>
-        {% if user_role == "mecanico" %}
+        {% if user_role == "mecanico" or user_role == "administrador" %}
         <button class="vehicle-options-button">
             + Mantención
         </button>

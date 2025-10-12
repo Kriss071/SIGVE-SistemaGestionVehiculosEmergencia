@@ -5,6 +5,8 @@
   overflow: hidden;
 }
 
+/* Listado de Vehículos */
+
 .vehicle-list {
   display: grid;
   grid-auto-rows: min-content;
@@ -45,6 +47,51 @@
   scrollbar-color: #ff2848 #f0f0f0;
 }
 
+/* Buscador */
+
+.vehicle-search-bar-container {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #d9d9d9;
+  padding: 10px 0;
+}
+
+.vehicle-search-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  width: 100%;
+  background: #fff;
+  padding: 10px 20px;
+  border-radius: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  border-bottom: 2px solid #ff2848;
+}
+
+.vehicle-search-bar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 16px;
+}
+
+.vehicle-search-bar button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: #555;
+  transition: color 0.2s;
+}
+
+.vehicle-search-bar button:hover {
+  color: #000;
+}
+
+/* Tarjetas de Vehículos */
+
 .vehicle-card {
   position: relative;
   display: flex;
@@ -52,7 +99,6 @@
   padding: 10px 20px;
   background: #fff;
   border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
