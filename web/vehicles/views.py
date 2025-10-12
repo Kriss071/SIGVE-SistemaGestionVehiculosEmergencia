@@ -1,8 +1,8 @@
 from datetime import date
 from django.contrib import messages
 from django.shortcuts import redirect, render
-from .services.supabase_service import SupabaseVehicleService
-from accounts.decorators import require_supabase_login
+from .services.vehicle_service import SupabaseVehicleService
+from accounts.decorators import require_role, require_supabase_login
 from django.views.decorators.http import require_http_methods
 from .forms import VehicleForm
 
@@ -15,14 +15,17 @@ def vehicle_list_view(request):
     
     vehicles = service.list_vehicles()
     form = VehicleForm()
+    user_role = request.session.get("sb_user_role", "user")
 
     return render(request, "vehicles/vehicle_list.html", {
         "vehicles": vehicles,
         "form": form,
+        "user_role": user_role
     })
 
 
 @require_supabase_login
+@require_role("administrador")
 @require_http_methods(["GET", "POST"])
 def add_vehicle_view(request):
     token = request.session.get("sb_access_token")

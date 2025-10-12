@@ -39,13 +39,21 @@
 
     <!-- Botones -->
     <section class="vehicle-options">
-
+        
+        <p>
+            Rol: <strong>{{ user_role|capfirst }}</strong>
+        </p>
+        {% if user_role == "mecanico" %}
         <button class="vehicle-options-button">
             + Mantención
         </button>
+        {% endif %}
+
+        {% if user_role == "administrador" %}
         <button class="vehicle-options-button" id="btnAddVehicle">
             + Vehículo
         </button>
+        {% endif %}
 
     </section>
 </main>
