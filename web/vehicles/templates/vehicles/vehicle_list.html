@@ -11,15 +11,20 @@
 <main class="main-container">
 
     <!-- Listado de Vehículos -->
-    <section class="vehicle-list">
+    <section class="vehicle-list" id="vehicleList">
 
         <div class="vehicle-search-bar-container">
-            <form class="vehicle-search-bar">
-                <input type="text" name="q" placeholder="Buscar vehículo por patente, marca, modelo o año...">
+            <form class="vehicle-search-bar" method="get" id="vehicleSearchForm">
+                <input type="text" name="q" id="vehicleSearchInput"
+                    placeholder="Buscar vehículo por patente, marca, modelo o año...">
                 <button type="submit">
                     🔍
                 </button>
             </form>
+        </div>
+
+        <div id="vehicleLoader" class="vehicle-loader hidden">
+            🔄 Buscando vehículos...
         </div>
 
 

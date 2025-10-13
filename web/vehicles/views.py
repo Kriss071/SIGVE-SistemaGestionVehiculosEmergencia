@@ -1,5 +1,6 @@
 from datetime import date
 from django.contrib import messages
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from .services.vehicle_service import SupabaseVehicleService
 from accounts.decorators import require_role, require_supabase_login
@@ -12,16 +13,32 @@ def vehicle_list_view(request):
     token = request.session.get("sb_access_token")
     refresh_token = request.session.get("sb_refresh_token")
     service = SupabaseVehicleService(token, refresh_token)
-    
-    vehicles = service.list_vehicles()
+
+    query = request.GET.get("q", "").strip()
+    if query:
+        vehicles = service.search_vehicles(query)
+    else:
+        vehicles = service.list_vehicles()
+
     form = VehicleForm()
     user_role = request.session.get("sb_user_role", "user")
 
-    return render(request, "vehicles/vehicle_list.html", {
-        "vehicles": vehicles,
-        "form": form,
-        "user_role": user_role
-    })
+    return render(
+        request,
+        "vehicles/vehicle_list.html",
+        {"vehicles": vehicles, "form": form, "user_role": user_role, "query": query},
+    )
+
+
+@require_supabase_login
+def vehicle_search_api(request):
+    query = request.GET.get("q", "")
+    token = request.session.get("sb_access_token")
+    refresh_token = request.session.get("sb_refresh_token")
+    service = SupabaseVehicleService(token, refresh_token)
+
+    results = service.search_vehicles(query)
+    return JsonResponse({"vehicles": results})
 
 
 @require_supabase_login
@@ -44,7 +61,7 @@ def add_vehicle_view(request):
         else:
             messages.error(request, "Error al agregar vehículo ❌")
         return redirect("vehicle_list")
-    
+
     else:
         messages.error(request, "Formulario inválido. Revisa los campos ⚠️")
 
