@@ -198,7 +198,7 @@
   display: none;
   position: fixed;
   inset: 0;
-  z-index: 1;
+  z-index: 20;
   background: rgba(0, 0, 0, 0.4);
   overflow-y: auto;
 }
@@ -352,6 +352,36 @@
   }
 }
 
+/* Modal Detalle Vehiculo */
+
+.vehicle-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 15px;
+  background-color: #1a1a1a;
+}
+
+.vehicle-detail-content img {
+  width: 100%;
+  max-height: 300px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.vehicle-detail-content h2 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin: 5px 0;
+  color: #00bfff;
+}
+
+.vehicle-detail-content p {
+  margin: 3px 0;
+  font-size: 1rem;
+  color: #ccc;
+  line-height: 1.4;
+}
 
 /* Toast */
 
@@ -396,10 +426,10 @@
     text-align: center;
   }
 
-  .vehicle-image {
+  /* .vehicle-image {
     width: 100%;
     height: 180px;
-  }
+  } */
 
   .vehicle-info {
     padding: 1rem;
