@@ -37,8 +37,20 @@ class SupabaseVehicleService(VehicleService):
             )
             .execute()
         )
-        
-        if q.isdigit():
-            response.data = [v for v in response.data if str(v.get("anio", "")).startswith(q)]
 
+        if q.isdigit():
+            response.data = [
+                v for v in response.data if str(v.get("anio", "")).startswith(q)
+            ]
+
+        return response.data
+
+    def get_vehicle(self, patente: str):
+        response = (
+            self.client.table("vehiculo")
+            .select("*")
+            .eq("patente", patente)
+            .maybe_single()
+            .execute()
+        )
         return response.data

@@ -11,7 +11,7 @@
 <main class="main-container">
 
     <!-- Listado de Vehículos -->
-    <section class="vehicle-list" id="vehicleList">
+    <section class="vehicle-list" id="vehicleListContainer">
 
         <div class="vehicle-search-bar-container">
             <form class="vehicle-search-bar" method="get" id="vehicleSearchForm">
@@ -27,28 +27,30 @@
             🔄 Buscando vehículos...
         </div>
 
+        <div class="vehicle-list" id="vehicleList">
+            {% for vehicle in vehicles %}
 
-        {% for vehicle in vehicles %}
-
-        <article class="vehicle-card">
-            {% if vehicle.imagen_url %}
-            <img src="{{ vehicle.imagen_url }}" class="vehicle-image" alt="{{ vehicle.marca }} {{ vehicle.modelo }}">
-            {% else %}
-            <img src="{% static 'img/img_not_found.jpg' %}" class="vehicle-image" alt="Imagen no disponible">
-            {% endif %}
-            <div class="vehicle-info">
-                <h2 class="vehicle-title">{{ vehicle.patente }}</h2>
-                <p class="vehicle-description">{{ vehicle.marca }} - {{ vehicle.modelo }}</p>
-                <p class="vehicle-description">Año: {{ vehicle.anio }}</p>
-            </div>
-            <svg xmlns="http://www.w3.org/2000/svg" class="vehicle-next-icon" viewBox="0 0 42 42">
-                <path fill="currentColor" fill-rule="evenodd"
-                    d="M13.933 1L34 21.068L14.431 40.637l-4.933-4.933l14.638-14.636L9 5.933z" />
-            </svg>
-        </article>
-        {% empty %}
-        <li>No hay vehículos registrados.</li>
-        {% endfor %}
+            <article class="vehicle-card" data-patente="{{ vehicle.patente }}">
+                {% if vehicle.imagen_url %}
+                <img src="{{ vehicle.imagen_url }}" class="vehicle-image"
+                    alt="{{ vehicle.marca }} {{ vehicle.modelo }}">
+                {% else %}
+                <img src="{% static 'img/img_not_found.jpg' %}" class="vehicle-image" alt="Imagen no disponible">
+                {% endif %}
+                <div class="vehicle-info">
+                    <h2 class="vehicle-title">{{ vehicle.patente }}</h2>
+                    <p class="vehicle-description">{{ vehicle.marca }} - {{ vehicle.modelo }}</p>
+                    <p class="vehicle-description">Año: {{ vehicle.anio }}</p>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="vehicle-next-icon" viewBox="0 0 42 42">
+                    <path fill="currentColor" fill-rule="evenodd"
+                        d="M13.933 1L34 21.068L14.431 40.637l-4.933-4.933l14.638-14.636L9 5.933z" />
+                </svg>
+            </article>
+            {% empty %}
+            <li>No hay vehículos registrados.</li>
+            {% endfor %}
+        </div>
 
     </section>
 

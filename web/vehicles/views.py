@@ -1,6 +1,6 @@
 from datetime import date
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import HttpResponseBadRequest, HttpResponseNotFound, JsonResponse
 from django.shortcuts import redirect, render
 from .services.vehicle_service import SupabaseVehicleService
 from accounts.decorators import require_role, require_supabase_login
@@ -8,6 +8,7 @@ from django.views.decorators.http import require_http_methods
 from .forms import VehicleForm
 
 
+# Listado de Vehiculos
 @require_supabase_login
 def vehicle_list_view(request):
     token = request.session.get("sb_access_token")
@@ -30,6 +31,7 @@ def vehicle_list_view(request):
     )
 
 
+# Buscardor
 @require_supabase_login
 def vehicle_search_api(request):
     query = request.GET.get("q", "")
@@ -41,6 +43,7 @@ def vehicle_search_api(request):
     return JsonResponse({"vehicles": results})
 
 
+# Agregar Vehiculo
 @require_supabase_login
 @require_role("administrador")
 @require_http_methods(["GET", "POST"])
@@ -66,3 +69,21 @@ def add_vehicle_view(request):
         messages.error(request, "Formulario inválido. Revisa los campos ⚠️")
 
     return render(request, "form/add_vehicle.html", {"form": form})
+
+
+# Detalle Vehiculo
+@require_supabase_login
+def vehicle_detail_api(request):
+    patente = request.GET.get("patente")
+    if not patente:
+        return HttpResponseBadRequest("Missing 'patente' parameter")
+
+    token = request.session.get("sb_access_token")
+    refresh_token = request.session.get("sb_refresh_token")
+    service = SupabaseVehicleService(token, refresh_token)
+
+    vehicle = service.get_vehicle(patente)
+    if not vehicle:
+        return HttpResponseNotFound("Vehículo no encontrado")
+
+    return JsonResponse({"vehicle": vehicle})
