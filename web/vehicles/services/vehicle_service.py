@@ -4,7 +4,7 @@ from accounts.client.supabase_client import get_supabase_with_user
 
 
 class SupabaseVehicleService(VehicleService):
-    def __init__(self, token: str, refresh_token):
+    def __init__(self, token: str, refresh_token: str):
         self.client = get_supabase_with_user(token, refresh_token)
 
     def list_vehicles(self):

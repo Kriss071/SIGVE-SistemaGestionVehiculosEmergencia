@@ -1,0 +1,91 @@
+.maintenance-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.maintenance-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+.maintenance-card {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.maintenance-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.card-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #343a40;
+}
+
+.card-body {
+    padding: 1rem;
+    flex-grow: 1; /* Hace que el cuerpo de la tarjeta ocupe el espacio disponible */
+}
+
+.card-body p {
+    margin: 0 0 0.75rem 0;
+    color: #495057;
+    line-height: 1.5;
+}
+
+.card-body p strong {
+    color: #212529;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.status-badge {
+    padding: 0.25em 0.6em;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border-radius: 50px;
+    color: #36e44a;
+    text-transform: capitalize;
+}
+
+/* Colores para los estados (ajusta según los estados que manejes) */
+.status-pendiente { background-color: #ffc107; color: #212529; }
+.status-en-proceso { background-color: #007bff; }
+.status-finalizado { background-color: #28a745; }
+.status-cancelado { background-color: #dc3545; }
+.status-desconocido { background-color: #6c757d; }
+
+.empty-list-message {
+    grid-column: 1 / -1; /* Ocupa todo el ancho del grid */
+    text-align: center;
+    padding: 3rem;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+}
