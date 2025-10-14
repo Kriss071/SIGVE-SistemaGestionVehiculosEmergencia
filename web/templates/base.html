@@ -29,10 +29,10 @@
         </div>
         <nav class="header-nav">
             <ul>
-                <li><a href="{% url 'vehicle_list' %}">Vehículos</a></li>
-                <li><a href="{% url 'maintenance_list' %}">Mantenciones</a></li>
-                <li><a href="">asd</a></li>
-                <li><a href="{% url 'logout' %}">Cerrar Sesión</a></li>
+                <li><a href="{% url 'vehicle_list' %}" class="{% if active_page == 'vehicle_list' %}active{% endif %}">Vehículos</a></li>
+                <li><a href="{% url 'maintenance_list' %}" class="{% if active_page == 'maintenance_list' %}active{% endif %}">Mantenciones</a></li>
+                <li><a href="" class="{% if active_page == 'asd' %}active{% endif %}">asd</a></li>
+                <li><a href="{% url 'logout' %}" class="{% if active_page == 'asd' %}active{% endif %}">Cerrar Sesión</a></li>
             </ul>
         </nav>
     </header>
