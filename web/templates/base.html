@@ -23,16 +23,15 @@
     {% endif %}
 
     <header class="main-header">
-        <!-- <h1>{% block header_title %}{% endblock %}</h1> -->
         <div class="header-top">
             <img src="{% static 'img/logo.png' %}" alt="Logo de la empresa" class="header-logo-img">
             <span class="header-title">Nombre de la Empresa</span>
         </div>
         <nav class="header-nav">
             <ul>
-                <li><a href="" class="active">Vehículos</a></li>
-                <li><a href="">Vehículos</a></li>
-                <li><a href="">Mantenciones</a></li>
+                <li><a href="{% url 'vehicle_list' %}">Vehículos</a></li>
+                <li><a href="{% url 'maintenance_list' %}">Mantenciones</a></li>
+                <li><a href="">asd</a></li>
                 <li><a href="{% url 'logout' %}">Cerrar Sesión</a></li>
             </ul>
         </nav>
