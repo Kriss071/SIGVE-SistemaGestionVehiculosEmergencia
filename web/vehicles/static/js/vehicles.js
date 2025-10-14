@@ -35,7 +35,6 @@ document.addEventListener("DOMContentLoaded", () => {
             setTimeout(() => toast.classList.add("show"), appearDelay + i * 200);
             setTimeout(() => {
                 toast.classList.add("hide");
-                // Escucha el final de la transición para remover el elemento.
                 toast.addEventListener('transitionend', () => toast.remove(), { once: true });
             }, displayTime + i * 200);
         });
@@ -122,6 +121,14 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!card) return;
 
         const patente = card.dataset.patente;
+
+        toggleModal(UI.modalDetalle, true);
+        UI.vehicleDetailContent.innerHTML = `
+            <div class="modal-loader">
+                <div class="spinner"></div>
+                <p>Cargando detalles...</p>
+            </div>
+        `;
 
         try {
             const res = await fetch(`/vehiculos/detail/?patente=${encodeURIComponent(patente)}`);
