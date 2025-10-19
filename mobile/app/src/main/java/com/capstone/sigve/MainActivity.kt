@@ -16,6 +16,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.capstone.sigve.data.repository.SettingsRepository
 import com.capstone.sigve.domain.model.AppTheme
+import com.capstone.sigve.ui.navigation.AppNavigation
 import com.capstone.sigve.ui.settings.SettingsScreen
 import com.capstone.sigve.ui.settings.SettingsViewModel
 import com.capstone.sigve.ui.theme.SIGVETheme
@@ -50,8 +51,8 @@ class MainActivity : ComponentActivity() {
                 customColors = customColors
             ) {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    SettingsScreen(
-                        viewModel = settingsViewModel,
+                    AppNavigation(
+                        settingsViewModel = settingsViewModel,
                         innerPadding = innerPadding
                     )
                 }
