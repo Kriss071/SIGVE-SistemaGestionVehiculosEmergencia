@@ -9,7 +9,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.capstone.sigve.domain.model.AppTheme
 import com.capstone.sigve.ui.navigation.AppNavigation
 import com.capstone.sigve.ui.settings.SettingsViewModel
