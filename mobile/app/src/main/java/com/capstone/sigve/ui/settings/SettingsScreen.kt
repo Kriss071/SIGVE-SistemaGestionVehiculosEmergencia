@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.capstone.sigve.domain.model.AppColor
 import com.capstone.sigve.domain.model.AppTheme
 import com.capstone.sigve.domain.model.CustomColors
@@ -51,7 +52,10 @@ import com.capstone.sigve.ui.theme.LightGreenColors
 import com.capstone.sigve.ui.theme.LightRedColors
 
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel, innerPadding: PaddingValues) {
+fun SettingsScreen(
+    viewModel: SettingsViewModel = hiltViewModel(),
+    innerPadding: PaddingValues
+) {
     val theme by viewModel.theme.collectAsState()
     val color by viewModel.color.collectAsState()
     val customColors by viewModel.customColors.collectAsState()
@@ -368,7 +372,11 @@ fun HSVInlinePicker(
                 .height(40.dp)
                 .fillMaxWidth()
                 .background(preview, RoundedCornerShape(8.dp))
-                .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f), RoundedCornerShape(8.dp))
+                .border(
+                    1.dp,
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                    RoundedCornerShape(8.dp)
+                )
         )
 
         // Hue slider 0..360
@@ -385,7 +393,10 @@ fun HSVInlinePicker(
         )
 
         // Saturation 0..1
-        Text("Saturación: ${(saturation * 100).toInt()}%", style = MaterialTheme.typography.bodySmall)
+        Text(
+            "Saturación: ${(saturation * 100).toInt()}%",
+            style = MaterialTheme.typography.bodySmall
+        )
         Slider(
             value = saturation,
             onValueChange = {

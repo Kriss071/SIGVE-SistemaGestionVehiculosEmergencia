@@ -30,11 +30,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
 import com.capstone.sigve.R
 
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen() {
 
     Box(
         modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center

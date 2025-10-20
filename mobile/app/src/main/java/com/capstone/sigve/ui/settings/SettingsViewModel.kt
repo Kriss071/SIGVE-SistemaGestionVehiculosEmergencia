@@ -6,12 +6,17 @@ import com.capstone.sigve.data.repository.SettingsRepository
 import com.capstone.sigve.domain.model.AppColor
 import com.capstone.sigve.domain.model.AppTheme
 import com.capstone.sigve.domain.model.CustomColors
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class SettingsViewModel(private val settingsRepo: SettingsRepository): ViewModel() {
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
+    private val settingsRepo: SettingsRepository
+) : ViewModel() {
 
     private val _theme: StateFlow<AppTheme> = settingsRepo.themeFlow.stateIn(
         viewModelScope,
@@ -42,15 +47,15 @@ class SettingsViewModel(private val settingsRepo: SettingsRepository): ViewModel
         get() = _customColors
 
 
-    fun setTheme(theme: AppTheme){
+    fun setTheme(theme: AppTheme) {
         viewModelScope.launch { settingsRepo.setTheme(theme) }
     }
 
-    fun setColor(color: AppColor){
+    fun setColor(color: AppColor) {
         viewModelScope.launch { settingsRepo.setColor(color) }
     }
 
-    fun setCustomColors(colors: CustomColors){
+    fun setCustomColors(colors: CustomColors) {
         viewModelScope.launch { settingsRepo.setCustomColors(colors) }
     }
 }
