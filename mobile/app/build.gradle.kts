@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.hilt)
 
     // Kapt
-    kotlin("kapt")
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -64,7 +64,7 @@ dependencies {
 
     // Hilt
     implementation(libs.hilt.android)
-    kapt(libs.hilt.compiler)
+    ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
 
 
