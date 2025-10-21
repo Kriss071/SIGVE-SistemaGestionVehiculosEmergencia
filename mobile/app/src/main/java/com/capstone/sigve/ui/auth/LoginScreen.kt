@@ -1,5 +1,6 @@
 package com.capstone.sigve.ui.auth
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,18 +23,43 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.capstone.sigve.R
+import com.capstone.sigve.ui.navigation.AppScreens
 
 @Composable
-fun LoginScreen() {
+fun LoginScreen(
+    navController: NavController,
+    viewModel: AuthViewModel = hiltViewModel()
+) {
+
+    val uiState = viewModel.uiState
+    val context = LocalContext.current
+
+
+    LaunchedEffect(key1 = uiState.loginSuccess) {
+        if (uiState.loginSuccess) {
+            navController.navigate(AppScreens.SettingsScreen.route)
+        }
+        viewModel.onLoginSuccessShown()
+    }
+
+    LaunchedEffect(key1 = uiState.error) {
+        uiState.error?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Box(
         modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
@@ -50,7 +76,12 @@ fun LoginScreen() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text("Bienvenido a SIGVE", fontSize = 40.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(
+                "Bienvenido a SIGVE",
+                fontSize = 40.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -74,8 +105,9 @@ fun LoginScreen() {
                         text = "Iniciar Sesión", fontWeight = FontWeight.Bold, fontSize = 32.sp
                     )
 
-                    OutlinedTextField(value = "",
-                        onValueChange = {},
+                    OutlinedTextField(
+                        value = viewModel.email,
+                        onValueChange = { viewModel.onEmailChange(it) },
                         label = { Text("Usuario") },
                         leadingIcon = {
                             Icon(
@@ -83,11 +115,13 @@ fun LoginScreen() {
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(100)
+                        shape = RoundedCornerShape(100),
+                        isError = uiState.error != null
                     )
 
-                    OutlinedTextField(value = "",
-                        onValueChange = {},
+                    OutlinedTextField(
+                        value = viewModel.password,
+                        onValueChange = { viewModel.onPasswordChange(it) },
                         label = { Text("Contraseña") },
                         leadingIcon = {
                             Icon(
@@ -95,11 +129,13 @@ fun LoginScreen() {
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(100)
+                        shape = RoundedCornerShape(100),
+                        isError = uiState.error != null
                     )
 
                     Button(
-                        onClick = {},
+                        onClick = { viewModel.onLoginClicked() },
+                        enabled = !uiState.isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
@@ -108,7 +144,12 @@ fun LoginScreen() {
                             containerColor = Color(0xFFDF2532)
                         )
                     ) {
-                        Text("Iniciar Sesión", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(
+                            "Iniciar Sesión",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
                     }
 
                     TextButton(onClick = {}) {

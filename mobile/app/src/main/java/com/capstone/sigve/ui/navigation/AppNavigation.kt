@@ -14,9 +14,9 @@ fun AppNavigation(
     innerPadding: PaddingValues
 ) {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = AppScreens.SettingsScreen.route) {
+    NavHost(navController = navController, startDestination = AppScreens.LoginScreen.route) {
         composable(AppScreens.LoginScreen.route) {
-            LoginScreen()
+            LoginScreen(navController = navController)
         }
 
         composable(AppScreens.SettingsScreen.route) {
