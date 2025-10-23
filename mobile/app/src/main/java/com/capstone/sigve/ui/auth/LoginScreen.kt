@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.capstone.sigve.R
-import com.capstone.sigve.ui.navigation.AppScreens
+import com.capstone.sigve.ui.navigation.RootNavRoute
 
 @Composable
 fun LoginScreen(
@@ -50,7 +50,11 @@ fun LoginScreen(
 
     LaunchedEffect(key1 = uiState.loginSuccess) {
         if (uiState.loginSuccess) {
-            navController.navigate(AppScreens.SettingsScreen.route)
+            navController.navigate(RootNavRoute.MainScreen.route) {
+                popUpTo(RootNavRoute.LoginScreen.route) {
+                    inclusive = true
+                }
+            }
         }
         viewModel.onLoginSuccessShown()
     }
