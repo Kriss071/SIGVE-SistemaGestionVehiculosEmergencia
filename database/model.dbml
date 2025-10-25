@@ -1,0 +1,298 @@
+// ==== Tablas de Localización Geográfica ====
+
+Table region {
+  Note: 'Representa una región de Chile'
+  id integer                      [primary key]
+  name varchar                    [not null, unique]
+}
+
+Table province {
+  Note: 'Representa un provincia de Chile'
+  id integer                      [primary key]
+  name varchar                    [not null]
+  region_id integer               [ref: > region.id, not null]
+}
+
+Table commune {
+  Note: 'Representa una comuna de Chile'
+  id integer                      [primary key]
+  name varchar                    [not null]
+  province_id integer             [ref: > province.id, not null]
+}
+
+// ==== Tablas de Negocio ====
+
+Table fire_station {
+  Note: 'Representa un cuartel de bomberos'
+  id integer                      [primary key]
+  name varchar                    [not null]
+  address varchar                 [not null]
+
+  commune_id integer              [ref: > commune.id]
+  
+  created_at timestamp            [not null]
+  updated_at timestamp
+}
+
+Table workshop {
+  Note: 'Representa un taller mecánico'
+  id integer                      [primary key]
+  name varchar                    [not null]
+  address varchar
+  phone varchar
+  email varchar
+
+  created_at timestamp            [not null]
+  updated_at timestamp
+}
+
+// ==== Tablas de Catalogo (Lookup) ====
+// Contienen las opciones para los menús desplegables
+
+Table vehicle_type {
+  Note: ' Tipos de vehículos (ej: Carro Bomba, Camioneta)'
+  id integer                      [primary key]
+  name varchar                    [not null, unique]
+  description text
+
+  created_at timestamp            [not null]
+  updated_at timestamp
+}
+
+Table vehicle_status {
+  Note: ' Estados de un vehículo (ej: Disponible, En Mantención, De Baja)'
+  id integer                      [primary key]
+  name varchar                    [not null, unique]
+  description text
+
+  created_at timestamp            [not null]
+  updated_at timestamp
+}
+
+Table vehicle_status_log {
+  Note: 'Historial de todos los cambios de estado de un vehículo (Log Inmutable)'
+  id integer                      [primary key]
+
+  vehicle_id integer              [ref: > vehicle.id, not null]
+  vehicle_status_id integer       [ref: > vehicle_status.id, not null]
+  changed_by_employee_id uuid     [ref: > employee.id, note: 'Empleado que registró el cambio']
+
+  change_date timestamp           [not null, note: 'Momento exacto del cambio']
+  reason text                     [note: 'Ej: "Ingreso a taller por mantención orden #50"']
+
+  created_at timestamp            [not null]
+}
+
+Table fuel_type {
+  Note: 'Tipos de combustible (ej: Diésel, Gasolina 95)'
+  id integer                      [primary key]
+  name varchar                    [not null, unique]
+
+  created_at timestamp           [not null]
+  updated_at timestamp 
+}
+
+Table transmission_type {
+  Note: 'Tipos de transmisión (ej: Manual, Automática)'
+  id integer                      [primary key]
+  name varchar                    [not null, unique]
+
+  created_at timestamp            [not null]
+  updated_at timestamp
+}
+
+Table oil_type {
+  Note: 'Tipos de aceite (ej: 10W-40 Sintético, 15W-40 Mineral)'
+  id integer                      [primary key]
+  name varchar                    [not null, unique]
+  description text
+
+  created_at timestamp            [not null]
+  updated_at timestamp
+}
+
+Table coolant_type {
+  Note: 'Tipos de refrigerante (ej: Orgánico (rojo), Inorgánico (verde))'
+  id integer                      [primary key]
+  name varchar                    [not null, unique]
+  description text
+
+  created_at timestamp [not null]
+  updated_at timestamp
+}
+
+// ==== Tabla principal de Vehículos ====
+
+Table vehicle {
+  Note: 'Representa la ficha técnica de un vehículo de una estación de bomberos'
+  id integer                      [primary key]
+  license_plate varchar           [not null, unique, note: 'Patente']
+  brand varchar                   [not null, note: 'Marca']
+  model varchar                   [not null, note: 'Modelo']
+  year integer                    [not null, note: 'Año']
+  engine_number varchar           [unique, note: 'Numero de motor']
+  vin varchar                     [unique, note: 'Numero de chasis']
+  mileage integer                 [note: 'Ultimo kilometraje registrado']
+  mileage_last_updated date       [note: 'Fecha ultimo kilometraje registrado']
+  oil_capacity_liters decimal     [note: 'Capacidad de aceite en litos']
+  registration_date date          [note: 'Fecha de inscripción en el padrón']
+  next_revision_date date         [note: 'Proxima revisión técnica']
+
+  fire_station_id integer         [ref: > fire_station.id, not null]
+  vehicle_type_id integer         [ref: > vehicle_type.id, not null]
+  vehicle_status_id integer       [ref: > vehicle_status.id, not null]
+  fuel_type_id integer            [ref: > fuel_type.id]
+  transmission_type_id integer    [ref: > transmission_type.id]
+  oil_type_id integer             [ref: > oil_type.id]
+  coolant_type_id integer         [ref: > coolant_type.id]
+
+  created_at timestamp [not null]
+  updated_at timestamp
+
+}
+
+// ==== Tablas de Mantenciones ====
+
+Table task_type {
+  Note: 'Tipos de trabajos/tareas estándar de taller (ej: Cambio de Aceite, Revisión Frenos)'
+  id integer                      [primary key]
+  name varchar                    [not null, unique]
+  description text
+
+  created_at timestamp            [not null]
+  updated_at timestamp
+}
+
+Table maintenance_order {
+  Note: 'Representa una orden de trabajo (visita) de un vehículo a un taller'
+  id integer                      [primary key]
+
+  vehicle_id integer              [ref: > vehicle.id, not null]
+  workshop_id integer             [ref: > workshop.id, not null]
+  employee_id uuid                [ref: > employee.id, note: 'Mecánico asignado a la orden']
+
+  entry_date date                 [not null, note: 'Fecha de ingreso al taller']
+  exit_date date                  [note: 'Fecha de salida (nulo si sigue en taller)']
+  mileage integer                 [not null, note: 'Kilometraje al ingresar']
+  total_cost decimal              [note: 'Costo total (calculado o manual)']
+  observations text               [note: 'Notas generales del mecánico']
+
+  created_at timestamp            [not null]
+  updated_at timestamp
+}
+
+Table maintenance_task {
+  Note: 'Detalle de los trabajos específicos realizados en una orden de mantención'
+  id integer                      [primary key]
+
+  maintenance_order_id integer    [ref: > maintenance_order.id, not null]
+  task_type_id integer            [ref: > task_type.id, not null]
+
+  description text                [note: 'Detalle adicional, ej: "se usó filtro X"']
+  cost decimal                    [not null, default: 0, note: 'Costo de la mano de obra para esta tarea']
+
+  created_at timestamp            [not null]
+  updated_at timestamp
+}
+
+// ==== Tablas de inventario y repuestos ====
+
+Table supplier {
+  Note: 'Catálogo de proveedores de repuestos'
+  id integer                      [primary key]
+  name varchar                    [not null, unique]
+  rut varchar                     [unique]
+  address varchar
+  phone varchar
+  email varchar
+
+  created_at timestamp            [not null]
+  updated_at timestamp
+}
+
+Table spare_part {
+  Note: 'Catálogo de repuestos'
+  id integer                      [primary key]
+  name varchar                    [not null, note: 'Nombre de la pieza']
+  sku varchar                     [not null, unique]
+  brand varchar                   [note: 'Marca de la pieza']
+  description text
+  current_cost decimal            [not null]
+
+  supplier_id integer             [ref: > supplier.id, note: 'Proveedor']
+
+  created_at timestamp [not null]
+  updated_at timestamp
+}
+
+Table spare_part_stock {
+  Note: 'Stock de repuestos en cada taller'
+  id integer                      [primary key]
+
+  spare_part_id integer           [ref: > spare_part.id, not null]
+  workshop_id integer             [ref: > workshop.id, not null]
+  last_updated_by_employee_id uuid [ref: > employee.id, note: 'Empleado que actualizó el stock']
+
+
+  quantity integer                [not null, default: 0]
+  location varchar                [note: 'Ubicación física en bodega (ej: Estante A-3)']
+
+  updated_at timestamp            [note: 'Última vez que se actualizó este stock']
+
+// Restricción para asegurar que solo haya una fila por repuesto/taller
+// Se define a nivel de base de datos
+// unique(spare_part_id, workshop_id)
+
+  Indexes {
+    (spare_part_id, workshop_id) [unique, note: 'Un repuesto por taller']
+  }
+}
+
+Table maintenance_task_part {
+  Note: 'Repuestos específicos usados en una tarea de mantención'
+  id integer                      [primary key]
+
+  maintenance_task_id integer     [ref: > maintenance_task.id, not null]
+  spare_part_id integer           [ref: > spare_part.id, not null]
+
+  quantity_used integer           [not null, default: 1]
+  cost_per_unit decimal           [note: 'Costo del repuesto al momento de usarlo']
+
+  created_at timestamp            [not null]
+// Esta tabla no tiene updated_at, un log no debe modificarse.
+}
+
+// ==== Tablas de gestión de usuarios ====
+
+Table role {
+  Note: 'Roles de usuario (ej: Admin, Mecánico, Gerente)'
+  id integer                      [primary key]
+  name varchar                    [not null, unique]
+  description text
+
+  created_at timestamp [not null]
+  updated_at timestamp
+}
+
+Table employee {
+  Note: 'Perfil de empleado. Extiende la tabla auth.users de Supabase'
+  id uuid                          [primary key, ref: > auth.users.id, note: 'PK es FK a auth.users.id (CORREGIDO)']
+
+  first_name varchar              [not null]
+  last_name varchar               [not null]
+  rut varchar                     [unique]
+  phone varchar
+  is_active boolean               [not null, default: true]
+
+  role_id integer                 [ref: > role.id, not null]
+  workshop_id integer             [ref: > workshop.id, note: 'Taller principal (nulo si es Admin global)']
+
+  created_at timestamp [not null]
+  updated_at timestamp
+}
+
+// Tabla de referencia, no se crea en este esquema
+Table auth.users {
+  Note: 'Tabla de Supabase (referencia)'
+  id uuid                         [primary key, note: 'Tipo de dato UUID (no integer)']
+}
