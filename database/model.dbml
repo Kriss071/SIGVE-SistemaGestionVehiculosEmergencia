@@ -9,14 +9,14 @@ Table region {
 Table province {
   Note: 'Representa un provincia de Chile'
   id integer                      [primary key]
-  name varchar                    [not null]
+  name varchar                    [not null, unique]
   region_id integer               [ref: > region.id, not null]
 }
 
 Table commune {
   Note: 'Representa una comuna de Chile'
   id integer                      [primary key]
-  name varchar                    [not null]
+  name varchar                    [not null, unique]
   province_id integer             [ref: > province.id, not null]
 }
 
@@ -25,8 +25,8 @@ Table commune {
 Table fire_station {
   Note: 'Representa un cuartel de bomberos'
   id integer                      [primary key]
-  name varchar                    [not null]
-  address varchar                 [not null]
+  name varchar                    [not null, unique]
+  address varchar                 [not null, unique]
 
   commune_id integer              [ref: > commune.id]
   
@@ -38,9 +38,9 @@ Table workshop {
   Note: 'Representa un taller mecánico'
   id integer                      [primary key]
   name varchar                    [not null]
-  address varchar
-  phone varchar
-  email varchar
+  address varchar                 [unique]
+  phone varchar                   [unique]
+  email varchar                   [unique]
 
   created_at timestamp            [not null]
   updated_at timestamp
@@ -60,7 +60,7 @@ Table vehicle_type {
 }
 
 Table vehicle_status {
-  Note: ' Estados de un vehículo (ej: Disponible, En Mantención, De Baja)'
+  Note: 'Estados de un vehículo (ej: Disponible, En Mantención, De Baja)'
   id integer                      [primary key]
   name varchar                    [not null, unique]
   description text
@@ -74,9 +74,9 @@ Table vehicle_status_log {
   id integer                      [primary key]
 
   vehicle_id integer              [ref: > vehicle.id, not null]
-  vehicle_status_id integer       [ref: > vehicle_status.id, not null]
   changed_by_employee_id uuid     [ref: > employee.id, note: 'Empleado que registró el cambio']
-
+  vehicle_status_id integer       [ref: > vehicle_status.id, not null]
+  
   change_date timestamp           [not null, note: 'Momento exacto del cambio']
   reason text                     [note: 'Ej: "Ingreso a taller por mantención orden #50"']
 
@@ -88,7 +88,7 @@ Table fuel_type {
   id integer                      [primary key]
   name varchar                    [not null, unique]
 
-  created_at timestamp           [not null]
+  created_at timestamp            [not null]
   updated_at timestamp 
 }
 
@@ -167,9 +167,9 @@ Table maintenance_order {
   Note: 'Representa una orden de trabajo (visita) de un vehículo a un taller'
   id integer                      [primary key]
 
-  vehicle_id integer              [ref: > vehicle.id, not null]
-  workshop_id integer             [ref: > workshop.id, not null]
   employee_id uuid                [ref: > employee.id, note: 'Mecánico asignado a la orden']
+  workshop_id integer             [ref: > workshop.id, not null]
+  vehicle_id integer              [ref: > vehicle.id, not null]
 
   entry_date date                 [not null, note: 'Fecha de ingreso al taller']
   exit_date date                  [note: 'Fecha de salida (nulo si sigue en taller)']
@@ -185,8 +185,8 @@ Table maintenance_task {
   Note: 'Detalle de los trabajos específicos realizados en una orden de mantención'
   id integer                      [primary key]
 
-  maintenance_order_id integer    [ref: > maintenance_order.id, not null]
   task_type_id integer            [ref: > task_type.id, not null]
+  maintenance_order_id integer    [ref: > maintenance_order.id, not null]
 
   description text                [note: 'Detalle adicional, ej: "se usó filtro X"']
   cost decimal                    [not null, default: 0, note: 'Costo de la mano de obra para esta tarea']
@@ -225,6 +225,7 @@ Table spare_part {
   updated_at timestamp
 }
 
+// NO SE APLICO RESTRICCIÓN
 Table spare_part_stock {
   Note: 'Stock de repuestos en cada taller'
   id integer                      [primary key]
@@ -276,7 +277,7 @@ Table role {
 
 Table employee {
   Note: 'Perfil de empleado. Extiende la tabla auth.users de Supabase'
-  id uuid                          [primary key, ref: > auth.users.id, note: 'PK es FK a auth.users.id (CORREGIDO)']
+  id uuid                         [primary key, ref: > auth.users.id]
 
   first_name varchar              [not null]
   last_name varchar               [not null]
