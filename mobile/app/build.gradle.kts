@@ -11,6 +11,9 @@ plugins {
 
     // Kapt
     alias(libs.plugins.ksp)
+
+    // Serialization
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 val localProperties = Properties()
@@ -91,6 +94,9 @@ dependencies {
     implementation(libs.supabase.postgrest)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.okhttp)
+
+    // Serialization
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

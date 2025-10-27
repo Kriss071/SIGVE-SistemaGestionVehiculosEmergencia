@@ -2,6 +2,7 @@ package com.capstone.sigve.ui.vehicles
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -17,12 +18,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,6 +35,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,8 +44,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 private data class DummyVehicle(val patente: String, val details: String)
 
@@ -56,7 +62,10 @@ private val dummyList = listOf(
 )
 
 @Composable
-fun VehiclesScreen() {
+fun VehiclesScreen(viewModel: VehiclesViewModel = hiltViewModel()) {
+    val uiState by remember { derivedStateOf { viewModel.uiState } }
+
+
     // Estado para la barra de búsqueda (sin lógica real aún)
     var searchQuery by remember { mutableStateOf("") }
 
@@ -88,19 +97,44 @@ fun VehiclesScreen() {
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
-            // --- Lista de Vehículos ---
-            LazyColumn(
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 80.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(dummyList) { vehicle ->
-                    VehicleListItem(
-                        patente = vehicle.patente,
-                        details = vehicle.details,
-                        onClick = { /* Lógica de navegación se agregará aquí */ }
-                    )
+            when {
+                // Estado de Carga
+                uiState.isLoading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+                // Estado de Error
+                uiState.error != null -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Error: ${uiState.error}", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+                // Estado de Éxito (la carga terminó y no hay error)
+                else -> {
+                    // AQUÍ ESTÁ LA NUEVA LÓGICA
+                    if (uiState.vehicles.isEmpty()) {
+                        // Si la lista está vacía, muestra el mensaje
+                        EmptyStateMessage(message = "No hay vehículos registrados todavía.")
+                    } else {
+                        // Si la lista tiene contenido, muestra la LazyColumn
+                        LazyColumn(
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 80.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(uiState.vehicles) { vehicle ->
+                                VehicleListItem(
+                                    patente = vehicle.licensePlate,
+                                    details = "${vehicle.brand} - ${vehicle.model}",
+                                    onClick = { /* TODO: Navegar a detalles del vehículo */ }
+                                )
+                            }
+                        }
+                    }
                 }
             }
+
+
         }
     }
 }
@@ -186,6 +220,36 @@ fun VehicleListItem(
                 contentDescription = "Ver detalle",
                 modifier = Modifier.size(32.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+fun EmptyStateMessage(message: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(bottom = 64.dp) // Sube un poco el mensaje para que no quede pegado abajo
+        ) {
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
         }
     }

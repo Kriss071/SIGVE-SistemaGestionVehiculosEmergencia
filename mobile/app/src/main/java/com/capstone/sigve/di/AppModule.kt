@@ -4,7 +4,9 @@ import android.content.Context
 import com.capstone.sigve.BuildConfig
 import com.capstone.sigve.data.repository.AuthRepositoryImpl
 import com.capstone.sigve.data.repository.SettingsRepository
+import com.capstone.sigve.data.repository.VehiclesRepositoryImpl
 import com.capstone.sigve.domain.repository.AuthRepository
+import com.capstone.sigve.domain.repository.VehiclesRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -20,6 +22,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
+    // Cliente Supabase
     @Provides
     @Singleton
     fun provideSupabaseClient(): SupabaseClient {
@@ -32,6 +35,8 @@ object AppModule {
         }
     }
 
+    // === Repositorios ===
+
     @Provides
     @Singleton
     fun provideAuthRepository(client: SupabaseClient): AuthRepository {
@@ -43,5 +48,12 @@ object AppModule {
     fun provideSettingsRepository(@ApplicationContext context: Context): SettingsRepository {
         return SettingsRepository(context)
     }
+
+    @Provides
+    @Singleton
+    fun provideVehiclesRepository(client: SupabaseClient): VehiclesRepository {
+        return VehiclesRepositoryImpl(client)
+    }
+
 
 }
