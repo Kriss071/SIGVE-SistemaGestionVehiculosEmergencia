@@ -45,21 +45,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-
-private data class DummyVehicle(val patente: String, val details: String)
-
-private val dummyList = listOf(
-    DummyVehicle("QL-RN 27", "Mercedes-Benz Atego 1529"),
-    DummyVehicle("PM-HW 03", "MAN TGM 13.290"),
-    DummyVehicle("CD-TF 88", "Iveco Eurocargo Magirus"),
-    DummyVehicle("JK-RX 19", "Scania P320"),
-    DummyVehicle("NV-ZB 41", "Renault Midlum 280"),
-    DummyVehicle("RS-GM 75", "Freightliner M2 / Rosenbauer"),
-    DummyVehicle("BC-FG 55", "Volkswagen Constellation")
-)
 
 @Composable
 fun VehiclesScreen(viewModel: VehiclesViewModel = hiltViewModel()) {
@@ -112,7 +99,6 @@ fun VehiclesScreen(viewModel: VehiclesViewModel = hiltViewModel()) {
                 }
                 // Estado de Éxito (la carga terminó y no hay error)
                 else -> {
-                    // AQUÍ ESTÁ LA NUEVA LÓGICA
                     if (uiState.vehicles.isEmpty()) {
                         // Si la lista está vacía, muestra el mensaje
                         EmptyStateMessage(message = "No hay vehículos registrados todavía.")
@@ -124,7 +110,7 @@ fun VehiclesScreen(viewModel: VehiclesViewModel = hiltViewModel()) {
                         ) {
                             items(uiState.vehicles) { vehicle ->
                                 VehicleListItem(
-                                    patente = vehicle.licensePlate,
+                                    patente = vehicle.license_plate,
                                     details = "${vehicle.brand} - ${vehicle.model}",
                                     onClick = { /* TODO: Navegar a detalles del vehículo */ }
                                 )
@@ -253,10 +239,4 @@ fun EmptyStateMessage(message: String) {
             )
         }
     }
-}
-
-@Preview()
-@Composable
-fun PreviewVehicleScreen() {
-    VehiclesScreen()
 }
