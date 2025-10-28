@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Admin: Usuarios{% endblock %}
+{% load static %}
+
+{% block styles %}
+<link rel="stylesheet" href="{% static 'css/vehicles.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="main-container">
+
+    <section class="vehicle-list" id="userListContainer">
+
+        <div class="vehicle-search-bar-container">
+            <form class="vehicle-search-bar" method="get" id="userSearchForm">
+                <input type="text" name="q" id="userSearchInput"
+                    placeholder="Buscar usuario por email o rol...">
+                <button type="submit">
+                    🔍
+                </button>
+            </form>
+        </div>
+
+        <div id="userLoader" class="vehicle-loader hidden">
+            🔄 Buscando usuarios...
+        </div>
+
+        <div class="vehicle-list" id="userList">
+            
+            {% for user in users %}
+            <article class="vehicle-card" data-user-id="{{ user.id }}">
+                
+                <img src="{% static 'img/img_not_found.jpg' %}" class="vehicle-image" alt="Icono de usuario">
+                
+                <div class="vehicle-info">
+                    <h2 class="vehicle-title">{{ user.email }}</h2>
+                    
+                    <p class="vehicle-description">
+                        Rol: <strong>{{ user.role|capfirst }}</strong>
+                    </p>
+                    <p class="vehicle-description">
+                        Miembro desde: {{ user.created_at|date:"d M, Y"|default:"N/A" }}
+                    </p>
+                </div>
+                
+                <svg xmlns="http://www.w3.org/2000/svg" class="vehicle-next-icon" viewBox="0 0 42 42">
+                    <path fill="currentColor" fill-rule="evenodd"
+                        d="M13.933 1L34 21.068L14.431 40.637l-4.933-4.933l14.638-14.636L9 5.933z" />
+                </svg>
+            </article>
+            
+            {% empty %}
+            <div class="empty-list-message" style="background: #fff; padding: 1rem; border-radius: 10px;">
+                No hay usuarios registrados en el sistema.
+            </div>
+            {% endfor %}
+        </div>
+
+    </section>
+
+    <section class="vehicle-options">
+
+        <p>
+            Rol: <strong>{{ user_role|capfirst }}</strong>
+        </p>
+        
+        <button class="vehicle-options-button" id="btnAddUser">
+            + Agregar Usuario
+        </button>
+
+        </section>
+</main>
+
+{% endblock %}
+
+
+{% block scripts %}
+{% endblock %}

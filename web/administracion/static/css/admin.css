@@ -1,0 +1,193 @@
+/* Contenido para: web/administracion/static/css/admin.css */
+
+.main-container {
+  flex: 1;
+  display: flex;
+  padding: 2rem 1rem;
+  overflow: hidden;
+}
+
+/* Listado de Admin (Adaptado de .vehicle-list) */
+.admin-list {
+  position: relative;
+  display: grid;
+  grid-auto-rows: min-content;
+  gap: 1rem;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding-right: 10px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+/* Scrollbars */
+.admin-list::-webkit-scrollbar {
+  width: 10px;
+}
+.admin-list::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 10px;
+}
+.admin-list::-webkit-scrollbar-thumb {
+  background: #ff2848;
+  border-radius: 10px;
+}
+.admin-list::-webkit-scrollbar-thumb:hover {
+  background: #e0223f;
+}
+.admin-list {
+  scrollbar-width: thin;
+  scrollbar-color: #ff2848 #f0f0f0;
+}
+
+/* Buscador (Adaptado de .vehicle-search-bar) */
+.admin-search-bar-container {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #d9d9d9;
+  padding: 10px 0;
+}
+
+.admin-search-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  width: 100%;
+  background: #fff;
+  padding: 10px 20px;
+  border-radius: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  border-bottom: 2px solid #ff2848;
+}
+
+.admin-search-bar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 16px;
+}
+
+.admin-search-bar button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: #555;
+  transition: color 0.2s;
+}
+.admin-search-bar button:hover {
+  color: #000;
+}
+
+/* Loader (Adaptado de .vehicle-loader) */
+.admin-loader {
+  position: absolute;
+  top: 50%;
+  text-align: center;
+  font-size: 16px;
+  color: #555;
+  padding: 10px;
+  transition: opacity 0.2s ease;
+  z-index: 990;
+}
+.admin-loader.hidden {
+  opacity: 0;
+  visibility: hidden;
+  height: 0;
+}
+.admin-loader:not(.hidden) {
+  opacity: 1;
+  visibility: visible;
+  height: auto;
+}
+
+/* Tarjetas de Admin (Adaptado de .vehicle-card) */
+.admin-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 10px 20px;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.admin-image {
+  width: 80px;
+  aspect-ratio: 1 / 1;
+  height: 90%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border-radius: 20px;
+  box-shadow: 0px 0px 16px -7px #000000;
+}
+
+.admin-info {
+  padding: 0.75rem 1rem;
+}
+
+.admin-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 0.3rem;
+}
+
+.admin-description {
+  font-size: 1.0rem;
+  color: #ff2848;
+}
+
+.admin-next-icon {
+  position: absolute;
+  color: gray;
+  right: 20px;
+  width: 20px;
+}
+
+/* Opciones de Admin (Adaptado de .vehicle-options) */
+.admin-options {
+  width: 50%;
+  display: grid;
+  place-content: center;
+  gap: 2rem;
+}
+
+.admin-options-button {
+  padding: 1.5rem 4.5rem;
+  background-color: #ff2848;
+  color: black;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: inset 0px 0px 16px -7px #000000;
+  transition: background-color 0.2s ease;
+}
+
+.admin-options-button:hover {
+  background-color: #e0223f;
+}
+
+/* --- ADAPTACIÓN DE MODALS (PENDIENTE) --- */
+/* (Debes copiar y adaptar el CSS de los modals si los necesitas) */
+/*
+.admin_modal { ... }
+.admin_modal_content { ... }
+.close_admin_modal { ... }
+.form-admin { ... }
+.admin-detail-content { ... }
+*/
