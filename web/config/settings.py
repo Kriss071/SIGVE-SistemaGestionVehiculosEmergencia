@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 
-import psycopg2
 from dotenv import load_dotenv
 import os
 
@@ -143,3 +142,79 @@ STATICFILES_DIRS = [
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGGING = {
+    'version': 1,
+    
+    # No deshabilitar loggers existentes (importante para que funcionen los de Django/libs)
+    'disable_existing_loggers': False,
+
+    # --- Cómo se verán los mensajes ---
+    'formatters': {
+        'verbose': {
+            # Formato detallado: Nivel, Fecha/Hora, Módulo, Mensaje
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            # Formato simple: Nivel, Mensaje
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+
+    # --- Dónde enviar los mensajes ---
+    'handlers': {
+        'console': {
+            # Enviar a la consola (terminal)
+            'class': 'logging.StreamHandler',
+            # Usar el formato detallado
+            'formatter': 'verbose', 
+        },
+    },
+
+    # --- Qué loggers configurar ---
+    'loggers': {
+        # --- Loggers de Bibliotecas (Menos detalle) ---
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO', # Mostrar solo INFO, WARNING, ERROR, CRITICAL para Django
+            'propagate': False, # No pasar mensajes de Django al logger 'root'
+        },
+        'supabase': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'httpx': {
+            'handlers': ['console'],
+            'level': 'INFO',
+             'propagate': False,
+        },
+        # --- Loggers de Tus Aplicaciones ---
+        'accounts': { 
+            'handlers': ['console'], # Enviar logs de 'accounts' a la consola
+            'level': 'DEBUG',       # Mostrar DEBUG, INFO, WARNING, ERROR, CRITICAL
+            'propagate': False,      # Puedes poner True si quieres que también vayan al root
+        },
+        'vehicles': { 
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'maintenance': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        # Añade aquí otras apps tuyas si las tienes...
+    },
+    
+    # --- Logger Raíz (Captura todo lo demás) ---
+    'root': {
+        'handlers': ['console'], # Enviar logs no capturados a la consola
+        'level': 'INFO',         # Nivel por defecto para logs no específicos (ej. warnings de librerías no listadas)
+    },
+
+
+}

@@ -52,12 +52,14 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const vehicleHTML = vehicles.map(v => `
-            <article class="vehicle-card" data-patente="${v.patente}">
-                <img src="${v.imagen_url || '/static/img/img_not_found.jpg'}" class="vehicle-image" alt="${v.marca} ${v.modelo}">
+            <article class="vehicle-card" data-license-plate="${v.license_plate}">
+                <img src="${v.imagen_url || '/static/img/img_not_found.jpg'}" class="vehicle-image" alt="${v.brand} ${v.model}">
                 <div class="vehicle-info">
-                    <h2 class="vehicle-title">${v.patente}</h2>
-                    <p class="vehicle-description">${v.marca} - ${v.modelo}</p>
-                    <p class="vehicle-description">Año: ${v.anio}</p>
+                    <h2 class="vehicle-title">${v.license_plate}</h2>
+                    <p class="vehicle-description">${v.brand} - ${v.model}</p>
+                    <p class="vehicle-description">Año: ${v.year}</p>
+                    ${v.vehicle_type_name ? `<p class="vehicle-description">${v.vehicle_type_name}</p>` : ''}
+                    ${v.vehicle_status_name ? `<p class="vehicle-description">Estado: ${v.vehicle_status_name}</p>` : ''}
                 </div>
                 <svg xmlns="http://www.w3.org/2000/svg" class="vehicle-next-icon" viewBox="0 0 42 42">
                     <path fill="currentColor" fill-rule="evenodd" d="M13.933 1L34 21.068L14.431 40.637l-4.933-4.933l14.638-14.636L9 5.933z" />
@@ -72,15 +74,24 @@ document.addEventListener("DOMContentLoaded", () => {
     // Rellena el contenido del modal de detalle del vehículo.
     const renderVehicleDetail = (vehicle) => {
         UI.vehicleDetailContent.innerHTML = `
-            <img src="${vehicle.imagen_url || '/static/img/img_not_found.jpg'}" alt="${vehicle.marca} ${vehicle.modelo}">
-            <h2>${vehicle.patente}</h2>
-            <p><strong>Marca:</strong> ${vehicle.marca}</p>
-            <p><strong>Modelo:</strong> ${vehicle.modelo}</p>
-            <p><strong>Año:</strong> ${vehicle.anio}</p>
-            <p><strong>Tipo:</strong> ${vehicle.tipo_vehiculo || '-'}</p>
-            <p><strong>Estado mantención:</strong> ${vehicle.estado_mantencion || '-'}</p>
-            <p><strong>Kilometraje:</strong> ${vehicle.kilometraje_actual || '0'} km</p>
-            <p><strong>Observaciones:</strong> ${vehicle.observaciones || '-'}</p>
+            <img src="${vehicle.imagen_url || '/static/img/img_not_found.jpg'}" alt="${vehicle.brand} ${vehicle.model}">
+            <h2>${vehicle.license_plate}</h2>
+            <p><strong>Marca:</strong> ${vehicle.brand}</p>
+            <p><strong>Modelo:</strong> ${vehicle.model}</p>
+            <p><strong>Año:</strong> ${vehicle.year}</p>
+            ${vehicle.vehicle_type_name ? `<p><strong>Tipo:</strong> ${vehicle.vehicle_type_name}</p>` : ''}
+            ${vehicle.vehicle_status_name ? `<p><strong>Estado:</strong> ${vehicle.vehicle_status_name}</p>` : ''}
+            ${vehicle.fire_station_name ? `<p><strong>Cuartel:</strong> ${vehicle.fire_station_name}</p>` : ''}
+            ${vehicle.mileage ? `<p><strong>Kilometraje:</strong> ${vehicle.mileage} km</p>` : ''}
+            ${vehicle.mileage_last_updated ? `<p><strong>Fecha Último Kilometraje:</strong> ${vehicle.mileage_last_updated}</p>` : ''}
+            ${vehicle.engine_number ? `<p><strong>Número de Motor:</strong> ${vehicle.engine_number}</p>` : ''}
+            ${vehicle.vin ? `<p><strong>VIN:</strong> ${vehicle.vin}</p>` : ''}
+            ${vehicle.oil_capacity_liters ? `<p><strong>Capacidad de Aceite:</strong> ${vehicle.oil_capacity_liters} L</p>` : ''}
+            ${vehicle.oil_type_name ? `<p><strong>Tipo de Aceite:</strong> ${vehicle.oil_type_name}</p>` : ''}
+            ${vehicle.fuel_type_name ? `<p><strong>Combustible:</strong> ${vehicle.fuel_type_name}</p>` : ''}
+            ${vehicle.transmission_type_name ? `<p><strong>Transmisión:</strong> ${vehicle.transmission_type_name}</p>` : ''}
+            ${vehicle.registration_date ? `<p><strong>Fecha de Inscripción:</strong> ${vehicle.registration_date}</p>` : ''}
+            ${vehicle.next_revision_date ? `<p><strong>Próxima Revisión:</strong> ${vehicle.next_revision_date}</p>` : ''}
         `;
     };
 
@@ -120,7 +131,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const card = e.target.closest(".vehicle-card");
         if (!card) return;
 
-        const patente = card.dataset.patente;
+        // Obtener la patente del nuevo atributo data
+        const licensePlate = card.dataset.licensePlate || card.dataset.license_plate;
 
         toggleModal(UI.modalDetalle, true);
         UI.vehicleDetailContent.innerHTML = `
@@ -131,7 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
 
         try {
-            const res = await fetch(`/vehiculos/detail/?patente=${encodeURIComponent(patente)}`);
+            const res = await fetch(`/vehiculos/detail/?license_plate=${encodeURIComponent(licensePlate)}`);
             if (!res.ok) throw new Error("No se pudo obtener la información del vehículo");
 
             const data = await res.json();

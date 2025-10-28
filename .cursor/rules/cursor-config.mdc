@@ -1,0 +1,155 @@
+---
+alwaysApply: true
+description: Reglas y directrices para el desarrollo en el proyecto SIGVE. globs:
+
+"web/**"
+
+"mobile/**" 
+alwaysApply: true
+---
+
+
+Reglas de Cursor para el Proyecto SIGVE
+Estructura del Proyecto
+Respetar la estructura del monorepo: Mantén la separación clara entre el desarrollo web y mobile.
+
+Web (Django): Sigue la estructura de aplicaciones de Django (accounts, vehicles, maintenance). No crees archivos fuera de las carpetas de las aplicaciones correspondientes, a menos que sea una nueva aplicación.
+
+Mobile (Kotlin): Respeta la estructura de paquetes existente, separando data, domain, y ui. Sigue el patrón de diseño MVVM como se ha implementado.
+
+Base de Datos: El esquema de la base de datos se define en database/model.dbml. Cualquier cambio en la base de datos debe reflejarse primero en este archivo.
+
+Convenciones de Código
+Nomenclatura:
+
+Python (Django):
+
+Archivos: snake_case.py
+
+Clases: PascalCase
+
+Variables/Funciones: snake_case
+
+Tablas/Columnas de la base de datos: snake_case (según model.dbml)
+
+Kotlin (Android):
+
+Archivos: PascalCase.kt
+
+Clases/Composable: PascalCase
+
+Variables/Funciones: camelCase
+
+JavaScript:
+
+Archivos: kebab-case.js
+
+Variables/Funciones: camelCase
+
+CSS:
+
+Clases: kebab-case
+
+Importaciones:
+
+Organiza las importaciones en grupos: librerías externas, librerías del framework (Django/Kotlin), y luego los módulos internos del proyecto.
+
+Frontend (Web - Django Templates)
+Django Templates:
+
+Utiliza la herencia de plantillas ({% extends "base.html" %}).
+
+Para la lógica de la interfaz, utiliza JavaScript en archivos estáticos separados.
+
+Carga los archivos estáticos usando {% load static %}.
+
+Estilos:
+
+Utiliza CSS plano. Mantén los estilos específicos de cada aplicación en su propia carpeta static/css.
+
+JavaScript:
+
+Utiliza JavaScript moderno (ES6+).
+
+Manipula el DOM de manera eficiente y utiliza addEventListener para manejar eventos.
+
+Realiza llamadas a la API de Django utilizando fetch.
+
+Backend (Web - Django)
+Django:
+
+Sigue el patrón Modelo-Vista-Template (MVT).
+
+Utiliza servicios (services/) para encapsular la lógica de negocio y las interacciones con la base de datos (Supabase).
+
+Implementa decoradores para la autenticación y la validación de roles.
+
+Base de Datos (Supabase):
+
+Toda la interacción con Supabase debe realizarse a través del cliente de Supabase (supabase_client.py).
+
+Utiliza los métodos del cliente de Supabase para las operaciones CRUD.
+
+Las consultas deben ser seguras y eficientes.
+
+Seguridad:
+
+Utiliza los decoradores @require_supabase_login y @require_role para proteger las vistas.
+
+Valida todos los datos de entrada a través de los formularios de Django.
+
+Nunca expongas claves secretas o tokens en el código del frontend.
+
+Mobile (Kotlin - Jetpack Compose)
+Jetpack Compose:
+
+Construye la interfaz de usuario con funciones @Composable.
+
+Utiliza ViewModel para gestionar el estado de la interfaz y la lógica de negocio.
+
+Implementa la navegación utilizando NavHost y rememberNavController.
+
+UI/UX:
+
+Utiliza MaterialTheme para mantener un diseño consistente.
+
+Implementa un diseño adaptable que funcione en diferentes tamaños de pantalla.
+
+Estado y Datos:
+
+Utiliza StateFlow y collectAsState para observar los cambios en el estado desde el ViewModel.
+
+Las llamadas a la API de Supabase deben realizarse en el ViewModel dentro de un viewModelScope.
+
+Maneja los estados de carga, error y éxito de las llamadas a la API en la interfaz de usuario.
+
+Integración con Backend (Supabase):
+
+Utiliza el cliente de Supabase para Kotlin para interactuar con la base de datos y la autenticación.
+
+Los modelos de datos de Kotlin (Vehicle.kt) deben coincidir con la estructura de las tablas de Supabase.
+
+Inyección de Dependencias:
+
+Utiliza Hilt para la inyección de dependencias. Define los proveedores en di/AppModule.kt.
+
+Calidad de Código y Buenas Prácticas
+Comentarios: Documenta las funciones y clases complejas, explicando su propósito y funcionamiento.
+
+Testing:
+
+Web: Crea pruebas unitarias para la lógica de negocio en los servicios de Django.
+
+Mobile: Implementa pruebas unitarias para los ViewModel y pruebas de interfaz de usuario para los componentes de Jetpack Compose.
+
+Rendimiento:
+
+Optimiza las consultas a la base de datos para minimizar la latencia.
+
+En la aplicación móvil, utiliza remember para evitar recomposiciones innecesarias.
+
+Mantenimiento:
+
+Mantén las funciones y clases pequeñas y enfocadas en una única responsabilidad.
+
+Evita el código duplicado. Si una lógica se repite, extráela a una función o clase reutilizable.

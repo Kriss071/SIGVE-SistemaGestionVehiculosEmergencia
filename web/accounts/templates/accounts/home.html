@@ -1,7 +1,0 @@
-{% extends "base.html" %}
-{% block title %}Panel{% endblock %}
-{% block content %}
-  <h2 class="mb-3">Panel del Administrador</h2>
-  <p>Bienvenido, <strong>{{ email }}</strong></p>
-  <a href="{% url 'logout' %}" class="btn btn-danger mt-3">Cerrar sesión</a>
-{% endblock %}

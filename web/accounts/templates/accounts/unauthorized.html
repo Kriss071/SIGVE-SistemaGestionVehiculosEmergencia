@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Acceso No Autorizado{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <h1>🚫 Acceso No Autorizado</h1>
+            <p class="mt-4">Lo sentimos, no tienes permisos para acceder a esta sección.</p>
+            <p>Por favor, contacta al administrador si crees que esto es un error.</p>
+            <a href="{% url 'login' %}" class="btn btn-primary mt-3">Volver al Inicio</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

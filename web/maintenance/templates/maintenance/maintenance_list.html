@@ -12,7 +12,7 @@
         {% for maintenance in maintenances %}
         <div class="maintenance-card">
             <div class="card-header">
-                <h3>Patente: {{ maintenance.vehiculo_patente|default:"N/A" }}</h3>
+                <h3>Patente: {{ maintenance.vehicle_license_plate|default:"N/A" }}</h3>
                 <span class="status-badge status-{{ maintenance.estado_mantencion|lower|default:'desconocido' }}">
                     {{ maintenance.estado_mantencion|default:"Desconocido" }}
                 </span>

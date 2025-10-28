@@ -29,17 +29,23 @@
         <div class="vehicle-list" id="vehicleList">
             {% for vehicle in vehicles %}
 
-            <article class="vehicle-card" data-patente="{{ vehicle.patente }}">
+            <article class="vehicle-card" data-license-plate="{{ vehicle.license_plate }}">
                 {% if vehicle.imagen_url %}
                 <img src="{{ vehicle.imagen_url }}" class="vehicle-image"
-                    alt="{{ vehicle.marca }} {{ vehicle.modelo }}">
+                    alt="{{ vehicle.brand }} {{ vehicle.model }}">
                 {% else %}
                 <img src="{% static 'img/img_not_found.jpg' %}" class="vehicle-image" alt="Imagen no disponible">
                 {% endif %}
                 <div class="vehicle-info">
-                    <h2 class="vehicle-title">{{ vehicle.patente }}</h2>
-                    <p class="vehicle-description">{{ vehicle.marca }} - {{ vehicle.modelo }}</p>
-                    <p class="vehicle-description">Año: {{ vehicle.anio }}</p>
+                    <h2 class="vehicle-title">{{ vehicle.license_plate }}</h2>
+                    <p class="vehicle-description">{{ vehicle.brand }} - {{ vehicle.model }}</p>
+                    <p class="vehicle-description">Año: {{ vehicle.year }}</p>
+                    {% if vehicle.vehicle_type_name %}
+                    <p class="vehicle-description">{{ vehicle.vehicle_type_name }}</p>
+                    {% endif %}
+                    {% if vehicle.vehicle_status_name %}
+                    <p class="vehicle-description">Estado: {{ vehicle.vehicle_status_name }}</p>
+                    {% endif %}
                 </div>
                 <svg xmlns="http://www.w3.org/2000/svg" class="vehicle-next-icon" viewBox="0 0 42 42">
                     <path fill="currentColor" fill-rule="evenodd"
@@ -59,13 +65,13 @@
         <p>
             Rol: <strong>{{ user_role|capfirst }}</strong>
         </p>
-        {% if user_role == "mecanico" or user_role == "administrador" %}
+        {% if user_role == "Mecánico" or user_role == "Administrador" %}
         <button class="vehicle-options-button">
             + Mantención
         </button>
         {% endif %}
 
-        {% if user_role == "administrador" %}
+        {% if user_role == "Administrador" %}
         <button class="vehicle-options-button" id="btnAddVehicle">
             + Vehículo
         </button>

@@ -6,60 +6,121 @@
             <p class="form-message">Completa el formulario para agregar un nuevo vehículo.</p>
             {% csrf_token %}
 
+            <!-- Patente -->
             <label>
-                {{ form.patente }}
-                <span>Patente</span>
+                {{ form.license_plate }}
+                <span>{{ form.license_plate.label }}</span>
             </label>
 
-            <label>
-                {{ form.estado_mantencion }}
-                <span>Estado de Mantención</span>
-            </label>
-
+            <!-- Cuartel de Bomberos y Estado -->
             <div class="form-flex">
                 <label>
-                    {{ form.kilometraje_actual }}
-                    <span>Kilometraje Actual</span>
+                    {{ form.fire_station_id }}
+                    <span>{{ form.fire_station_id.label }}</span>
                 </label>
 
                 <label>
-                    {{ form.tipo_vehiculo }}
-                    <span>Tipo de Vehículo</span>
+                    {{ form.vehicle_status_id }}
+                    <span>{{ form.vehicle_status_id.label }}</span>
                 </label>
             </div>
 
-
-            <div class="form-flex">
-                <label>
-                    {{ form.marca }}
-                    <span>Marca</span>
-                </label>
-
-                <label>
-                    {{ form.modelo }}
-                    <span>Modelo</span>
-                </label>
-            </div>
-
-            <div class="form-flex">
-                <label>
-                    {{ form.anio }}
-                    <span>Año</span>
-                </label>
-
-                <label>
-                    {{ form.fecha_ingreso }}
-                    <span>Fecha de Ingreso</span>
-                </label>
-
-            </div>
-
-
-
+            <!-- Tipo de Vehículo -->
             <label>
-                {{ form.observaciones }}
-                <span>Observaciones</span>
+                {{ form.vehicle_type_id }}
+                <span>{{ form.vehicle_type_id.label }}</span>
             </label>
+
+            <!-- Marca y Modelo -->
+            <div class="form-flex">
+                <label>
+                    {{ form.brand }}
+                    <span>{{ form.brand.label }}</span>
+                </label>
+
+                <label>
+                    {{ form.model }}
+                    <span>{{ form.model.label }}</span>
+                </label>
+            </div>
+
+            <!-- Año y Kilometraje -->
+            <div class="form-flex">
+                <label>
+                    {{ form.year }}
+                    <span>{{ form.year.label }}</span>
+                </label>
+
+                <label>
+                    {{ form.mileage }}
+                    <span>{{ form.mileage.label }}</span>
+                </label>
+            </div>
+
+            <!-- Fechas opcionales -->
+            <div class="form-flex">
+                <label>
+                    {{ form.mileage_last_updated }}
+                    <span>{{ form.mileage_last_updated.label }}</span>
+                </label>
+
+                <label>
+                    {{ form.registration_date }}
+                    <span>{{ form.registration_date.label }}</span>
+                </label>
+            </div>
+
+            <!-- Tipo de Combustible y Transmisión -->
+            <div class="form-flex">
+                <label>
+                    {{ form.fuel_type_id }}
+                    <span>{{ form.fuel_type_id.label }}</span>
+                </label>
+
+                <label>
+                    {{ form.transmission_type_id }}
+                    <span>{{ form.transmission_type_id.label }}</span>
+                </label>
+            </div>
+
+            <!-- Tipo de Aceite y Refrigerante -->
+            <div class="form-flex">
+                <label>
+                    {{ form.oil_type_id }}
+                    <span>{{ form.oil_type_id.label }}</span>
+                </label>
+
+                <label>
+                    {{ form.coolant_type_id }}
+                    <span>{{ form.coolant_type_id.label }}</span>
+                </label>
+            </div>
+
+            <!-- Motro, Chasis y Aceite -->
+            <div class="form-flex">
+                <label>
+                    {{ form.engine_number }}
+                    <span>{{ form.engine_number.label }}</span>
+                </label>
+
+                <label>
+                    {{ form.vin }}
+                    <span>{{ form.vin.label }}</span>
+                </label>
+            </div>
+
+            <!-- Capacidad de aceite y próxima revisión -->
+            <div class="form-flex">
+                <label>
+                    {{ form.oil_capacity_liters }}
+                    <span>{{ form.oil_capacity_liters.label }}</span>
+                </label>
+
+                <label>
+                    {{ form.next_revision_date }}
+                    <span>{{ form.next_revision_date.label }}</span>
+                </label>
+            </div>
 
             <button type="submit" class="submit_button">Agregar Vehículo</button>
         </form>

@@ -1,68 +1,46 @@
-{% extends "base.html" %}
 {% load static %}
-{% block title %}Login{% endblock %}
-{% block content %}
+<!DOCTYPE html>
+<html lang="en">
 
-<div class="login-wrap">
-  <div class="login-title-app">SIGVE</div>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inicio de Sesión</title>
+    <link rel="stylesheet" href="{% static 'css/accounts.css' %}">
+</head>
 
-  <div class="login-card">
-  
-    <div class="login-avatar">
-      <svg viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="8" r="4" fill="#ffd6e1"/>
-        <path d="M4 20c0-4 3.5-6 8-6s8 2 8 6" fill="#f04a73"/>
-        <circle cx="12" cy="8" r="4" stroke="#f04a73" stroke-width="1.5" fill="transparent"/>
-      </svg>
-    </div>
+<body>
+    <main>
 
-    <div class="subtitulo-login"><h2> Iniciar sesión</h2></div>
+        <h2>Bienvenido a SIGVE</h2>
 
-  
+        <article class="login-wrap">
+            <header>
+                <h1>Iniciar Sesión</h1>
+            </header>
+            <section>
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 20 20">
+                            <path fill="currentColor"
+                                d="M5 5a5 5 0 0 1 10 0v2A5 5 0 0 1 5 7V5zM0 16.68A19.9 19.9 0 0 1 10 14c3.64 0 7.06.97 10 2.68V20H0v-3.32z" />
+                        </svg>
+                        {{ form.email }}
+                    </div>
+                    <div class="form-group">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24">
+                            <path fill="currentColor"
+                                d="M6 22q-.825 0-1.413-.588T4 20V10q0-.825.588-1.413T6 8h1V6q0-2.075 1.463-3.538T12 1q2.075 0 3.538 1.463T17 6v2h1q.825 0 1.413.588T20 10v10q0 .825-.588 1.413T18 22H6Zm6-5q.825 0 1.413-.588T14 15q0-.825-.588-1.413T12 13q-.825 0-1.413.588T10 15q0 .825.588 1.413T12 17ZM9 8h6V6q0-1.25-.875-2.125T12 3q-1.25 0-2.125.875T9 6v2Z" />
+                        </svg>
+                        {{ form.password }}
+                    </div>
+                    <button type="submit">Iniciar Sesión</button>
+                    <a href="">Olvide mi contraseña</a>
+                </form>
+            </section>
+        </article>
+    </main>
+</body>
 
-   
-    <form method="post" novalidate>
-      {% csrf_token %}
-
-  
-      <div class="mb-3 {% if form.email.errors %}has-error{% endif %}">
-        <label for="id_email" class="form-label">Email</label>
-        {{ form.email }}
-        {% if form.email.errors %}
-          <div class="field-error">
-            {% for error in form.email.errors %}
-              <small>{{ error }}</small>
-            {% endfor %}
-          </div>
-        {% endif %}
-      </div>
-
-      <div class="mb-3 {% if form.password.errors %}has-error{% endif %}">
-        <label for="id_password" class="form-label">Contraseña</label>
-        {{ form.password }}
-        {% if form.password.errors %}
-          <div class="field-error">
-            {% for error in form.password.errors %}
-              <small>{{ error }}</small>
-            {% endfor %}
-          </div>
-        {% endif %}
-      </div>
-
-      <button type="submit">Entrar</button>
-    </form>
-  </div>
-
-</div>
-<script>
-
-  setTimeout(() => {
-    document.querySelectorAll(".field-error, .alert.error").forEach(el => {
-      el.style.transition = "opacity 0.9s ease";
-      el.style.opacity = "0";
-      setTimeout(() => el.remove(), 600);
-    });
-  }, 2000);
-</script>
-
-{% endblock %}
+</html>
