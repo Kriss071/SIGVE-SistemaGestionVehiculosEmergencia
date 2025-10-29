@@ -1,5 +1,5 @@
 # En: web/administracion/services/user_service.py
-from accounts.client.supabase_client import get_supabase_admin
+from accounts.client.supabase_client import get_supabase
 from supabase import Client
 from typing import List, Dict, Any, Tuple, Optional
 from postgrest.exceptions import APIError # Importar para manejo de errores

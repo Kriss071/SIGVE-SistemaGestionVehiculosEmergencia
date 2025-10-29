@@ -46,7 +46,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts',
     'vehicles',
-    'maintenance'
+    'maintenance',
+    'administracion',
 ]
 
 MIDDLEWARE = [

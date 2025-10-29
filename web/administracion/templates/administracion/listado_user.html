@@ -3,7 +3,9 @@
 {% load static %}
 
 {% block styles %}
-<link rel="stylesheet" href="{% static 'css/vehicles.css' %}">
+{# OPTIONAL: Consider changing this to a dedicated CSS file for users if needed #}
+{# <link rel="stylesheet" href="{% static 'css/admin_users.css' %}"> #}
+<link rel="stylesheet" href="{% static 'css/vehicles.css' %}"> {# Keeps vehicle styles for now #}
 {% endblock %}
 
 {% block content %}
@@ -13,8 +15,9 @@
 
         <div class="vehicle-search-bar-container">
             <form class="vehicle-search-bar" method="get" id="userSearchForm">
-                <input type="text" name="q" id="userSearchInput"
-                    placeholder="Buscar usuario por email o rol...">
+                {# Adjusted placeholder text for users #}
+                <input type="text" name="q_user" id="userSearchInput"
+                       placeholder="Buscar usuario por nombre, apellido o RUT...">
                 <button type="submit">
                     🔍
                 </button>
@@ -26,29 +29,34 @@
         </div>
 
         <div class="vehicle-list" id="userList">
-            
+
             {% for user in users %}
+            {# Changed data attribute to data-user-id #}
             <article class="vehicle-card" data-user-id="{{ user.id }}">
-                
+
                 <img src="{% static 'img/img_not_found.jpg' %}" class="vehicle-image" alt="Icono de usuario">
-                
+
                 <div class="vehicle-info">
-                    <h2 class="vehicle-title">{{ user.email }}</h2>
-                    
+                    {# CORRECTED: Use first_name and last_name #}
+                    <h2 class="vehicle-title">{{ user.first_name }} {{ user.last_name }}</h2>
+
+                    {# CORRECTED: Use role_name #}
                     <p class="vehicle-description">
-                        Rol: <strong>{{ user.role|capfirst }}</strong>
+                        Rol: <strong>{{ user.role_name|default:"N/A"|capfirst }}</strong>
                     </p>
+                    {# OPTIONAL: Display RUT or Phone if needed #}
                     <p class="vehicle-description">
-                        Miembro desde: {{ user.created_at|date:"d M, Y"|default:"N/A" }}
+                       RUT: {{ user.rut|default:"N/A" }}
                     </p>
+                    {# Removed 'Miembro desde' as 'created_at' wasn't selected in the service #}
                 </div>
-                
+
                 <svg xmlns="http://www.w3.org/2000/svg" class="vehicle-next-icon" viewBox="0 0 42 42">
                     <path fill="currentColor" fill-rule="evenodd"
-                        d="M13.933 1L34 21.068L14.431 40.637l-4.933-4.933l14.638-14.636L9 5.933z" />
+                          d="M13.933 1L34 21.068L14.431 40.637l-4.933-4.933l14.638-14.636L9 5.933z" />
                 </svg>
             </article>
-            
+
             {% empty %}
             <div class="empty-list-message" style="background: #fff; padding: 1rem; border-radius: 10px;">
                 No hay usuarios registrados en el sistema.
@@ -63,7 +71,8 @@
         <p>
             Rol: <strong>{{ user_role|capfirst }}</strong>
         </p>
-        
+
+        {# Button to add user (already correct) #}
         <button class="vehicle-options-button" id="btnAddUser">
             + Agregar Usuario
         </button>
@@ -75,4 +84,6 @@
 
 
 {% block scripts %}
+{# OPTIONAL: Link to a dedicated JS file for user list interaction if needed #}
+{# <script src="{% static 'js/administracion.js' %}"></script> #}
 {% endblock %}

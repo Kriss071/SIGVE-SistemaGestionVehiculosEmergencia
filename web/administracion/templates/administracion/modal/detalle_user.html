@@ -1,0 +1,29 @@
+{# Asumiendo que este es tu detalle_user.html #}
+
+<div class="user_modal" id="userDetailModal"> 
+    <div class="user_modal_content"> 
+        <span class="close_user_modal" id="closeUserDetailModal">&times;</span> 
+        <div class="user-detail-content" id="userDetailContent"> 
+            {# --- Contenido dinámico del detalle del usuario (cargado por JS) --- #}
+            {# (Nombre, RUT, Rol, etc.) #}
+
+            {# --- Botones condicionales SOLO para Administrador --- #}
+            <hr style="border-top: 1px solid #555; margin: 15px 0;"> 
+            
+            {% if user_role == "Administrador" %} 
+                {# --- Botón 1 (Editar) --- #}
+                <button class="admin-action-button" id="btnEditUserDetail"> 
+                    ✏️ Editar Usuario 
+                </button>
+
+                {# --- NUEVO BOTÓN (Eliminar) --- #}
+                <button class="admin-action-button danger" id="btnDeleteUserDetail" style="background-color: #dc3545; margin-top: 10px;"> {# Clase 'danger' opcional + estilo #}
+                    🗑️ Eliminar Usuario 
+                </button>
+                {# --- Fin Nuevo Botón --- #}
+
+            {% endif %}
+            {# --- Fin de los botones condicionales --- #}
+        </div>
+    </div>
+</div>

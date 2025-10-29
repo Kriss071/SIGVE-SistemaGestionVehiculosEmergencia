@@ -1,83 +1,111 @@
-from accounts.client.supabase_client import get_supabase_admin
-from supabase import Client
-from typing import List, Dict, Any, Tuple, Optional
+# En: web/administracion/services/user_service.py
+import logging
+from accounts.client.supabase_client import get_supabase
+
+logger = logging.getLogger(__name__)
 
 class UserService:
-    
-    def __init__(self):
-        self.admin_client: Client = get_supabase_admin()
 
-    def list_users_with_roles(self) -> Tuple[List[Dict[str, Any]], Optional[str]]:
-        
+    def list_users_with_roles(self):
+        """Lista empleados desde la tabla 'employee' con el nombre de su rol."""
+        supabase = get_supabase()
+        logger.info("👥 Listando empleados con roles...")
+
         try:
-            # --- INICIO DE LA CORRECCIÓN ---
-            # 1. Obtenemos la lista de usuarios directamente
-            auth_users = self.admin_client.auth.admin.list_users()
-            
-            # 2. Obtenemos los roles
-            roles_resp = self.admin_client.table("roles_usuario").select("*").execute()
-            
-            # 3. La línea 'auth_users = auth_users_resp.users' se elimina
-            roles_data = roles_resp.data
-            # --- FIN DE LA CORRECCIÓN ---
+            response = (
+                supabase.table("employee")
+                .select(
+                    """
+                    id, 
+                    first_name, 
+                    last_name, 
+                    rut, 
+                    phone, 
+                    is_active,
+                    role:role_id(name), 
+                    workshop:workshop_id(name) 
+                    """
+                )
+                .order("last_name")
+                .execute()
+            )
 
-            roles_map = {role['usuario_id']: role['rol'] for role in roles_data}
-            
-            combined_list = []
-            for user in auth_users:
-                user_id = user.id
-                role = roles_map.get(user_id, "user") 
+            logger.debug(f"📊 Respuesta cruda de Supabase (list_users_with_roles): {response.data}")
+
+            if response.data is not None:
+                users_list = []
+                for user_data in response.data:
+                    normalized_user = {
+                        'id': user_data.get('id'),
+                        'first_name': user_data.get('first_name', ''),
+                        'last_name': user_data.get('last_name', ''),
+                        'rut': user_data.get('rut', ''),
+                        'phone': user_data.get('phone', ''),
+                        'is_active': user_data.get('is_active', False),
+                        'role_name': user_data.get('role', {}).get('name') if isinstance(user_data.get('role'), dict) else 'Sin Rol',
+                        'workshop_name': user_data.get('workshop', {}).get('name') if isinstance(user_data.get('workshop'), dict) else 'N/A',
+                        'email': None # Columna 'email' no presente en tabla 'employee'
+                    }
+                    users_list.append(normalized_user)
                 
-                combined_list.append({
-                    "id": user_id,
-                    "email": user.email,
-                    "role": role,
-                    "created_at": user.created_at,
-                    "last_sign_in_at": user.last_sign_in_at
-                })
-                
-            return combined_list, None
-        
-        except Exception as e:
-            print(f"Error al listar usuarios y roles: {e}")
-            return [], str(e)
+                logger.info(f"✅ Se listaron {len(users_list)} empleados.")
+                return users_list, None
+            else:
+                 logger.warning("⚠️ La consulta a 'employee' no devolvió datos.")
+                 return [], None
 
-    def create_user(self, email: str, password: str, role: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
-        # (Esta función estaba bien, se mantiene igual)
-        try:
-            user_resp = self.admin_client.auth.admin.create_user({
-                "email": email,
-                "password": password,
-                "email_confirm": True 
-            })
-            
-            if not user_resp or not user_resp.user:
-                 raise Exception("No se pudo crear el usuario en Auth.")
-            
-            user = user_resp.user
-            
-            role_data = { 
-                "usuario_id": user.id, 
-                "rol": role 
-            }
-            self.admin_client.table("roles_usuario").upsert(role_data).execute()
-            
-            user_dict = {
-                "id": user.id,
-                "email": user.email,
-                "role": role
-            }
-            return user_dict, None
-        
         except Exception as e:
-            print(f"Error al crear usuario: {e}")
-            return None, str(e)
+            error_message = f"Error al listar usuarios y roles: {getattr(e, 'message', str(e))}"
+            logger.error(f"❌ {error_message}", exc_info=True)
+            return None, error_message
 
-    def delete_user(self, user_id: str) -> Tuple[bool, Optional[str]]:
-        # (Esta función estaba bien, se mantiene igual)
+    def get_user_details(self, user_id: str):
+        """Obtiene los detalles de un empleado por su UUID."""
+        supabase = get_supabase()
+        logger.info(f"ℹ️ Obteniendo detalles para empleado ID: {user_id}")
+
         try:
-            self.admin_client.auth.admin.delete_user(user_id)
-            return True, None
+            response = (
+                supabase.table("employee")
+                .select(
+                     """
+                    id, 
+                    first_name, 
+                    last_name, 
+                    rut, 
+                    phone, 
+                    is_active,
+                    role:role_id(name), 
+                    workshop:workshop_id(name) 
+                    """
+                )
+                .eq("id", user_id) 
+                .maybe_single()    
+                .execute()
+            )
+
+            logger.debug(f"📊 Respuesta cruda de Supabase (get_user_details): {response.data}")
+
+            if response.data:
+                user_data = response.data
+                normalized_user = {
+                    'id': user_data.get('id'),
+                    'first_name': user_data.get('first_name', ''),
+                    'last_name': user_data.get('last_name', ''),
+                    'rut': user_data.get('rut', ''),
+                    'phone': user_data.get('phone', ''),
+                    'is_active': user_data.get('is_active', False),
+                    'role_name': user_data.get('role', {}).get('name') if isinstance(user_data.get('role'), dict) else 'Sin Rol',
+                    'workshop_name': user_data.get('workshop', {}).get('name') if isinstance(user_data.get('workshop'), dict) else 'N/A',
+                    'email': None 
+                }
+                logger.info(f"✅ Detalles encontrados para {user_id}.")
+                return normalized_user, None 
+            else:
+                logger.warning(f"⚠️ Empleado no encontrado: {user_id}")
+                return None, "Empleado no encontrado"
+
         except Exception as e:
-            print(f"Error al eliminar usuario: {e}")
-            return False, str(e)
+            error_message = f"Error al obtener detalles del usuario {user_id}: {getattr(e, 'message', str(e))}"
+            logger.error(f"❌ {error_message}", exc_info=True)
+            return None, error_message

@@ -181,13 +181,3 @@
 .admin-options-button:hover {
   background-color: #e0223f;
 }
-
-/* --- ADAPTACIÓN DE MODALS (PENDIENTE) --- */
-/* (Debes copiar y adaptar el CSS de los modals si los necesitas) */
-/*
-.admin_modal { ... }
-.admin_modal_content { ... }
-.close_admin_modal { ... }
-.form-admin { ... }
-.admin-detail-content { ... }
-*/
