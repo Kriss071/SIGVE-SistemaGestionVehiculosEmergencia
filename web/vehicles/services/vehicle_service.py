@@ -4,14 +4,16 @@ import logging
 from typing import Any
 from .base import VehicleService
 from accounts.client.supabase_client import get_supabase_with_user
+from shared.services.base_service import BaseService
 
 logger = logging.getLogger(__name__)
 
 
-class SupabaseVehicleService(VehicleService):
+class SupabaseVehicleService(BaseService, VehicleService):
     """
     Implementación concreta de VehicleService que interactúa con Supabase.
-
+    Hereda de BaseService para la inicialización del cliente.
+    
     Esta clase maneja toda la lógica de obtención, creación y búsqueda de vehículos
     utilizando la API de Supabase a través de la biblioteca `supabase-py`.
     Hereda de la clase base abstracta VehicleService, garantizando que implementa
@@ -27,7 +29,7 @@ class SupabaseVehicleService(VehicleService):
             refresh_token: El token de refresco del usuario actual.
         """
         # Crea y almacena una instancia del cliente Supabase autenticado para este servicio
-        self.client = get_supabase_with_user(token, refresh_token)
+        super().__init__(token, refresh_token)
         logger.debug("🔧 Instancia de SupabaseVehicleService creada.")
 
 

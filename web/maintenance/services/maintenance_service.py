@@ -1,13 +1,13 @@
 import logging
 from .base import MaintenanceService
 from accounts.client.supabase_client import get_supabase_with_user
-
+from shared.services.base_service import BaseService
 
 # Inicializa el logger para este módulo.
 logger = logging.getLogger(__name__)
 
 
-class SupabaseMaintenanceService(MaintenanceService):
+class SupabaseMaintenanceService(BaseService, MaintenanceService):
     """
     Implementación del servicio de mantenimiento que interactúa con Supabase.
     """
@@ -21,7 +21,7 @@ class SupabaseMaintenanceService(MaintenanceService):
             refresh_token: El token de refresco del usuario actual.
         """
 
-        self.client = get_supabase_with_user(token, refresh_token)
+        super().__init__(token, refresh_token)
 
     def list_maintenance(self):
         """

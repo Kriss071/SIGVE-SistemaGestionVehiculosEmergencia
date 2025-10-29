@@ -1,7 +1,12 @@
 import logging
-from django.shortcuts import render
+from django.contrib import messages
+from django.shortcuts import redirect, render
+from django.urls import reverse
+from django.views.decorators.http import require_http_methods
 from accounts.decorators import require_role, require_supabase_login
 from .services.role_services import SupabaseRoleService
+from .forms import RoleForm
+
 
 # Configura el logger para este módulo
 logger = logging.getLogger(__name__)
@@ -26,7 +31,7 @@ def dashboard_view(request):
 @require_role(BACKOFFICE_REQUIRED_ROLE)
 def role_list_view(request):
     """
-    Muestra la lista de todos los roles existentes.
+    Muestra la lista de roles y gestiona la creación de un nuevo rol.
     """
     logger.info("📄 (role_list_view) Accediendo a la lista de roles.")
     token = request.session.get("sb_access_token")
