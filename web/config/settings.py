@@ -46,7 +46,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts',
     'vehicles',
-    'maintenance'
+    'maintenance',
+    'backoffice'
 ]
 
 MIDDLEWARE = [
@@ -203,6 +204,11 @@ LOGGING = {
             'propagate': False,
         },
         'maintenance': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'backoffice': {
             'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': False,
