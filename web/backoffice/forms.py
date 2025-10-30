@@ -179,3 +179,29 @@ class SupplierForm(forms.Form):
         if self.prefix:
             # Añadimos el campo 'id' (entero) que es necesario para la actualización.
             self.fields['id'] = forms.IntegerField(widget=forms.HiddenInput())
+
+
+class VehicleTypeForm(forms.Form):
+    """
+    Formulario para la creación y edición de Tipos de Vehículo (VehicleType).
+    """
+    
+    name = forms.CharField(
+        label="Nombre del Tipo",
+        max_length=100,
+        required=True,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: Carro Bomba"})
+    )
+    description = forms.CharField(
+        label="Descripción",
+        required=False,
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Describe brevemente este tipo de vehículo..."})
+    )
+    
+    def __init__(self, *args, **kwargs):
+        self.prefix = kwargs.pop('prefix', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.prefix:
+            # Añadimos el campo 'id' (entero) para la actualización.
+            self.fields['id'] = forms.IntegerField(widget=forms.HiddenInput())

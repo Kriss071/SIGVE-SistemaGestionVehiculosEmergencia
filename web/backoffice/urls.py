@@ -28,4 +28,11 @@ urlpatterns = [
     path('suppliers/update/<int:supplier_id>/', views.supplier_update_view, name='supplier_update'),
     path('suppliers/delete/<int:supplier_id>/', views.supplier_delete_view, name='supplier_delete'),
     path('api/suppliers/<int:supplier_id>/', views.get_supplier_api, name='api_get_supplier'),
+
+    # Tipos de Vehículo
+    path('vehicle-types/', views.vehicle_type_list_view, name='vehicle_type_list'),
+    path('vehicle-types/create/', views.vehicle_type_create_view, name='vehicle_type_create'),
+    path('vehicle-types/update/<int:vehicle_type_id>/', views.vehicle_type_update_view, name='vehicle_type_update'),
+    path('vehicle-types/delete/<int:vehicle_type_id>/', views.vehicle_type_delete_view, name='vehicle_type_delete'),
+    path('api/vehicle-types/<int:vehicle_type_id>/', views.get_vehicle_type_api, name='api_get_vehicle_type'),
 ]

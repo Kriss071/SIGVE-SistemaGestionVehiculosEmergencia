@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // ===================================================================
-    // 3. LÓGICA PARA PROVEEDORES (NUEVA)
+    // 3. LÓGICA PARA PROVEEDORES
     // ===================================================================
 
     const updateSupplierModalEl = document.getElementById('updateSupplierModal');
@@ -249,5 +249,78 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    const updateVehicleTypeModalEl = document.getElementById('updateVehicleTypeModal');
+    const deleteVehicleTypeModalEl = document.getElementById('deleteVehicleTypeModal');
+
+    // 4.1 LÓGICA PARA RELLENAR EL FORMULARIO DE EDICIÓN DE TIPO DE VEHÍCULO
+    if (updateVehicleTypeModalEl) {
+        const loader = document.getElementById('updateVehicleTypeLoader');
+        const form = document.getElementById('updateVehicleTypeForm');
+
+        updateVehicleTypeModalEl.addEventListener('show.bs.modal', function (event) {
+            console.log("Modal de edición de TIPO DE VEHÍCULO detectado.");
+
+            loader.classList.remove('d-none');
+            form.classList.add('d-none');
+
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const vehicleTypeId = row.dataset.id; // data-id="1"
+
+            if (!vehicleTypeId) {
+                console.error('ERROR: No se pudo encontrar el ID del tipo (data-id).');
+                return;
+            }
+
+            // URLs para la API y el formulario de Tipo de Vehículo
+            const apiUrl = `/administracion/api/vehicle-types/${vehicleTypeId}/`;
+            const formActionUrl = `/administracion/vehicle-types/update/${vehicleTypeId}/`;
+
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error(`Error de red: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Datos de TIPO DE VEHÍCULO recibidos:", data);
+
+                    form.action = formActionUrl;
+
+                    // IDs de formulario de Django con prefijo 'update'
+                    form.querySelector('#id_update-id').value = data.id || '';
+                    form.querySelector('#id_update-name').value = data.name || '';
+                    form.querySelector('#id_update-description').value = data.description || '';
+
+                    loader.classList.add('d-none');
+                    form.classList.remove('d-none');
+                })
+                .catch(error => {
+                    console.error('FALLO CRÍTICO en API de tipo de vehículo:', error);
+                    alert('No se pudieron cargar los datos para editar.');
+                    loader.classList.add('d-none');
+                });
+        });
+    }
+
+    // 4.2 LÓGICA PARA PREPARAR EL MODAL DE ELIMINACIÓN DE TIPO DE VEHÍCULO
+    if (deleteVehicleTypeModalEl) {
+        deleteVehicleTypeModalEl.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const vehicleTypeId = row.dataset.id;
+            const vehicleTypeName = row.dataset.name; // data-name="..."
+
+            if (!vehicleTypeId) {
+                console.error('No se pudo encontrar el ID para eliminar.');
+                return;
+            }
+
+            const formActionUrl = `/administracion/vehicle-types/delete/${vehicleTypeId}/`;
+            document.getElementById('deleteVehicleTypeForm').action = formActionUrl;
+            document.getElementById('deleteVehicleTypeName').textContent = vehicleTypeName;
+        });
+    }
+
 });
 
+  

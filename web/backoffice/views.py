@@ -12,6 +12,8 @@ from .services.workshop_service import WorkshopService
 from .forms import EmployeeForm, WorkshopForm
 from .services.supplier_service import SupplierService
 from .forms import EmployeeForm, WorkshopForm, SupplierForm
+from .services.vehicle_type_service import VehicleTypeService
+from .forms import EmployeeForm, WorkshopForm, SupplierForm, VehicleTypeForm
 
 # Configura el logger para este módulo
 logger = logging.getLogger(__name__)
@@ -450,3 +452,120 @@ def get_supplier_api(request, supplier_id: int):
         
     logger.info(f"📡 (get_supplier_api) Datos encontrados. Devolviendo JSON.")
     return JsonResponse(supplier)
+
+
+def _get_vehicle_type_service(request) -> VehicleTypeService:
+    """Función auxiliar para instanciar el servicio de Tipo de Vehículo."""
+    token = request.session.get("sb_access_token")
+    refresh_token = request.session.get("sb_refresh_token")
+    return VehicleTypeService(token, refresh_token)
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+def vehicle_type_list_view(request):
+    """
+    Renderiza la página de gestión de tipos de vehículo.
+    """
+    logger.info(f"▶️ (vehicle_type_list_view) Accediendo a gestión de tipos de vehículo.")
+    service = _get_vehicle_type_service(request)
+    
+    vehicle_types = service.list_vehicle_types()
+    
+    create_form = VehicleTypeForm()
+    update_form = VehicleTypeForm(prefix="update")
+
+    context = {
+        'vehicle_types': vehicle_types,
+        'create_form': create_form,
+        'update_form': update_form,
+    }
+    return render(request, 'backoffice/vehicle_type_list.html', context)
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def vehicle_type_create_view(request):
+    """
+    Vista para procesar la creación de un nuevo tipo de vehículo.
+    """
+    logger.info("➕ (vehicle_type_create_view) Recibida petición POST para crear tipo de vehículo.")
+    service = _get_vehicle_type_service(request)
+    form = VehicleTypeForm(request.POST)
+
+    if form.is_valid():
+        data = form.cleaned_data
+        logger.debug(f"ℹ️ (vehicle_type_create_view) Formulario válido. Datos: {data}")
+        
+        success = service.create_vehicle_type(data)
+        if success:
+            messages.success(request, f"Tipo de vehículo '{data['name']}' creado exitosamente. ✅")
+        else:
+            messages.error(request, "Error al crear el tipo de vehículo. ❌")
+    else:
+        logger.warning(f"⚠️ (vehicle_type_create_view) Formulario inválido: {form.errors.as_json()}")
+        messages.error(request, f"Error de validación. {form.errors.as_text()} ❌")
+        
+    return redirect('backoffice:vehicle_type_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def vehicle_type_update_view(request, vehicle_type_id: int):
+    """
+    Vista para procesar la actualización de un tipo de vehículo.
+    """
+    logger.info(f"🔄 (vehicle_type_update_view) POST para actualizar tipo de vehículo: {vehicle_type_id}")
+    service = _get_vehicle_type_service(request)
+    form = VehicleTypeForm(request.POST, prefix="update")
+
+    if form.is_valid():
+        data = form.cleaned_data
+        logger.debug(f"ℹ️ (vehicle_type_update_view) Formulario válido. Datos: {data}")
+        success = service.update_vehicle_type(vehicle_type_id, data)
+        if success:
+            messages.success(request, f"Tipo de vehículo '{data['name']}' actualizado. ✅")
+        else:
+            messages.error(request, "Error al actualizar el tipo de vehículo. ❌")
+    else:
+        logger.warning(f"⚠️ (vehicle_type_update_view) Formulario inválido: {form.errors.as_json()}")
+        messages.error(request, f"Error de validación. {form.errors.as_text()} ❌")
+        
+    return redirect('backoffice:vehicle_type_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def vehicle_type_delete_view(request, vehicle_type_id: int):
+    """
+    Vista para procesar la eliminación de un tipo de vehículo.
+    """
+    logger.info(f"🗑️ (vehicle_type_delete_view) POST para eliminar tipo de vehículo: {vehicle_type_id}")
+    service = _get_vehicle_type_service(request)
+    
+    success = service.delete_vehicle_type(vehicle_type_id)
+    if success:
+        messages.success(request, "Tipo de vehículo eliminado exitosamente. ✅")
+    else:
+        messages.error(request, "Error al eliminar. Es posible que esté en uso. ❌")
+        
+    return redirect('backoffice:vehicle_type_list')
+
+# --- API (para el modal de edición de Tipo de Vehículo) ---
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["GET"])
+def get_vehicle_type_api(request, vehicle_type_id: int):
+    """
+    Endpoint de API para obtener los datos de un tipo de vehículo.
+    """
+    logger.info(f"📡 (get_vehicle_type_api) Solicitando datos para tipo: {vehicle_type_id}")
+    service = _get_vehicle_type_service(request)
+    vehicle_type = service.get_vehicle_type(vehicle_type_id)
+    
+    if not vehicle_type:
+        logger.warning(f"📡 (get_vehicle_type_api) Tipo no encontrado: {vehicle_type_id}")
+        return HttpResponseNotFound(JsonResponse({"error": "Tipo de vehículo no encontrado"}))
+        
+    logger.info(f"📡 (get_vehicle_type_api) Datos encontrados. Devolviendo JSON.")
+    return JsonResponse(vehicle_type)
