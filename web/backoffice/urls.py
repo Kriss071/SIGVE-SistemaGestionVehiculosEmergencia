@@ -21,4 +21,11 @@ urlpatterns = [
     path('workshops/update/<int:workshop_id>/', views.workshop_update_view, name='workshop_update'),
     path('workshops/delete/<int:workshop_id>/', views.workshop_delete_view, name='workshop_delete'),
     path('api/workshops/<int:workshop_id>/', views.get_workshop_api, name='api_get_workshop'),
+
+    # Proveedores
+    path('suppliers/', views.supplier_list_view, name='supplier_list'),
+    path('suppliers/create/', views.supplier_create_view, name='supplier_create'),
+    path('suppliers/update/<int:supplier_id>/', views.supplier_update_view, name='supplier_update'),
+    path('suppliers/delete/<int:supplier_id>/', views.supplier_delete_view, name='supplier_delete'),
+    path('api/suppliers/<int:supplier_id>/', views.get_supplier_api, name='api_get_supplier'),
 ]

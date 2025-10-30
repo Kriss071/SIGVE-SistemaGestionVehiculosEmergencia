@@ -1,6 +1,6 @@
 import logging
 from django.contrib import messages
-from django.http import HttpResponseBadRequest, HttpResponseNotFound, JsonResponse
+from django.http import HttpResponseNotFound, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
@@ -10,6 +10,8 @@ from .services.employee_service import EmployeeService
 from .forms import EmployeeForm
 from .services.workshop_service import WorkshopService
 from .forms import EmployeeForm, WorkshopForm
+from .services.supplier_service import SupplierService
+from .forms import EmployeeForm, WorkshopForm, SupplierForm
 
 # Configura el logger para este módulo
 logger = logging.getLogger(__name__)
@@ -326,3 +328,125 @@ def get_workshop_api(request, workshop_id: int):
         
     logger.info(f"📡 (get_workshop_api) Datos encontrados. Devolviendo JSON.")
     return JsonResponse(workshop)
+
+
+def _get_supplier_service(request) -> SupplierService:
+    """Función auxiliar para instanciar el servicio de Proveedor."""
+    token = request.session.get("sb_access_token")
+    refresh_token = request.session.get("sb_refresh_token")
+    return SupplierService(token, refresh_token)
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+def supplier_list_view(request):
+    """
+    Renderiza la página de gestión de proveedores.
+    Muestra la lista y los modales de creación y edición.
+    """
+    logger.info(f"▶️ (supplier_list_view) Accediendo a gestión de proveedores. Usuario: {request.session.get('sb_user_email')}")
+    service = _get_supplier_service(request)
+    
+    suppliers = service.list_suppliers()
+    
+    # Preparar formulario de Creación (sin prefijo)
+    create_form = SupplierForm()
+    
+    # Preparar formulario de Edición (con prefijo "update")
+    update_form = SupplierForm(prefix="update")
+
+    context = {
+        'suppliers': suppliers,
+        'create_form': create_form,
+        'update_form': update_form,
+    }
+    return render(request, 'backoffice/supplier_list.html', context)
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def supplier_create_view(request):
+    """
+    Vista para procesar la creación de un nuevo proveedor (desde el modal).
+    """
+    logger.info("➕ (supplier_create_view) Recibida petición POST para crear proveedor.")
+    service = _get_supplier_service(request)
+    form = SupplierForm(request.POST)
+
+    if form.is_valid():
+        data = form.cleaned_data
+        logger.debug(f"ℹ️ (supplier_create_view) Formulario válido. Datos: {data}")
+        
+        success = service.create_supplier(data)
+        if success:
+            messages.success(request, f"Proveedor '{data['name']}' creado exitosamente. ✅")
+        else:
+            messages.error(request, "Error al crear el proveedor. Revise los logs. ❌")
+    else:
+        logger.warning(f"⚠️ (supplier_create_view) Formulario inválido: {form.errors.as_json()}")
+        messages.error(request, f"Error de validación. {form.errors.as_text()} ❌")
+        
+    return redirect('backoffice:supplier_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def supplier_update_view(request, supplier_id: int):
+    """
+    Vista para procesar la actualización de un proveedor (desde el modal).
+    """
+    logger.info(f"🔄 (supplier_update_view) Recibida petición POST para actualizar proveedor: {supplier_id}")
+    service = _get_supplier_service(request)
+    form = SupplierForm(request.POST, prefix="update")
+
+    if form.is_valid():
+        data = form.cleaned_data
+        logger.debug(f"ℹ️ (supplier_update_view) Formulario válido. Datos a actualizar: {data}")
+        success = service.update_supplier(supplier_id, data)
+        if success:
+            messages.success(request, f"Proveedor '{data['name']}' actualizado exitosamente. ✅")
+        else:
+            messages.error(request, "Error al actualizar el proveedor. ❌")
+    else:
+        logger.warning(f"⚠️ (supplier_update_view) Formulario inválido: {form.errors.as_json()}")
+        messages.error(request, f"Error de validación. {form.errors.as_text()} ❌")
+        
+    return redirect('backoffice:supplier_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def supplier_delete_view(request, supplier_id: int):
+    """
+    Vista para procesar la eliminación de un proveedor (desde el modal).
+    """
+    logger.info(f"🗑️ (supplier_delete_view) Recibida petición POST para eliminar proveedor: {supplier_id}")
+    service = _get_supplier_service(request)
+    
+    success = service.delete_supplier(supplier_id)
+    if success:
+        messages.success(request, "Proveedor eliminado exitosamente. ✅")
+    else:
+        messages.error(request, "Error al eliminar el proveedor. Es posible que esté en uso. ❌")
+        
+    return redirect('backoffice:supplier_list')
+
+# --- API (para el modal de edición de Proveedor) ---
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["GET"])
+def get_supplier_api(request, supplier_id: int):
+    """
+    Endpoint de API para obtener los datos de un proveedor y
+    poblar el formulario de edición.
+    """
+    logger.info(f"📡 (get_supplier_api) Solicitando datos para proveedor: {supplier_id}")
+    service = _get_supplier_service(request)
+    supplier = service.get_supplier(supplier_id)
+    
+    if not supplier:
+        logger.warning(f"📡 (get_supplier_api) Proveedor no encontrado: {supplier_id}")
+        return HttpResponseNotFound(JsonResponse({"error": "Proveedor no encontrado"}))
+        
+    logger.info(f"📡 (get_supplier_api) Datos encontrados. Devolviendo JSON.")
+    return JsonResponse(supplier)

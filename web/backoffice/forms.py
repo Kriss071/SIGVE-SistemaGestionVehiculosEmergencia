@@ -135,3 +135,47 @@ class WorkshopForm(forms.Form):
         if self.prefix:
             # Añadimos el campo 'id' (entero) que es necesario para la actualización.
             self.fields['id'] = forms.IntegerField(widget=forms.HiddenInput())
+
+class SupplierForm(forms.Form):
+    """
+    Formulario para la creación y edición de Proveedores (Supplier).
+    - Si se usa con un prefijo 'update', se añade un campo 'id' oculto.
+    """
+    
+    name = forms.CharField(
+        label="Nombre del Proveedor",
+        max_length=100,
+        required=True,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: Repuestos Express S.A."})
+    )
+    rut = forms.CharField(
+        label="RUT",
+        max_length=12,
+        required=False,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: 76.123.456-7"})
+    )
+    address = forms.CharField(
+        label="Dirección",
+        required=False,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: Av. 10 de Julio 543, Santiago"})
+    )
+    phone = forms.CharField(
+        label="Teléfono",
+        max_length=15,
+        required=False,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: +56221234567"})
+    )
+    email = forms.EmailField(
+        label="Email de Contacto",
+        required=False,
+        widget=forms.EmailInput(attrs={"class": "form-control", "placeholder": "Ej: ventas@repuestos.cl"})
+    )
+    
+    def __init__(self, *args, **kwargs):
+        self.prefix = kwargs.pop('prefix', None)
+        super().__init__(*args, **kwargs)
+        
+        # Si el formulario es para ACTUALIZAR (identificado por el prefijo 'update')...
+        if self.prefix:
+            # Añadimos el campo 'id' (entero) que es necesario para la actualización.
+            self.fields['id'] = forms.IntegerField(widget=forms.HiddenInput())

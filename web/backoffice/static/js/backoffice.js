@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const getCsrfToken = () => document.querySelector('[name=csrfmiddlewaretoken]').value;
 
     // ===================================================================
-    // 1. LÓGICA PARA EMPLEADOS
+    // 2. LÓGICA PARA TALLERES (WORKSHOP)
     // ===================================================================
 
     const updateEmployeeModalEl = document.getElementById('updateEmployeeModal');
@@ -169,4 +169,85 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+
+    // ===================================================================
+    // 3. LÓGICA PARA PROVEEDORES (NUEVA)
+    // ===================================================================
+
+    const updateSupplierModalEl = document.getElementById('updateSupplierModal');
+    const deleteSupplierModalEl = document.getElementById('deleteSupplierModal');
+
+    // 3.1 LÓGICA PARA RELLENAR EL FORMULARIO DE EDICIÓN DE PROVEEDOR
+    if (updateSupplierModalEl) {
+        const loader = document.getElementById('updateSupplierLoader');
+        const form = document.getElementById('updateSupplierForm');
+
+        updateSupplierModalEl.addEventListener('show.bs.modal', function (event) {
+            console.log("Modal de edición de PROVEEDOR detectado.");
+
+            loader.classList.remove('d-none');
+            form.classList.add('d-none');
+
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const supplierId = row.dataset.id; // data-id="1"
+
+            if (!supplierId) {
+                console.error('ERROR: No se pudo encontrar el ID del proveedor (data-id).');
+                return;
+            }
+
+            // URLs para la API y el formulario de Proveedor
+            const apiUrl = `/administracion/api/suppliers/${supplierId}/`;
+            const formActionUrl = `/administracion/suppliers/update/${supplierId}/`;
+
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error(`Error de red: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Datos de PROVEEDOR recibidos:", data);
+
+                    form.action = formActionUrl;
+
+                    // IDs de formulario de Django con prefijo 'update'
+                    form.querySelector('#id_update-id').value = data.id || '';
+                    form.querySelector('#id_update-name').value = data.name || '';
+                    form.querySelector('#id_update-rut').value = data.rut || '';
+                    form.querySelector('#id_update-address').value = data.address || '';
+                    form.querySelector('#id_update-phone').value = data.phone || '';
+                    form.querySelector('#id_update-email').value = data.email || '';
+
+                    loader.classList.add('d-none');
+                    form.classList.remove('d-none');
+                })
+                .catch(error => {
+                    console.error('FALLO CRÍTICO en API de proveedor:', error);
+                    alert('No se pudieron cargar los datos para editar.');
+                    loader.classList.add('d-none');
+                });
+        });
+    }
+
+    // 3.2 LÓGICA PARA PREPARAR EL MODAL DE ELIMINACIÓN DE PROVEEDOR
+    if (deleteSupplierModalEl) {
+        deleteSupplierModalEl.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const supplierId = row.dataset.id;
+            const supplierName = row.dataset.name; // data-name="..."
+
+            if (!supplierId) {
+                console.error('No se pudo encontrar el ID para eliminar.');
+                return;
+            }
+
+            const formActionUrl = `/administracion/suppliers/delete/${supplierId}/`;
+            document.getElementById('deleteSupplierForm').action = formActionUrl;
+            document.getElementById('deleteSupplierName').textContent = supplierName;
+        });
+    }
+
 });
+
