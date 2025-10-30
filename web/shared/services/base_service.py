@@ -30,21 +30,30 @@ class BaseService(ABC):
     def _execute_query(self, query, method_name: str) -> List[Dict[str, Any]]:
         """
         Ejecuta una consulta de Supabase y maneja los errores comunes.
+        
+        Ahora puede manejar respuestas que no son listas 
+        (como .maybe_single()).
 
         Args:
             query: La consulta de PostgREST a ejecutar.
             method_name (str): El nombre del método que llama para logging.
 
         Returns:
-            Una lista de diccionarios con los resultados o una lista vacía en caso de error.
+            Los datos de la respuesta (lista, dict, o None) o una lista vacía 
+            en caso de error.
         """
         try:
             response = query.execute()
-            logger.debug(f"📊 ({method_name}) Respuesta cruda de Supabase: {len(response.data)} registros encontrados.")
-            return response.data or []
+            logger.debug(f"📊 ({method_name}) Respuesta cruda de Supabase: {response.data}")
+            
+            # .maybe_single() devuelve un dict directamente, no una lista.
+            # Otros (select, insert, update) devuelven una lista.
+            # Si no hay datos, 'response.data' puede ser [] o None.
+            return response.data
+        
         except PostgrestAPIError as e:
             logger.error(f"❌ ({method_name}) Error de API: {e.message}", exc_info=True)
-            return []
+            return [] # Devuelve lista vacía en error de API
         except Exception as e:
             logger.error(f"❌ ({method_name}) Error inesperado: {e}", exc_info=True)
-            return []
+            return [] # Devuelve lista vacía en error genérico

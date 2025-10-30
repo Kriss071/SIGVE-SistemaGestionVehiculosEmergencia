@@ -13,6 +13,12 @@ urlpatterns = [
     path('employees/create/', views.employee_create_view, name='employee_create'),
     path('employees/update/<uuid:employee_id>/', views.employee_update_view, name='employee_update'),
     path('employees/delete/<uuid:employee_id>/', views.employee_delete_view, name='employee_delete'),
-    # API para Empleados (NUEVO)
     path('api/employees/<uuid:employee_id>/', views.get_employee_api, name='api_get_employee'),
+
+    # Talleres
+    path('workshops/', views.workshop_list_view, name='workshop_list'),
+    path('workshops/create/', views.workshop_create_view, name='workshop_create'),
+    path('workshops/update/<int:workshop_id>/', views.workshop_update_view, name='workshop_update'),
+    path('workshops/delete/<int:workshop_id>/', views.workshop_delete_view, name='workshop_delete'),
+    path('api/workshops/<int:workshop_id>/', views.get_workshop_api, name='api_get_workshop'),
 ]

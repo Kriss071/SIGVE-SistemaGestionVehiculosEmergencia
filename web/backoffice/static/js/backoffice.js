@@ -1,97 +1,77 @@
 /**
- * employee.js
- * Gestiona la interactividad de los modales para las operaciones CRUD de empleados.
- * - Carga datos de un empleado en el modal de edición mediante una llamada a la API.
- * - Prepara el modal de confirmación de eliminación con los datos del empleado.
+ * backoffice.js
+ * Gestiona la interactividad de los modales para las operaciones CRUD 
+ * en el panel de administración (Empleados, Talleres, etc.).
  */
 document.addEventListener('DOMContentLoaded', function () {
 
-    const updateModalEl = document.getElementById('updateEmployeeModal');
-    const deleteModalEl = document.getElementById('deleteEmployeeModal');
+    // Selectores comunes
+    const getCsrfToken = () => document.querySelector('[name=csrfmiddlewaretoken]').value;
 
     // ===================================================================
-    // 1. LÓGICA PARA RELLENAR EL FORMULARIO DE EDICIÓN
+    // 1. LÓGICA PARA EMPLEADOS
     // ===================================================================
 
-    if (updateModalEl) {
+    const updateEmployeeModalEl = document.getElementById('updateEmployeeModal');
+    const deleteEmployeeModalEl = document.getElementById('deleteEmployeeModal');
+
+    // 1.1 LÓGICA PARA RELLENAR EL FORMULARIO DE EDICIÓN DE EMPLEADO
+    if (updateEmployeeModalEl) {
         const loader = document.getElementById('updateEmployeeLoader');
         const form = document.getElementById('updateEmployeeForm');
-        // Escuchamos el evento que Bootstrap 5 dispara JUSTO ANTES de mostrar el modal.
-        updateModalEl.addEventListener('show.bs.modal', function (event) {
-            console.log("Modal de edición detectado. Iniciando proceso...");
+        
+        updateEmployeeModalEl.addEventListener('show.bs.modal', function (event) {
+            console.log("Modal de edición de EMPLEADO detectado.");
 
-            // Asegurarnos de que el loader esté visible y el form oculto al empezar.
             loader.classList.remove('d-none');
             form.classList.add('d-none');
 
-            // 'event.relatedTarget' es el botón específico que disparó la apertura del modal.
             const button = event.relatedTarget;
             const row = button.closest('tr');
             const employeeId = row.dataset.id;
 
             if (!employeeId) {
-                console.error('ERROR: No se pudo encontrar el ID del empleado en la fila de la tabla (data-id).');
+                console.error('ERROR: No se pudo encontrar el ID del empleado (data-id).');
                 return;
             }
-            console.log(`Empleado a editar ID: ${employeeId}`);
 
-            // Construimos las URLs que necesitamos dinámicamente.
             const apiUrl = `/administracion/api/employees/${employeeId}/`;
             const formActionUrl = `/administracion/employees/update/${employeeId}/`;
 
-            console.log(`Llamando a la API en: ${apiUrl}`);
-            const updateForm = document.getElementById('updateEmployeeForm');
-
-            // Hacemos la llamada a nuestra API para obtener los datos del empleado.
             fetch(apiUrl)
                 .then(response => {
-                    if (!response.ok) {
-                        // Si la respuesta no es exitosa (ej: 404, 500), lanzamos un error.
-                        throw new Error(`Error de red: ${response.status} - ${response.statusText}`);
-                    }
-                    return response.json(); // Convertimos la respuesta a formato JSON.
+                    if (!response.ok) throw new Error(`Error de red: ${response.status}`);
+                    return response.json();
                 })
                 .then(data => {
-                    console.log("Datos recibidos de la API:", data);
+                    console.log("Datos de EMPLEADO recibidos:", data);
 
-                    // ---- ¡AQUÍ OCURRE LA MAGIA! Rellenamos el formulario. ----
+                    form.action = formActionUrl;
 
-                    // Asignamos la URL correcta al 'action' del formulario.
-                    updateForm.action = formActionUrl;
+                    // IDs de formulario de Django con prefijo 'update'
+                    form.querySelector('#id_update-id').value = data.id || '';
+                    form.querySelector('#id_update-first_name').value = data.first_name || '';
+                    form.querySelector('#id_update-last_name').value = data.last_name || '';
+                    form.querySelector('#id_update-rut').value = data.rut || '';
+                    form.querySelector('#id_update-phone').value = data.phone || '';
+                    form.querySelector('#id_update-role_id').value = data.role_id || '';
+                    form.querySelector('#id_update-workshop_id').value = data.workshop_id || '';
+                    form.querySelector('#id_update-is_active').checked = data.is_active;
 
-                    // Django usa prefijos en los IDs, por eso buscamos 'id_update-first_name', etc.
-                    updateForm.querySelector('#id_update-id').value = data.id || '';
-                    updateForm.querySelector('#id_update-first_name').value = data.first_name || '';
-                    updateForm.querySelector('#id_update-last_name').value = data.last_name || '';
-                    updateForm.querySelector('#id_update-rut').value = data.rut || '';
-                    updateForm.querySelector('#id_update-phone').value = data.phone || '';
-                    updateForm.querySelector('#id_update-role_id').value = data.role_id || '';
-                    updateForm.querySelector('#id_update-workshop_id').value = data.workshop_id || '';
-                    updateForm.querySelector('#id_update-is_active').checked = data.is_active;
-
-                    console.log("Formulario de edición rellenado exitosamente. ✅");
-
-                    // Ocultar el loader y mostrar el formulario ya poblado.
                     loader.classList.add('d-none');
                     form.classList.remove('d-none');
                 })
                 .catch(error => {
-                    console.error('FALLO CRÍTICO en la llamada a la API:', error);
-                    alert('No se pudieron cargar los datos para editar. Revisa la consola del navegador para más detalles (F12).');
-
-                    // También ocultamos el loader para no dejarlo girando.
+                    console.error('FALLO CRÍTICO en API de empleado:', error);
+                    alert('No se pudieron cargar los datos para editar.');
                     loader.classList.add('d-none');
                 });
         });
     }
 
-
-    // ===================================================================
-    // 2. LÓGICA PARA PREPARAR EL MODAL DE ELIMINACIÓN (YA FUNCIONA)
-    // ===================================================================
-
-    if (deleteModalEl) {
-        deleteModalEl.addEventListener('show.bs.modal', function (event) {
+    // 1.2 LÓGICA PARA PREPARAR EL MODAL DE ELIMINACIÓN DE EMPLEADO
+    if (deleteEmployeeModalEl) {
+        deleteEmployeeModalEl.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
             const row = button.closest('tr');
             const employeeId = row.dataset.id;
@@ -104,12 +84,89 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const formActionUrl = `/administracion/employees/delete/${employeeId}/`;
-
-            const deleteForm = document.getElementById('deleteEmployeeForm');
-            deleteForm.action = formActionUrl;
-
+            document.getElementById('deleteEmployeeForm').action = formActionUrl;
             document.getElementById('deleteEmployeeName').textContent = employeeName;
             document.getElementById('deleteEmployeeRUT').textContent = employeeRUT;
         });
     }
+
+
+    // ===================================================================
+    // 2. LÓGICA PARA TALLERES (NUEVA)
+    // ===================================================================
+
+    const updateWorkshopModalEl = document.getElementById('updateWorkshopModal');
+    const deleteWorkshopModalEl = document.getElementById('deleteWorkshopModal');
+
+    // 2.1 LÓGICA PARA RELLENAR EL FORMULARIO DE EDICIÓN DE TALLER
+    if (updateWorkshopModalEl) {
+        const loader = document.getElementById('updateWorkshopLoader');
+        const form = document.getElementById('updateWorkshopForm');
+
+        updateWorkshopModalEl.addEventListener('show.bs.modal', function (event) {
+            console.log("Modal de edición de TALLER detectado.");
+
+            loader.classList.remove('d-none');
+            form.classList.add('d-none');
+
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const workshopId = row.dataset.id; // data-id="1"
+
+            if (!workshopId) {
+                console.error('ERROR: No se pudo encontrar el ID del taller (data-id).');
+                return;
+            }
+
+            // URLs para la API y el formulario de Taller
+            const apiUrl = `/administracion/api/workshops/${workshopId}/`;
+            const formActionUrl = `/administracion/workshops/update/${workshopId}/`;
+
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error(`Error de red: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Datos de TALLER recibidos:", data);
+
+                    form.action = formActionUrl;
+
+                    // IDs de formulario de Django con prefijo 'update'
+                    form.querySelector('#id_update-id').value = data.id || '';
+                    form.querySelector('#id_update-name').value = data.name || '';
+                    form.querySelector('#id_update-address').value = data.address || '';
+                    form.querySelector('#id_update-phone').value = data.phone || '';
+                    form.querySelector('#id_update-email').value = data.email || '';
+
+                    loader.classList.add('d-none');
+                    form.classList.remove('d-none');
+                })
+                .catch(error => {
+                    console.error('FALLO CRÍTICO en API de taller:', error);
+                    alert('No se pudieron cargar los datos para editar.');
+                    loader.classList.add('d-none');
+                });
+        });
+    }
+
+    // 2.2 LÓGICA PARA PREPARAR EL MODAL DE ELIMINACIÓN DE TALLER
+    if (deleteWorkshopModalEl) {
+        deleteWorkshopModalEl.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const workshopId = row.dataset.id;
+            const workshopName = row.dataset.name; // data-name="..."
+
+            if (!workshopId) {
+                console.error('No se pudo encontrar el ID para eliminar.');
+                return;
+            }
+
+            const formActionUrl = `/administracion/workshops/delete/${workshopId}/`;
+            document.getElementById('deleteWorkshopForm').action = formActionUrl;
+            document.getElementById('deleteWorkshopName').textContent = workshopName;
+        });
+    }
+
 });

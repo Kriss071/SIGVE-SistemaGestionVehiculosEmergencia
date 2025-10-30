@@ -1,22 +1,6 @@
 from django import forms
 from typing import List, Dict
 
-class RoleForm(forms.Form):
-    """
-    Formulario para la creación y edición de Roles.
-    """
-    name = forms.CharField(
-        label="Nombre del Rol",
-        max_length=100,
-        required=True,
-        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: Administrador"})
-    )
-    description = forms.CharField(
-        label="Descripción",
-        required=False,
-        widget=forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Describe los permisos y responsabilidades de este rol."})
-    )
-
 
 class EmployeeForm(forms.Form):
     """
@@ -110,3 +94,44 @@ class EmployeeForm(forms.Form):
         choices = [('', 'Ninguno / No aplica')]
         choices.extend([(str(w['id']), w['name']) for w in workshops])
         self.fields['workshop_id'].choices = choices
+
+class WorkshopForm(forms.Form):
+    """
+    Formulario para la creación y edición de Talleres (Workshop).
+    - Si se usa con un prefijo 'update', se añade un campo 'id' oculto.
+    """
+    
+    # Campo 'id' para el formulario de actualización
+    # Se añade en __init__ si hay prefijo
+    
+    name = forms.CharField(
+        label="Nombre del Taller",
+        max_length=100,
+        required=True,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: Taller Central Santiago"})
+    )
+    address = forms.CharField(
+        label="Dirección",
+        required=False,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: Av. Principal 123, Santiago"})
+    )
+    phone = forms.CharField(
+        label="Teléfono",
+        max_length=15,
+        required=False,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: +56912345678"})
+    )
+    email = forms.EmailField(
+        label="Email de Contacto",
+        required=False,
+        widget=forms.EmailInput(attrs={"class": "form-control", "placeholder": "Ej: contacto@taller.cl"})
+    )
+    
+    def __init__(self, *args, **kwargs):
+        self.prefix = kwargs.pop('prefix', None)
+        super().__init__(*args, **kwargs)
+        
+        # Si el formulario es para ACTUALIZAR (identificado por el prefijo 'update')...
+        if self.prefix:
+            # Añadimos el campo 'id' (entero) que es necesario para la actualización.
+            self.fields['id'] = forms.IntegerField(widget=forms.HiddenInput())

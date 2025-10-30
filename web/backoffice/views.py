@@ -7,8 +7,9 @@ from django.views.decorators.http import require_http_methods
 from accounts.decorators import require_role, require_supabase_login
 from .services.role_services import SupabaseRoleService
 from .services.employee_service import EmployeeService
-from .forms import RoleForm, EmployeeForm
-
+from .forms import EmployeeForm
+from .services.workshop_service import WorkshopService
+from .forms import EmployeeForm, WorkshopForm
 
 # Configura el logger para este módulo
 logger = logging.getLogger(__name__)
@@ -203,3 +204,125 @@ def get_employee_api(request, employee_id: str):
         
     logger.info(f"📡 (get_employee_api) Datos encontrados. Devolviendo JSON.")
     return JsonResponse(employee)
+
+
+def _get_workshop_service(request) -> WorkshopService:
+    """Función auxiliar para instanciar el servicio de Taller."""
+    token = request.session.get("sb_access_token")
+    refresh_token = request.session.get("sb_refresh_token")
+    return WorkshopService(token, refresh_token)
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+def workshop_list_view(request):
+    """
+    Renderiza la página de gestión de talleres.
+    Muestra la lista y los modales de creación y edición.
+    """
+    logger.info(f"▶️ (workshop_list_view) Accediendo a gestión de talleres. Usuario: {request.session.get('sb_user_email')}")
+    service = _get_workshop_service(request)
+    
+    workshops = service.list_workshops()
+    
+    # Preparar formulario de Creación (sin prefijo)
+    create_form = WorkshopForm()
+    
+    # Preparar formulario de Edición (con prefijo "update")
+    update_form = WorkshopForm(prefix="update")
+
+    context = {
+        'workshops': workshops,
+        'create_form': create_form,
+        'update_form': update_form,
+    }
+    return render(request, 'backoffice/workshop_list.html', context)
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def workshop_create_view(request):
+    """
+    Vista para procesar la creación de un nuevo taller (desde el modal).
+    """
+    logger.info("➕ (workshop_create_view) Recibida petición POST para crear taller.")
+    service = _get_workshop_service(request)
+    form = WorkshopForm(request.POST)
+
+    if form.is_valid():
+        data = form.cleaned_data
+        logger.debug(f"ℹ️ (workshop_create_view) Formulario válido. Datos: {data}")
+        
+        success = service.create_workshop(data)
+        if success:
+            messages.success(request, f"Taller '{data['name']}' creado exitosamente. ✅")
+        else:
+            messages.error(request, "Error al crear el taller. Revise los logs. ❌")
+    else:
+        logger.warning(f"⚠️ (workshop_create_view) Formulario inválido: {form.errors.as_json()}")
+        messages.error(request, f"Error de validación. {form.errors.as_text()} ❌")
+        
+    return redirect('backoffice:workshop_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def workshop_update_view(request, workshop_id: int):
+    """
+    Vista para procesar la actualización de un taller (desde el modal).
+    """
+    logger.info(f"🔄 (workshop_update_view) Recibida petición POST para actualizar taller: {workshop_id}")
+    service = _get_workshop_service(request)
+    form = WorkshopForm(request.POST, prefix="update")
+
+    if form.is_valid():
+        data = form.cleaned_data
+        logger.debug(f"ℹ️ (workshop_update_view) Formulario válido. Datos a actualizar: {data}")
+        success = service.update_workshop(workshop_id, data)
+        if success:
+            messages.success(request, f"Taller '{data['name']}' actualizado exitosamente. ✅")
+        else:
+            messages.error(request, "Error al actualizar el taller. ❌")
+    else:
+        logger.warning(f"⚠️ (workshop_update_view) Formulario inválido: {form.errors.as_json()}")
+        messages.error(request, f"Error de validación. {form.errors.as_text()} ❌")
+        
+    return redirect('backoffice:workshop_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def workshop_delete_view(request, workshop_id: int):
+    """
+    Vista para procesar la eliminación de un taller (desde el modal).
+    """
+    logger.info(f"🗑️ (workshop_delete_view) Recibida petición POST para eliminar taller: {workshop_id}")
+    service = _get_workshop_service(request)
+    
+    success = service.delete_workshop(workshop_id)
+    if success:
+        messages.success(request, "Taller eliminado exitosamente. ✅")
+    else:
+        messages.error(request, "Error al eliminar el taller. Es posible que esté en uso. ❌")
+        
+    return redirect('backoffice:workshop_list')
+
+# --- API (para el modal de edición de Taller) ---
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["GET"])
+def get_workshop_api(request, workshop_id: int):
+    """
+    Endpoint de API para obtener los datos de un taller y
+    poblar el formulario de edición.
+    """
+    logger.info(f"📡 (get_workshop_api) Solicitando datos para taller: {workshop_id}")
+    service = _get_workshop_service(request)
+    workshop = service.get_workshop(workshop_id)
+    
+    if not workshop:
+        logger.warning(f"📡 (get_workshop_api) Taller no encontrado: {workshop_id}")
+        return HttpResponseNotFound(JsonResponse({"error": "Taller no encontrado"}))
+        
+    logger.info(f"📡 (get_workshop_api) Datos encontrados. Devolviendo JSON.")
+    return JsonResponse(workshop)

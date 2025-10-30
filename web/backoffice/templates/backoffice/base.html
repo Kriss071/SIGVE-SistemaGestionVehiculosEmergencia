@@ -40,7 +40,8 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#"> {# {% url 'backoffice:workshop_list' %} #}
+                        <!-- ACTUALIZADO: Enlace a la lista de talleres -->
+                        <a class="nav-link {% if 'workshop_' in request.resolver_match.view_name or 'api_get_workshop' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'backoffice:workshop_list' %}">
                             <i class="bi bi-wrench-adjustable-circle me-2"></i> Talleres
                         </a>
                     </li>
