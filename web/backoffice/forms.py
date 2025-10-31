@@ -266,3 +266,21 @@ class VehicleStatusForm(forms.Form):
 
         if self.prefix:
             self.fields['id'] = forms.IntegerField(widget=forms.HiddenInput())
+
+class FuelTypeForm(forms.Form):
+    """
+    Formulario para la creación y edición de FuelType.
+    """
+    name = forms.CharField(
+        label="Nombre",
+        max_length=100,
+        required=True,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: Diésel"})
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.prefix = kwargs.pop('prefix', None)
+        super().__init__(*args, **kwargs)
+
+        if self.prefix:
+            self.fields['id'] = forms.IntegerField(widget=forms.HiddenInput())

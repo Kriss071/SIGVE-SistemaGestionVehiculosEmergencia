@@ -452,5 +452,67 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // ===================================================================
+    // LÓGICA PARA FUEL TYPE (NUEVA)
+    // ===================================================================
+    const updateFuelTypeModalEl = document.getElementById('updateFuelTypeModal');
+    const deleteFuelTypeModalEl = document.getElementById('deleteFuelTypeModal');
+
+    // LÓGICA PARA RELLENAR EL FORMULARIO DE EDICIÓN
+    if (updateFuelTypeModalEl) {
+        const loader = document.getElementById('updateFuelTypeLoader');
+        const form = document.getElementById('updateFuelTypeForm');
+        updateFuelTypeModalEl.addEventListener('show.bs.modal', function (event) {
+            console.log("Modal de edición de FuelType detectado.");
+            loader.classList.remove('d-none');
+            form.classList.add('d-none');
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const itemId = row.dataset.id;
+            if (!itemId) {
+                console.error('ERROR: No se pudo encontrar el ID (data-id).');
+                return;
+            }
+            const apiUrl = `/administracion/api/fuel-types/${itemId}/`;
+            const formActionUrl = `/administracion/fuel-types/update/${itemId}/`;
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error(`Error de red: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Datos de FuelType recibidos:", data);
+                    form.action = formActionUrl;
+                    // Rellena los campos del formulario (con prefijo 'update')
+                    form.querySelector('#id_update-id').value = data.id || '';
+                    form.querySelector('#id_update-name').value = data.name || '';
+                    loader.classList.add('d-none');
+                    form.classList.remove('d-none');
+                })
+                .catch(error => {
+                    console.error('FALLO CRÍTICO en API de fuel_type:', error);
+                    alert('No se pudieron cargar los datos para editar.');
+                    loader.classList.add('d-none');
+                });
+        });
+    }
+
+    // LÓGICA PARA PREPARAR EL MODAL DE ELIMINACIÓN
+    if (deleteFuelTypeModalEl) {
+        deleteFuelTypeModalEl.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const itemId = row.dataset.id;
+            const itemName = row.dataset.name;
+            if (!itemId) {
+                console.error('No se pudo encontrar el ID para eliminar.');
+                return;
+            }
+            const formActionUrl = `/administracion/fuel-types/delete/${itemId}/`;
+            document.getElementById('deleteFuelTypeForm').action = formActionUrl;
+            document.getElementById('deleteFuelTypeName').textContent = itemName;
+        });
+    }
+
 });
 
