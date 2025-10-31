@@ -6,15 +6,16 @@ body {
   
   /* --- Barra Lateral --- */
   .sidebar {
+    position: fixed; /* importante: para que quede fija al hacer scroll general */
     top: 0;
-    /* Anclado debajo del header principal si existe y es fijo */
-    /* top: 56px; */
     bottom: 0;
     left: 0;
-    z-index: 100; /* Detrás de la navbar principal pero sobre el contenido */
+    width: 240px; /* o el ancho que uses */
+    z-index: 100;
     box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
-    background-color: #e9ecef; /* Color de fondo más claro */
-    height: 80%;
+    background-color: #fff;
+    overflow-y: auto; /* <--- scroll para la barra lateral */
+    overflow-x: hidden;
   }
   
   @media (max-width: 767.98px) {

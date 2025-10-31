@@ -14,6 +14,9 @@ from .services.supplier_service import SupplierService
 from .forms import EmployeeForm, WorkshopForm, SupplierForm
 from .services.vehicle_type_service import VehicleTypeService
 from .forms import EmployeeForm, WorkshopForm, SupplierForm, VehicleTypeForm
+from .services.fire_station_service import FireStationService
+from .forms import FireStationForm
+from vehicles.services.catalog_service import CatalogService
 
 # Configura el logger para este módulo
 logger = logging.getLogger(__name__)
@@ -569,3 +572,127 @@ def get_vehicle_type_api(request, vehicle_type_id: int):
         
     logger.info(f"📡 (get_vehicle_type_api) Datos encontrados. Devolviendo JSON.")
     return JsonResponse(vehicle_type)
+
+
+def _get_fire_station_service(request) -> FireStationService:
+    """Función auxiliar para instanciar el servicio de Cuartel."""
+    logger.debug("🔧 (_get_fire_station_service) Creando instancia de FireStationService.")
+    token = request.session.get("sb_access_token")
+    refresh_token = request.session.get("sb_refresh_token")
+    return FireStationService(token, refresh_token)
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+def fire_station_list_view(request):
+    """
+    Renderiza la página de gestión de cuarteles.
+    """
+    logger.info(f"▶️ (fire_station_list_view) Accediendo a gestión de cuarteles.")
+    service = _get_fire_station_service(request)
+    
+    logger.debug("🎨 (fire_station_list_view) Poblando formularios de creación y actualización con comunas.")
+    # Preparar formularios y poblar el menú de comunas
+    create_form = FireStationForm()
+    create_form.set_communes(CatalogService.get_communes())
+    
+    update_form = FireStationForm(prefix="update")
+    update_form.set_communes(CatalogService.get_communes())
+
+    context = {
+        'fire_stations': service.list_fire_stations(),
+        'create_form': create_form,
+        'update_form': update_form,
+    }
+    logger.debug("✅ (fire_station_list_view) Contexto preparado, renderizando plantilla.")
+    return render(request, 'backoffice/fire_station_list.html', context)
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def fire_station_create_view(request):
+    """
+    Vista para procesar la creación de un nuevo cuartel.
+    """
+    logger.info("➕ (fire_station_create_view) POST para crear cuartel.")
+    service = _get_fire_station_service(request)
+    form = FireStationForm(request.POST)
+    form.set_communes(CatalogService.get_communes())
+    if form.is_valid():
+        logger.debug("✅ (fire_station_create_view) Formulario es válido.")
+        data = form.cleaned_data
+        data['commune_id'] = int(data['commune_id']) if data.get('commune_id') else None
+        success = service.create_fire_station(data)
+        if success:
+            messages.success(request, f"Cuartel '{data['name']}' creado exitosamente. ✅")
+        else:
+            messages.error(request, "Error al crear el cuartel. ❌")
+    else:
+        logger.warning(f"⚠️ (fire_station_create_view) Formulario inválido. Errores: {form.errors.as_json()}")
+        messages.error(request, f"Error de validación. {form.errors.as_text()} ❌")
+            
+    return redirect('backoffice:fire_station_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def fire_station_update_view(request, fire_station_id: int):
+    """
+    Vista para procesar la actualización de un cuartel.
+    """
+    logger.info(f"🔄 (fire_station_update_view) POST para actualizar cuartel: {fire_station_id}")
+    service = _get_fire_station_service(request)
+    form = FireStationForm(request.POST, prefix="update")
+    form.set_communes(CatalogService.get_communes())
+
+    if form.is_valid():
+        logger.debug(f"✅ (fire_station_update_view) Formulario de actualización es válido para ID: {fire_station_id}.")
+        data = form.cleaned_data
+        data['commune_id'] = int(data['commune_id']) if data.get('commune_id') else None
+
+        logger.debug(f"ℹ️ (fire_station_update_view) Datos limpios para actualizar: {data}")
+        success = service.update_fire_station(fire_station_id, data)
+        if success:
+            messages.success(request, f"Cuartel '{data['name']}' actualizado. ✅")
+        else:
+            messages.error(request, "Error al actualizar. ❌")
+    else:
+        logger.warning(f"⚠️ (fire_station_update_view) Formulario de actualización inválido. Errores: {form.errors.as_json()}")
+        messages.error(request, f"Error de validación. {form.errors.as_text()} ❌")
+            
+    return redirect('backoffice:fire_station_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def fire_station_delete_view(request, fire_station_id: int):
+    """
+    Vista para procesar la eliminación de un cuartel.
+    """
+    logger.info(f"🗑️ (fire_station_delete_view) POST para eliminar cuartel: {fire_station_id}")
+    service = _get_fire_station_service(request)
+    
+    success = service.delete_fire_station(fire_station_id)
+    if success:
+        messages.success(request, "Cuartel eliminado exitosamente. ✅")
+    else:
+        messages.error(request, "Error al eliminar. Es posible que esté en uso. ❌")
+            
+    return redirect('backoffice:fire_station_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["GET"])
+def get_fire_station_api(request, fire_station_id: int):
+    """
+    Endpoint de API para obtener los datos de un cuartel (para modales).
+    """
+    logger.info(f"📡 (get_fire_station_api) Solicitando datos para: {fire_station_id}")
+    service = _get_fire_station_service(request)
+    item = service.get_fire_station(fire_station_id)
+    
+    if not item:
+        logger.warning(f"❓ (get_fire_station_api) No se encontró el cuartel con ID: {fire_station_id}")
+        return HttpResponseNotFound(JsonResponse({"error": "Cuartel no encontrado"}))
+            
+    logger.debug(f"✅ (get_fire_station_api) Datos encontrados para ID {fire_station_id}. Devolviendo JSON.")
+    return JsonResponse(item)

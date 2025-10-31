@@ -205,3 +205,41 @@ class VehicleTypeForm(forms.Form):
         if self.prefix:
             # Añadimos el campo 'id' (entero) para la actualización.
             self.fields['id'] = forms.IntegerField(widget=forms.HiddenInput())
+
+
+class FireStationForm(forms.Form):
+    """
+    Formulario para la creación y edición de Cuarteles de Bomberos (FireStation).
+    - Si se usa con un prefijo 'update', se añade un campo 'id' oculto.
+    """
+    
+    name = forms.CharField(
+        label="Nombre del Cuartel",
+        max_length=100,
+        required=True,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: 1ª Cía. Bomberos de Santiago"})
+    )
+    address = forms.CharField(
+        label="Dirección",
+        required=True,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: Av. Libertador Bernardo O'Higgins 113"})
+    )
+    commune_id = forms.ChoiceField(
+        label="Comuna",
+        choices=[('', '---------')],
+        required=False,
+        widget=forms.Select(attrs={"class": "form-control"})
+    )
+    
+    def __init__(self, *args, **kwargs):
+        self.prefix = kwargs.pop('prefix', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.prefix:
+            self.fields['id'] = forms.IntegerField(widget=forms.HiddenInput())
+
+    def set_communes(self, communes: List[Dict]):
+        """Actualiza las opciones de comunas."""
+        choices = [('', 'Seleccione una comuna')]
+        choices.extend([(str(c['id']), c['name']) for c in communes])
+        self.fields['commune_id'].choices = choices

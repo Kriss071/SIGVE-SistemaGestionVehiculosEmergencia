@@ -154,7 +154,7 @@ LOGGING = {
     'formatters': {
         'verbose': {
             # Formato detallado: Nivel, Fecha/Hora, Módulo, Mensaje
-            'format': '{levelname} {asctime} {module} {message}',
+            'format': '{message} {levelname} {module} {asctime}',
             'style': '{',
         },
         'simple': {

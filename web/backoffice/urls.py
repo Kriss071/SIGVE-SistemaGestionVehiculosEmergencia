@@ -35,4 +35,11 @@ urlpatterns = [
     path('vehicle-types/update/<int:vehicle_type_id>/', views.vehicle_type_update_view, name='vehicle_type_update'),
     path('vehicle-types/delete/<int:vehicle_type_id>/', views.vehicle_type_delete_view, name='vehicle_type_delete'),
     path('api/vehicle-types/<int:vehicle_type_id>/', views.get_vehicle_type_api, name='api_get_vehicle_type'),
+
+    # Cuartel de Bombero
+    path('fire_stations/', views.fire_station_list_view, name='fire_station_list'),
+    path('fire_stations/create/', views.fire_station_create_view, name='fire_station_create'),
+    path('fire_stations/update/<int:fire_station_id>/', views.fire_station_update_view, name='fire_station_update'),
+    path('fire_stations/delete/<int:fire_station_id>/', views.fire_station_delete_view, name='fire_station_delete'),
+    path('api/fire_stations/<int:fire_station_id>/', views.get_fire_station_api, name='api_get_fire_station'),
 ]

@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (updateEmployeeModalEl) {
         const loader = document.getElementById('updateEmployeeLoader');
         const form = document.getElementById('updateEmployeeForm');
-        
+
         updateEmployeeModalEl.addEventListener('show.bs.modal', function (event) {
             console.log("Modal de edición de EMPLEADO detectado.");
 
@@ -252,6 +252,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const updateVehicleTypeModalEl = document.getElementById('updateVehicleTypeModal');
     const deleteVehicleTypeModalEl = document.getElementById('deleteVehicleTypeModal');
 
+    // ===================================================================
+    // LÓGICA PARA TIPOS DE VEHÍCULOS
+    // ===================================================================
     // 4.1 LÓGICA PARA RELLENAR EL FORMULARIO DE EDICIÓN DE TIPO DE VEHÍCULO
     if (updateVehicleTypeModalEl) {
         const loader = document.getElementById('updateVehicleTypeLoader');
@@ -321,6 +324,70 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+
+    // ===================================================================
+    // LÓGICA PARA CUARTELES (FIRE STATION) (NUEVA)
+    // ===================================================================
+    const updateFireStationModalEl = document.getElementById('updateFireStationModal');
+    const deleteFireStationModalEl = document.getElementById('deleteFireStationModal');
+
+    // LÓGICA PARA RELLENAR EL FORMULARIO DE EDICIÓN
+    if (updateFireStationModalEl) {
+        const loader = document.getElementById('updateFireStationLoader');
+        const form = document.getElementById('updateFireStationForm');
+        updateFireStationModalEl.addEventListener('show.bs.modal', function (event) {
+            console.log("Modal de edición de FireStation detectado.");
+            loader.classList.remove('d-none');
+            form.classList.add('d-none');
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const itemId = row.dataset.id;
+            if (!itemId) {
+                console.error('ERROR: No se pudo encontrar el ID (data-id).');
+                return;
+            }
+            const apiUrl = `/administracion/api/fire_stations/${itemId}/`;
+            const formActionUrl = `/administracion/fire_stations/update/${itemId}/`;
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error(`Error de red: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Datos de FireStation recibidos:", data);
+                    form.action = formActionUrl;
+                    // Rellena los campos del formulario (con prefijo 'update')
+                    form.querySelector('#id_update-id').value = data.id || '';
+                    form.querySelector('#id_update-name').value = data.name || '';
+                    form.querySelector('#id_update-address').value = data.address || '';
+                    form.querySelector('#id_update-commune_id').value = data.commune_id || '';
+                    loader.classList.add('d-none');
+                    form.classList.remove('d-none');
+                })
+                .catch(error => {
+                    console.error('FALLO CRÍTICO en API de fire_station:', error);
+                    alert('No se pudieron cargar los datos para editar.');
+                    loader.classList.add('d-none');
+                });
+        });
+    }
+
+    // LÓGICA PARA PREPARAR EL MODAL DE ELIMINACIÓN
+    if (deleteFireStationModalEl) {
+        deleteFireStationModalEl.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const itemId = row.dataset.id;
+            const itemName = row.dataset.name;
+            if (!itemId) {
+                console.error('No se pudo encontrar el ID para eliminar.');
+                return;
+            }
+            const formActionUrl = `/administracion/fire_stations/delete/${itemId}/`;
+            document.getElementById('deleteFireStationForm').action = formActionUrl;
+            document.getElementById('deleteFireStationName').textContent = itemName;
+        });
+    }
+
 });
 
-  

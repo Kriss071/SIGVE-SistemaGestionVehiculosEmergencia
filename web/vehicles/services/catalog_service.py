@@ -74,3 +74,8 @@ class CatalogService:
         """Obtiene todos los tipos de refrigerante ordenados por nombre."""
         return CatalogService._fetch_catalog("coolant_type", "id, name, description")
 
+    @staticmethod
+    def get_communes() -> List[Dict[str, Any]]:
+        """Obtiene todas las comunas ordenadas por nombre."""
+        return CatalogService._fetch_catalog("commune")
+
