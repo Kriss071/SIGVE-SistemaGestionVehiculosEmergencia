@@ -672,5 +672,56 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // ===================================================================
+    // LÓGICA PARA TASK TYPE (NUEVA)
+    // ===================================================================
+    const updateTaskTypeModalEl = document.getElementById('updateTaskTypeModal');
+    const deleteTaskTypeModalEl = document.getElementById('deleteTaskTypeModal');
+
+    // LÓGICA PARA RELLENAR EL FORMULARIO DE EDICIÓN
+    if (updateTaskTypeModalEl) {
+        const loader = document.getElementById('updateTaskTypeLoader');
+        const form = document.getElementById('updateTaskTypeForm');
+        updateTaskTypeModalEl.addEventListener('show.bs.modal', function (event) {
+            console.log("Modal de edición de TaskType detectado.");
+            loader.classList.remove('d-none');
+            form.classList.add('d-none');
+
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const itemId = row.dataset.id;
+            const apiUrl = `/administracion/api/task-types/${itemId}/`;
+            const formActionUrl = `/administracion/task-types/update/${itemId}/`;
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    form.action = formActionUrl;
+                    form.querySelector('#id_update-id').value = data.id || '';
+                    form.querySelector('#id_update-name').value = data.name || '';
+                    form.querySelector('#id_update-description').value = data.description || '';
+                    loader.classList.add('d-none');
+                    form.classList.remove('d-none');
+                })
+                .catch(error => {
+                    console.error('FALLO en API de task_type:', error);
+                    alert('No se pudieron cargar los datos para editar.');
+                });
+        });
+    }
+
+    // LÓGICA PARA PREPARAR EL MODAL DE ELIMINACIÓN
+    if (deleteTaskTypeModalEl) {
+        deleteTaskTypeModalEl.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const itemId = row.dataset.id;
+            const itemName = row.dataset.name;
+            const formActionUrl = `/administracion/task-types/delete/${itemId}/`;
+            document.getElementById('deleteTaskTypeForm').action = formActionUrl;
+            document.getElementById('deleteTaskTypeName').textContent = itemName;
+        });
+    }
+
 });
 

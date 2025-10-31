@@ -57,6 +57,7 @@
                     <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
                         <span><i class="bi bi-car-front-fill me-2"></i>Catálogos Vehículos</span>
                     </h6>
+                    <hr>
                     <ul class="nav flex-column mb-2">
                         <li class="nav-item">
                             <a class="nav-link {% if 'vehicle_type' in request.resolver_match.view_name or 'api_get_vehicle_type' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'backoffice:vehicle_type_list' %}">
@@ -86,6 +87,18 @@
                         <li class="nav-item">
                             <a class="nav-link {% if 'coolant_type' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'backoffice:coolant_type_list' %}">
                                <i class="bi bi-thermometer-half me-2"></i> Refrigerantes
+                            </a>
+                        </li>
+                    </ul>
+                    <hr>
+                    <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
+                        <span><i class="bi bi-file-text me-2"></i>Mantenimiento</span>
+                    </h6>
+                    <hr>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'task_type' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'backoffice:task_type_list' %}">
+                               <i class="bi bi-tools me-2"></i> Tipos de Tarea
                             </a>
                         </li>
                     </ul>

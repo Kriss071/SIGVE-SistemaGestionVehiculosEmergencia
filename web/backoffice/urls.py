@@ -77,4 +77,11 @@ urlpatterns = [
     path('coolant-types/update/<int:coolant_type_id>/', views.coolant_type_update_view, name='coolant_type_update'),
     path('coolant-types/delete/<int:coolant_type_id>/', views.coolant_type_delete_view, name='coolant_type_delete'),
     path('api/coolant-types/<int:coolant_type_id>/', views.get_coolant_type_api, name='api_get_coolant_type'),
+
+    # Tipo de Tarea
+    path('task-types/', views.task_type_list_view, name='task_type_list'),
+    path('task-types/create/', views.task_type_create_view, name='task_type_create'),
+    path('task-types/update/<int:task_type_id>/', views.task_type_update_view, name='task_type_update'),
+    path('task-types/delete/<int:task_type_id>/', views.task_type_delete_view, name='task_type_delete'),
+    path('api/task-types/<int:task_type_id>/', views.get_task_type_api, name='api_get_task_type'),
 ]

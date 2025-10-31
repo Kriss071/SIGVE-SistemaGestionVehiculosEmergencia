@@ -351,3 +351,27 @@ class CoolantTypeForm(forms.Form):
 
         if self.prefix:
             self.fields['id'] = forms.IntegerField(widget=forms.HiddenInput())
+
+
+class TaskTypeForm(forms.Form):
+    """
+    Formulario para la creación y edición de TaskType.
+    """
+    name = forms.CharField(
+        label="Nombre",
+        max_length=100,
+        required=True,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: Cambio de Aceite"})
+    )
+    description = forms.CharField(
+        label="Descripción",
+        required=False,
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 3})
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.prefix = kwargs.pop('prefix', None)
+        super().__init__(*args, **kwargs)
+
+        if self.prefix:
+            self.fields['id'] = forms.IntegerField(widget=forms.HiddenInput())
