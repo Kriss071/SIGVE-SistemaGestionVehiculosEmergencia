@@ -17,6 +17,8 @@ from .forms import EmployeeForm, WorkshopForm, SupplierForm, VehicleTypeForm
 from .services.fire_station_service import FireStationService
 from .forms import FireStationForm
 from vehicles.services.catalog_service import CatalogService
+from .services.vehicle_status_service import VehicleStatusService
+from .forms import VehicleStatusForm
 
 # Configura el logger para este módulo
 logger = logging.getLogger(__name__)
@@ -695,4 +697,107 @@ def get_fire_station_api(request, fire_station_id: int):
         return HttpResponseNotFound(JsonResponse({"error": "Cuartel no encontrado"}))
             
     logger.debug(f"✅ (get_fire_station_api) Datos encontrados para ID {fire_station_id}. Devolviendo JSON.")
+    return JsonResponse(item)
+
+
+def _get_vehicle_status_service(request) -> VehicleStatusService:
+    """Función auxiliar para instanciar el servicio."""
+    token = request.session.get("sb_access_token")
+    refresh_token = request.session.get("sb_refresh_token")
+    return VehicleStatusService(token, refresh_token)
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+def vehicle_status_list_view(request):
+    """
+    Renderiza la página de gestión de estados de vehículos.
+    """
+    logger.info(f"▶️ (vehicle_status_list_view) Accediendo a gestión de vehicle_statuses.")
+    service = _get_vehicle_status_service(request)
+    
+    context = {
+        'vehicle_statuses': service.list_vehicle_statuses(),
+        'create_form': VehicleStatusForm(),
+        'update_form': VehicleStatusForm(prefix="update"),
+    }
+    return render(request, 'backoffice/vehicle_status_list.html', context)
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def vehicle_status_create_view(request):
+    """
+    Vista para procesar la creación de un nuevo estado de vehículo.
+    """
+    logger.info("➕ (vehicle_status_create_view) POST para crear vehicle_status.")
+    service = _get_vehicle_status_service(request)
+    form = VehicleStatusForm(request.POST)
+
+    if form.is_valid():
+        data = form.cleaned_data
+        success = service.create_vehicle_status(data)
+        if success:
+            messages.success(request, f"Estado '{data['name']}' creado/a exitosamente. ✅")
+        else:
+            messages.error(request, "Error al crear el estado. ❌")
+    else:
+        messages.error(request, f"Error de validación. {form.errors.as_text()} ❌")
+        
+    return redirect('backoffice:vehicle_status_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def vehicle_status_update_view(request, vehicle_status_id: int):
+    """
+    Vista para procesar la actualización de un estado de vehículo.
+    """
+    logger.info(f"🔄 (vehicle_status_update_view) POST para actualizar vehicle_status: {vehicle_status_id}")
+    service = _get_vehicle_status_service(request)
+    form = VehicleStatusForm(request.POST, prefix="update")
+
+    if form.is_valid():
+        data = form.cleaned_data
+        success = service.update_vehicle_status(vehicle_status_id, data)
+        if success:
+            messages.success(request, f"Estado '{data['name']}' actualizado/a. ✅")
+        else:
+            messages.error(request, "Error al actualizar. ❌")
+    else:
+        messages.error(request, f"Error de validación. {form.errors.as_text()} ❌")
+        
+    return redirect('backoffice:vehicle_status_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def vehicle_status_delete_view(request, vehicle_status_id: int):
+    """
+    Vista para procesar la eliminación de un estado de vehículo.
+    """
+    logger.info(f"🗑️ (vehicle_status_delete_view) POST para eliminar vehicle_status: {vehicle_status_id}")
+    service = _get_vehicle_status_service(request)
+    
+    success = service.delete_vehicle_status(vehicle_status_id)
+    if success:
+        messages.success(request, "Estado eliminado/a exitosamente. ✅")
+    else:
+        messages.error(request, "Error al eliminar. Es posible que esté en uso. ❌")
+        
+    return redirect('backoffice:vehicle_status_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["GET"])
+def get_vehicle_status_api(request, vehicle_status_id: int):
+    """
+    Endpoint de API para obtener los datos de un estado de vehículo (para modales).
+    """
+    logger.info(f"📡 (get_vehicle_status_api) Solicitando datos para: {vehicle_status_id}")
+    service = _get_vehicle_status_service(request)
+    item = service.get_vehicle_status(vehicle_status_id)
+    
+    if not item:
+        return HttpResponseNotFound(JsonResponse({"error": "Estado no encontrado/a"}))
+        
     return JsonResponse(item)

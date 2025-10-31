@@ -59,12 +59,12 @@
                     </h6>
                     <ul class="nav flex-column mb-2">
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link {% if 'vehicle_type' in request.resolver_match.view_name or 'api_get_vehicle_type' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'backoffice:vehicle_type_list' %}">
                                 <i class="bi bi-tag-fill me-2"></i> Tipos
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link {% if 'vehicle_status' in request.resolver_match.view_name or 'api_get_vehicle_status' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'backoffice:vehicle_status_list' %}">
                                <i class="bi bi-check-circle-fill me-2"></i> Estados
                             </a>
                         </li>

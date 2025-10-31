@@ -389,5 +389,68 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // ===================================================================
+    // LÓGICA PARA VEHICLE STATUS (NUEVA)
+    // ===================================================================
+    const updateVehicleStatusModalEl = document.getElementById('updateVehicleStatusModal');
+    const deleteVehicleStatusModalEl = document.getElementById('deleteVehicleStatusModal');
+
+    // LÓGICA PARA RELLENAR EL FORMULARIO DE EDICIÓN
+    if (updateVehicleStatusModalEl) {
+        const loader = document.getElementById('updateVehicleStatusLoader');
+        const form = document.getElementById('updateVehicleStatusForm');
+        updateVehicleStatusModalEl.addEventListener('show.bs.modal', function (event) {
+            console.log("Modal de edición de VehicleStatus detectado.");
+            loader.classList.remove('d-none');
+            form.classList.add('d-none');
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const itemId = row.dataset.id;
+            if (!itemId) {
+                console.error('ERROR: No se pudo encontrar el ID (data-id).');
+                return;
+            }
+            const apiUrl = `/administracion/api/vehicle-statuses/${itemId}/`;
+            const formActionUrl = `/administracion/vehicle-statuses/update/${itemId}/`;
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error(`Error de red: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Datos de VehicleStatus recibidos:", data);
+                    form.action = formActionUrl;
+                    // Rellena los campos del formulario (con prefijo 'update')
+                    form.querySelector('#id_update-id').value = data.id || '';
+                    form.querySelector('#id_update-name').value = data.name || '';
+                    form.querySelector('#id_update-description').value = data.description || '';
+                    loader.classList.add('d-none');
+                    form.classList.remove('d-none');
+                })
+                .catch(error => {
+                    console.error('FALLO CRÍTICO en API de vehicle_status:', error);
+                    alert('No se pudieron cargar los datos para editar.');
+                    loader.classList.add('d-none');
+                });
+        });
+    }
+
+    // LÓGICA PARA PREPARAR EL MODAL DE ELIMINACIÓN
+    if (deleteVehicleStatusModalEl) {
+        deleteVehicleStatusModalEl.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const itemId = row.dataset.id;
+            const itemName = row.dataset.name;
+            if (!itemId) {
+                console.error('No se pudo encontrar el ID para eliminar.');
+                return;
+            }
+            const formActionUrl = `/administracion/vehicle-statuses/delete/${itemId}/`;
+            document.getElementById('deleteVehicleStatusForm').action = formActionUrl;
+            document.getElementById('deleteVehicleStatusName').textContent = itemName;
+        });
+    }
+
 });
 

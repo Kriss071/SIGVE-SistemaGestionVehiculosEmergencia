@@ -243,3 +243,26 @@ class FireStationForm(forms.Form):
         choices = [('', 'Seleccione una comuna')]
         choices.extend([(str(c['id']), c['name']) for c in communes])
         self.fields['commune_id'].choices = choices
+
+class VehicleStatusForm(forms.Form):
+    """
+    Formulario para la creación y edición de VehicleStatus.
+    """
+    name = forms.CharField(
+        label="Nombre",
+        max_length=100,
+        required=True,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Ej: Operativo"})
+    )
+    description = forms.CharField(
+        label="Descripción",
+        required=False,
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 3})
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.prefix = kwargs.pop('prefix', None)
+        super().__init__(*args, **kwargs)
+
+        if self.prefix:
+            self.fields['id'] = forms.IntegerField(widget=forms.HiddenInput())

@@ -42,4 +42,11 @@ urlpatterns = [
     path('fire_stations/update/<int:fire_station_id>/', views.fire_station_update_view, name='fire_station_update'),
     path('fire_stations/delete/<int:fire_station_id>/', views.fire_station_delete_view, name='fire_station_delete'),
     path('api/fire_stations/<int:fire_station_id>/', views.get_fire_station_api, name='api_get_fire_station'),
+
+    # Estados de Vehículos
+    path('vehicle-statuses/', views.vehicle_status_list_view, name='vehicle_status_list'),
+    path('vehicle-statuses/create/', views.vehicle_status_create_view, name='vehicle_status_create'),
+    path('vehicle-statuses/update/<int:vehicle_status_id>/', views.vehicle_status_update_view, name='vehicle_status_update'),
+    path('vehicle-statuses/delete/<int:vehicle_status_id>/', views.vehicle_status_delete_view, name='vehicle_status_delete'),
+    path('api/vehicle-statuses/<int:vehicle_status_id>/', views.get_vehicle_status_api, name='api_get_vehicle_status'),
 ]
