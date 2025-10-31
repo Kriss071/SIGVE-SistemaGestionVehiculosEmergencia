@@ -1,93 +1,113 @@
 {% extends "base.html" %}
-{% block title %}Vehículos{% endblock %}
 {% load static %}
 
-{% block styles %}
-<link rel="stylesheet" href="{% static 'css/vehicles.css' %}">
+{% block title %}Vehículos{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/vehicles.css' %}">
 {% endblock %}
 
-{% block content %}
-<main class="main-container">
+{% block page_content %}
+<div class="row">
+    <div class="col-lg-7">
 
-    <!-- Listado de Vehículos -->
-    <section class="vehicle-list" id="vehicleListContainer">
-
-        <div class="vehicle-search-bar-container">
-            <form class="vehicle-search-bar" method="get" id="vehicleSearchForm">
-                <input type="text" name="q" id="vehicleSearchInput"
-                    placeholder="Buscar vehículo por patente, marca, modelo o año...">
-                <button type="submit">
-                    🔍
-                </button>
-            </form>
+        <!-- Buscador -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Vehículos</h5>
+                <form class="d-flex" method="get" id="vehicleSearchForm">
+                    <input class="form-control me-2" type="search" name="q" id="vehicleSearchInput"
+                        placeholder="Buscar por patente, marca, modelo o año..." aria-label="Search">
+                    <button class="btn btn-outline-danger" type="submit"><i class="bi bi-search"></i></button>
+                </form>
+            </div>
         </div>
 
-        <div id="vehicleLoader" class="vehicle-loader hidden">
-            🔄 Buscando vehículos...
+        <!-- Loader -->
+        <div id="vehicleLoader" class="text-center my-4 d-none">
+            <div class="spinner-border text-danger" role="status">
+                <span class="visually-hidden">🔄 Buscando vehículos...</span>
+            </div>
         </div>
 
-        <div class="vehicle-list" id="vehicleList">
+        <!-- Listado -->
+        <div id="vehicleList">
             {% for vehicle in vehicles %}
-
-            <article class="vehicle-card" data-license-plate="{{ vehicle.license_plate }}">
-                {% if vehicle.imagen_url %}
-                <img src="{{ vehicle.imagen_url }}" class="vehicle-image"
-                    alt="{{ vehicle.brand }} {{ vehicle.model }}">
-                {% else %}
-                <img src="{% static 'img/img_not_found.jpg' %}" class="vehicle-image" alt="Imagen no disponible">
-                {% endif %}
-                <div class="vehicle-info">
-                    <h2 class="vehicle-title">{{ vehicle.license_plate }}</h2>
-                    <p class="vehicle-description">{{ vehicle.brand }} - {{ vehicle.model }}</p>
-                    <p class="vehicle-description">Año: {{ vehicle.year }}</p>
-                    {% if vehicle.vehicle_type_name %}
-                    <p class="vehicle-description">{{ vehicle.vehicle_type_name }}</p>
-                    {% endif %}
-                    {% if vehicle.vehicle_status_name %}
-                    <p class="vehicle-description">Estado: {{ vehicle.vehicle_status_name }}</p>
-                    {% endif %}
+            <div class="card mb-3 vehicle-card" data-license-plate="{{ vehicle.license_plate }}">
+                <div class="row g-0">
+                    <div class="col-md-2 d-flex align-items-center justify-content-center p-2">
+                        {% if vehicle.imagen_url %}
+                        <img src="{{ vehicle.imagen_url }}" class="img-fluid rounded"
+                            alt="{{ vehicle.brand }} {{ vehicle.model }}">
+                        {% else %}
+                        <img src="{% static 'img/img_not_found.jpg' %}" class="img-fluid rounded"
+                            alt="Imagen no disponible">
+                        {% endif %}
+                    </div>
+                    <div class="col-md-9">
+                        <div class="card-body">
+                            <h5 class="card-title mb-1">{{ vehicle.license_plate }}</h5>
+                            <p class="card-text mb-0">
+                                <small class="text-muted">{{ vehicle.brand }} - {{ vehicle.model }} ({{ vehicle.year }})</small>
+                            </p>
+                            <p class="card-text">
+                                <span class="badge bg-secondary">{{ vehicle.vehicle_type_name|default:'' }}</span>
+                                <span class="badge bg-success">{{ vehicle.vehicle_status_name|default:'' }}</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-md-1 d-flex align-items-center justify-content-center">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </div>
                 </div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="vehicle-next-icon" viewBox="0 0 42 42">
-                    <path fill="currentColor" fill-rule="evenodd"
-                        d="M13.933 1L34 21.068L14.431 40.637l-4.933-4.933l14.638-14.636L9 5.933z" />
-                </svg>
-            </article>
+            </div>
             {% empty %}
-            <li>No hay vehículos registrados.</li>
+            <div class="alert alert-info">No hay vehículos registrados.</div>
             {% endfor %}
         </div>
+    </div>
 
-    </section>
-
-    <!-- Botones -->
-    <section class="vehicle-options">
-
-        <p>
-            Rol: <strong>{{ user_role|capfirst }}</strong>
-        </p>
-        {% if user_role == "Mecánico" or user_role == "Administrador" %}
-        <button class="vehicle-options-button">
-            + Mantención
-        </button>
-        {% endif %}
+    <div class="col-lg-5">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                Resumen del Taller
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="p-3 border bg-light">
+                            <h3 class="display-6">68</h3>
+                            <p class="mb-0">Total de Vehículos</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 border bg-light">
+                            <h3 class="display-6">45</h3>
+                            <p class="mb-0">Vehículos Operativos</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         {% if user_role == "Administrador" %}
-        <button class="vehicle-options-button" id="btnAddVehicle">
-            + Vehículo
-        </button>
+        <div class="d-grid gap-2">
+            <button class="btn btn-primary btn-lg" id="btnAddVehicle">
+                <i class="bi bi-plus-circle-fill me-2"></i> Agregar Vehículo
+            </button>
+            <button class="btn btn-secondary btn-lg">
+                <i class="bi bi-tools me-2"></i> Registrar Mantención Externa
+            </button>
+        </div>
         {% endif %}
+    </div>
+</div>
 
-    </section>
-</main>
-
-<!--  Formulario para ingresar Vehículos-->
 {% include "modal/_vehicle_form.html" %}
-
-<!-- Modal detalle vehiculo -->
 {% include "modal/_vehicle_detail.html" %}
 
 {% endblock %}
 
-{% block scripts %}
+{% block page_scripts %}
 <script src="{% static 'js/vehicles.js' %}"></script>
 {% endblock %}

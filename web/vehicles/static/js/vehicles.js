@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Elementos DOM
     const UI = {
-        modalCreacion: document.getElementById("vehicle_modal"),
+        modalCreacion: document.getElementById("vehicleModal"),
         modalDetalle: document.getElementById("vehicleDetailModal"),
         btnAddVehicle: document.getElementById("btnAddVehicle"),
         searchForm: document.getElementById("vehicleSearchForm"),
@@ -10,7 +10,6 @@ document.addEventListener("DOMContentLoaded", () => {
         vehicleList: document.getElementById("vehicleList"),
         loader: document.getElementById("vehicleLoader"),
         vehicleDetailContent: document.getElementById("vehicleDetailContent"),
-        closeDetailModalBtn: document.getElementById("closeVehicleDetailModal"),
         toasts: document.querySelectorAll(".toast"),
     };
 
@@ -19,11 +18,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Manejo de Modales
 
-    const toggleModal = (modal, show) => {
-        if (!modal) return;
-        modal.style.display = show ? "block" : "none";
-        document.body.style.overflow = show ? "hidden" : "";
-    };
+    const creationModalInstance = UI.modalCreacion 
+        ? new bootstrap.Modal(UI.modalCreacion) 
+        : null;
+        
+    const detailModalInstance = UI.modalDetalle 
+        ? new bootstrap.Modal(UI.modalDetalle) 
+        : null;
 
     // Manejo de Toast
 
@@ -40,31 +41,45 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
 
-    // Renderizad
+    // Renderizado
 
     // Renderiza la lista de vehículos en el DOM.
     const renderVehicles = (vehicles) => {
         UI.vehicleList.innerHTML = "";
 
         if (!vehicles || vehicles.length === 0) {
-            UI.vehicleList.innerHTML = `<div class="empty-list-message">No se encontraron vehículos.</div>`;
+            UI.vehicleList.innerHTML = `<div class="alert alert-info">No hay vehículos registrados.</div>`;
             return;
         }
 
-        const vehicleHTML = vehicles.map(v => `
-            <article class="vehicle-card" data-license-plate="${v.license_plate}">
-                <img src="${v.imagen_url || '/static/img/img_not_found.jpg'}" class="vehicle-image" alt="${v.brand} ${v.model}">
-                <div class="vehicle-info">
-                    <h2 class="vehicle-title">${v.license_plate}</h2>
-                    <p class="vehicle-description">${v.brand} - ${v.model}</p>
-                    <p class="vehicle-description">Año: ${v.year}</p>
-                    ${v.vehicle_type_name ? `<p class="vehicle-description">${v.vehicle_type_name}</p>` : ''}
-                    ${v.vehicle_status_name ? `<p class="vehicle-description">Estado: ${v.vehicle_status_name}</p>` : ''}
+        const vehicleHTML = vehicles.map(vehicle => `
+            <div class="card mb-3 vehicle-card" data-license-plate="${vehicle.license_plate}">
+                <div class="row g-0">
+                    <!-- Imagen del vehículo -->
+                    <div class="col-md-2 d-flex align-items-center justify-content-center p-2">
+                        <img src="${vehicle.imagen_url || '/static/img/img_not_found.jpg'}" 
+                             class="img-fluid rounded" 
+                             alt="${vehicle.brand} ${vehicle.model}">
+                    </div>
+    
+                    <!-- Información principal -->
+                    <div class="col-md-9">
+                        <div class="card-body">
+                            <h5 class="card-title mb-1">${vehicle.license_plate}</h5>
+                            <p class="card-text mb-0"><small class="text-muted">${vehicle.brand} - ${vehicle.model} (${vehicle.year})</small></p>
+                            <p class="card-text">
+                                ${vehicle.vehicle_type_name ? `<span class="badge bg-secondary">${vehicle.vehicle_type_name}</span>` : ''}
+                                ${vehicle.vehicle_status_name ? `<span class="badge bg-success">${vehicle.vehicle_status_name}</span>` : ''}
+                            </p>
+                        </div>
+                    </div>
+    
+                    <!-- Icono de acciones -->
+                    <div class="col-md-1 d-flex align-items-center justify-content-center">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </div>
                 </div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="vehicle-next-icon" viewBox="0 0 42 42">
-                    <path fill="currentColor" fill-rule="evenodd" d="M13.933 1L34 21.068L14.431 40.637l-4.933-4.933l14.638-14.636L9 5.933z" />
-                </svg>
-            </article>
+            </div>
         `).join('');
 
         UI.vehicleList.innerHTML = vehicleHTML;
@@ -74,25 +89,139 @@ document.addEventListener("DOMContentLoaded", () => {
     // Rellena el contenido del modal de detalle del vehículo.
     const renderVehicleDetail = (vehicle) => {
         UI.vehicleDetailContent.innerHTML = `
-            <img src="${vehicle.imagen_url || '/static/img/img_not_found.jpg'}" alt="${vehicle.brand} ${vehicle.model}">
-            <h2>${vehicle.license_plate}</h2>
-            <p><strong>Marca:</strong> ${vehicle.brand}</p>
-            <p><strong>Modelo:</strong> ${vehicle.model}</p>
-            <p><strong>Año:</strong> ${vehicle.year}</p>
-            ${vehicle.vehicle_type_name ? `<p><strong>Tipo:</strong> ${vehicle.vehicle_type_name}</p>` : ''}
-            ${vehicle.vehicle_status_name ? `<p><strong>Estado:</strong> ${vehicle.vehicle_status_name}</p>` : ''}
-            ${vehicle.fire_station_name ? `<p><strong>Cuartel:</strong> ${vehicle.fire_station_name}</p>` : ''}
-            ${vehicle.mileage ? `<p><strong>Kilometraje:</strong> ${vehicle.mileage} km</p>` : ''}
-            ${vehicle.mileage_last_updated ? `<p><strong>Fecha Último Kilometraje:</strong> ${vehicle.mileage_last_updated}</p>` : ''}
-            ${vehicle.engine_number ? `<p><strong>Número de Motor:</strong> ${vehicle.engine_number}</p>` : ''}
-            ${vehicle.vin ? `<p><strong>VIN:</strong> ${vehicle.vin}</p>` : ''}
-            ${vehicle.oil_capacity_liters ? `<p><strong>Capacidad de Aceite:</strong> ${vehicle.oil_capacity_liters} L</p>` : ''}
-            ${vehicle.oil_type_name ? `<p><strong>Tipo de Aceite:</strong> ${vehicle.oil_type_name}</p>` : ''}
-            ${vehicle.fuel_type_name ? `<p><strong>Combustible:</strong> ${vehicle.fuel_type_name}</p>` : ''}
-            ${vehicle.transmission_type_name ? `<p><strong>Transmisión:</strong> ${vehicle.transmission_type_name}</p>` : ''}
-            ${vehicle.registration_date ? `<p><strong>Fecha de Inscripción:</strong> ${vehicle.registration_date}</p>` : ''}
-            ${vehicle.next_revision_date ? `<p><strong>Próxima Revisión:</strong> ${vehicle.next_revision_date}</p>` : ''}
-        `;
+        <div class="text-center mb-3">
+            <img src="${vehicle.imagen_url || '/static/img/img_not_found.jpg'}" 
+                 class="img-fluid rounded" 
+                 alt="${vehicle.brand} ${vehicle.model}"
+                 style="max-height: 200px; width: auto;">
+        </div>
+
+        <form id="vehicleDetailForm">
+            <fieldset id="vehicleDetailFieldset" disabled>
+
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control" id="detail_license_plate" value="${vehicle.license_plate || ''}" placeholder=" " disabled>
+                    <label for="detail_license_plate">Patente</label>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-md">
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="detail_brand" value="${vehicle.brand || ''}" placeholder=" ">
+                            <label for="detail_brand">Marca</label>
+                        </div>
+                    </div>
+                    <div class="col-md">
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="detail_model" value="${vehicle.model || ''}" placeholder=" ">
+                            <label for="detail_model">Modelo</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-md">
+                        <div class="form-floating">
+                            <input type="number" class="form-control" id="detail_year" value="${vehicle.year || ''}" placeholder=" ">
+                            <label for="detail_year">Año</label>
+                        </div>
+                    </div>
+                    <div class="col-md">
+                        <div class="form-floating">
+                            <input type="number" class="form-control" id="detail_mileage" value="${vehicle.mileage || ''}" placeholder=" ">
+                            <label for="detail_mileage">Kilometraje (km)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-md">
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="detail_vehicle_type" value="${vehicle.vehicle_type_name || ''}" placeholder=" ">
+                            <label for="detail_vehicle_type">Tipo</label>
+                        </div>
+                    </div>
+                    <div class="col-md">
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="detail_vehicle_status" value="${vehicle.vehicle_status_name || ''}" placeholder=" ">
+                            <label for="detail_vehicle_status">Estado</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control" id="detail_fire_station" value="${vehicle.fire_station_name || ''}" placeholder=" ">
+                    <label for="detail_fire_station">Cuartel</label>
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-md">
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="detail_engine_number" value="${vehicle.engine_number || ''}" placeholder=" ">
+                            <label for="detail_engine_number">Número de Motor</label>
+                        </div>
+                    </div>
+                    <div class="col-md">
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="detail_vin" value="${vehicle.vin || ''}" placeholder=" ">
+                            <label for="detail_vin">VIN (Chasis)</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-md">
+                        <div class="form-floating">
+                            <input type="number" class="form-control" id="detail_oil_capacity" value="${vehicle.oil_capacity_liters || ''}" placeholder=" ">
+                            <label for="detail_oil_capacity">Capacidad de Aceite (L)</label>
+                        </div>
+                    </div>
+                    <div class="col-md">
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="detail_oil_type" value="${vehicle.oil_type_name || ''}" placeholder=" ">
+                            <label for="detail_oil_type">Tipo de Aceite</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-md">
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="detail_fuel_type" value="${vehicle.fuel_type_name || ''}" placeholder=" ">
+                            <label for="detail_fuel_type">Combustible</label>
+                        </div>
+                    </div>
+                    <div class="col-md">
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="detail_transmission_type" value="${vehicle.transmission_type_name || ''}" placeholder=" ">
+                            <label for="detail_transmission_type">Transmisión</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-md">
+                        <div class="form-floating">
+                            <input type="date" class="form-control" id="detail_mileage_last_updated" value="${vehicle.mileage_last_updated || ''}" placeholder=" ">
+                            <label for="detail_mileage_last_updated">Último Kilometraje</glabel>
+                        </div>
+                    </div>
+                    <div class="col-md">
+                        <div class="form-floating">
+                            <input type="date" class="form-control" id="detail_registration_date" value="${vehicle.registration_date || ''}" placeholder=" ">
+                            <label for="detail_registration_date">Fecha Inscripción</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-floating mb-3">
+                    <input type="date" class="form-control" id="detail_next_revision_date" value="${vehicle.next_revision_date || ''}" placeholder=" ">
+                    <label for="detail_next_revision_date">Próxima Revisión</label>
+                </div>
+
+            </fieldset>
+        </form>
+    `;
     };
 
 
@@ -134,7 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Obtener la patente del nuevo atributo data
         const licensePlate = card.dataset.licensePlate || card.dataset.license_plate;
 
-        toggleModal(UI.modalDetalle, true);
+        detailModalInstance?.show();
         UI.vehicleDetailContent.innerHTML = `
             <div class="modal-loader">
                 <div class="spinner"></div>
@@ -150,7 +279,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const vehicle = data.vehicle || data;
 
             renderVehicleDetail(vehicle);
-            toggleModal(UI.modalDetalle, true);
         } catch (err) {
             console.error("Error cargando detalle del vehículo:", err);
             alert("No se pudo cargar el detalle del vehículo. Inténtalo nuevamente.");
@@ -158,17 +286,10 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     // Asignación de Eventos
-    UI.btnAddVehicle?.addEventListener("click", () => toggleModal(UI.modalCreacion, true));
+    UI.btnAddVehicle?.addEventListener("click", () => creationModalInstance?.show());
     UI.searchForm.addEventListener("submit", handleSearchSubmit);
     UI.searchInput.addEventListener("input", handleSearchInput);
     UI.vehicleList.addEventListener("click", handleVehicleListClick);
-    UI.closeDetailModalBtn?.addEventListener("click", () => toggleModal(UI.modalDetalle, false));
-
-    // Evento para cerrar modales al hacer clic fuera de ellos
-    window.addEventListener("click", e => {
-        if (e.target === UI.modalCreacion) toggleModal(UI.modalCreacion, false);
-        if (e.target === UI.modalDetalle) toggleModal(UI.modalDetalle, false);
-    });
 
     // Inicialización de Toast
     showToasts();

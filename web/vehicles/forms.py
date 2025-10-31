@@ -7,39 +7,39 @@ class VehicleForm(forms.Form):
     license_plate = forms.CharField(
         label="Patente",
         max_length=50,
-        widget=forms.TextInput(attrs={"class": "form-control", "required": True})
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": " "})
     )
     brand = forms.CharField(
         label="Marca",
         max_length=50,
-        widget=forms.TextInput(attrs={"class": "form-control", "required": True})
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": " "})
     )
     model = forms.CharField(
         label="Modelo",
         max_length=50,
-        widget=forms.TextInput(attrs={"class": "form-control", "required": True})
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": " "})
     )
     year = forms.IntegerField(
         label="Año",
         min_value=1900,
-        widget=forms.NumberInput(attrs={"class": "form-control", "required": True})
+        widget=forms.NumberInput(attrs={"class": "form-control", "placeholder": " "})
     )
     
-    # Campos obligatorios con Foreign Keys
+    # Campos obligatorios con Foreign Keys (usando form-select)
     fire_station_id = forms.ChoiceField(
         label="Cuartel de Bomberos",
         choices=[],
-        widget=forms.Select(attrs={"class": "form-control", "required": True})
+        widget=forms.Select(attrs={"class": "form-select"})
     )
     vehicle_type_id = forms.ChoiceField(
         label="Tipo de Vehículo",
         choices=[],
-        widget=forms.Select(attrs={"class": "form-control", "required": True})
+        widget=forms.Select(attrs={"class": "form-select"})
     )
     vehicle_status_id = forms.ChoiceField(
         label="Estado del Vehículo",
         choices=[],
-        widget=forms.Select(attrs={"class": "form-control", "required": True})
+        widget=forms.Select(attrs={"class": "form-select"})
     )
     
     # Campos opcionales
@@ -47,66 +47,66 @@ class VehicleForm(forms.Form):
         label="Número de Motor",
         max_length=100,
         required=False,
-        widget=forms.TextInput(attrs={"class": "form-control"})
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": " "})
     )
     vin = forms.CharField(
         label="VIN (Número de Chasis)",
         max_length=100,
         required=False,
-        widget=forms.TextInput(attrs={"class": "form-control"})
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": " "})
     )
     mileage = forms.IntegerField(
         label="Kilometraje",
         min_value=0,
         required=False,
-        widget=forms.NumberInput(attrs={"class": "form-control"})
+        widget=forms.NumberInput(attrs={"class": "form-control", "placeholder": " "})
     )
     mileage_last_updated = forms.DateField(
         label="Fecha Último Kilometraje",
         required=False,
-        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"})
+        widget=forms.DateInput(attrs={"class": "form-control", "type": "date", "placeholder": " "})
     )
     oil_capacity_liters = forms.DecimalField(
         label="Capacidad de Aceite (L)",
         min_value=0,
         required=False,
-        widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01"})
+        widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01", "placeholder": " "})
     )
     registration_date = forms.DateField(
         label="Fecha de Inscripción",
         required=False,
-        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"})
+        widget=forms.DateInput(attrs={"class": "form-control", "type": "date", "placeholder": " "})
     )
     next_revision_date = forms.DateField(
         label="Próxima Revisión Técnica",
         required=False,
-        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"})
+        widget=forms.DateInput(attrs={"class": "form-control", "type": "date", "placeholder": " "})
     )
     
-    # Campos opcionales con Foreign Keys
+    # Campos opcionales con Foreign Keys (usando form-select)
     fuel_type_id = forms.ChoiceField(
         label="Tipo de Combustible",
         choices=[('', '---------')],
         required=False,
-        widget=forms.Select(attrs={"class": "form-control"})
+        widget=forms.Select(attrs={"class": "form-select"})
     )
     transmission_type_id = forms.ChoiceField(
         label="Tipo de Transmisión",
         choices=[('', '---------')],
         required=False,
-        widget=forms.Select(attrs={"class": "form-control"})
+        widget=forms.Select(attrs={"class": "form-select"})
     )
     oil_type_id = forms.ChoiceField(
         label="Tipo de Aceite",
         choices=[('', '---------')],
         required=False,
-        widget=forms.Select(attrs={"class": "form-control"})
+        widget=forms.Select(attrs={"class": "form-select"})
     )
     coolant_type_id = forms.ChoiceField(
         label="Tipo de Refrigerante",
         choices=[('', '---------')],
         required=False,
-        widget=forms.Select(attrs={"class": "form-control"})
+        widget=forms.Select(attrs={"class": "form-select"})
     )
     
     def __init__(self, *args, **kwargs):
@@ -154,4 +154,3 @@ class VehicleForm(forms.Form):
         choices = [('', '---------')]
         choices.extend([(str(t['id']), t['name']) for t in coolant_types])
         self.fields['coolant_type_id'].choices = choices
-
