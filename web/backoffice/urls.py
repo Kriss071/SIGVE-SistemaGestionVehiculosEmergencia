@@ -63,4 +63,11 @@ urlpatterns = [
     path('transmission-types/update/<int:transmission_type_id>/', views.transmission_type_update_view, name='transmission_type_update'),
     path('transmission-types/delete/<int:transmission_type_id>/', views.transmission_type_delete_view, name='transmission_type_delete'),
     path('api/transmission-types/<int:transmission_type_id>/', views.get_transmission_type_api, name='api_get_transmission_type'),
+
+    # Tipo de Aceite
+    path('oil-types/', views.oil_type_list_view, name='oil_type_list'),
+    path('oil-types/create/', views.oil_type_create_view, name='oil_type_create'),
+    path('oil-types/update/<int:oil_type_id>/', views.oil_type_update_view, name='oil_type_update'),
+    path('oil-types/delete/<int:oil_type_id>/', views.oil_type_delete_view, name='oil_type_delete'),
+    path('api/oil-types/<int:oil_type_id>/', views.get_oil_type_api, name='api_get_oil_type'),
 ]

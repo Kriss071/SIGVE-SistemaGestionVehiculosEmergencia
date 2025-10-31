@@ -566,5 +566,58 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // ===================================================================
+    // LÓGICA PARA OIL TYPE (NUEVA)
+    // ===================================================================
+    const updateOilTypeModalEl = document.getElementById('updateOilTypeModal');
+    const deleteOilTypeModalEl = document.getElementById('deleteOilTypeModal');
+
+    // LÓGICA PARA RELLENAR EL FORMULARIO DE EDICIÓN
+    if (updateOilTypeModalEl) {
+        const loader = document.getElementById('updateOilTypeLoader');
+        const form = document.getElementById('updateOilTypeForm');
+        updateOilTypeModalEl.addEventListener('show.bs.modal', function (event) {
+            console.log("Modal de edición de OilType detectado.");
+            loader.classList.remove('d-none');
+            form.classList.add('d-none');
+
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const itemId = row.dataset.id;
+            const apiUrl = `/administracion/api/oil-types/${itemId}/`;
+            const formActionUrl = `/administracion/oil-types/update/${itemId}/`;
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Datos de OilType recibidos:", data);
+                    form.action = formActionUrl;
+                    form.querySelector('#id_update-id').value = data.id || '';
+                    form.querySelector('#id_update-name').value = data.name || '';
+                    form.querySelector('#id_update-description').value = data.description || ''; // <-- Se incluye la descripción
+                    loader.classList.add('d-none');
+                    form.classList.remove('d-none');
+                })
+                .catch(error => {
+                    console.error('FALLO en API de oil_type:', error);
+                    alert('No se pudieron cargar los datos para editar.');
+                    loader.classList.add('d-none');
+                });
+        });
+    }
+
+    // LÓGICA PARA PREPARAR EL MODAL DE ELIMINACIÓN
+    if (deleteOilTypeModalEl) {
+        deleteOilTypeModalEl.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const itemId = row.dataset.id;
+            const itemName = row.dataset.name;
+            const formActionUrl = `/administracion/oil-types/delete/${itemId}/`;
+            document.getElementById('deleteOilTypeForm').action = formActionUrl;
+            document.getElementById('deleteOilTypeName').textContent = itemName;
+        });
+    }
+
 });
 

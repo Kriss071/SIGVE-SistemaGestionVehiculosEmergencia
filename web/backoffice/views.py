@@ -21,6 +21,8 @@ from .services.vehicle_status_service import VehicleStatusService
 from .forms import VehicleStatusForm
 from .services.fuel_type_service import FuelTypeService
 from .forms import FuelTypeForm
+from .services.oil_type_service import OilTypeService
+from .forms import OilTypeForm
 
 # Configura el logger para este módulo
 logger = logging.getLogger(__name__)
@@ -1011,5 +1013,108 @@ def get_transmission_type_api(request, transmission_type_id: int):
     
     if not item:
         return HttpResponseNotFound(JsonResponse({"error": "Tipo de transmisión no encontrado"}))
+        
+    return JsonResponse(item)
+
+
+def _get_oil_type_service(request) -> OilTypeService:
+    """Función auxiliar para instanciar el servicio."""
+    token = request.session.get("sb_access_token")
+    refresh_token = request.session.get("sb_refresh_token")
+    return OilTypeService(token, refresh_token)
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+def oil_type_list_view(request):
+    """
+    Renderiza la página de gestión de tipos de aceite.
+    """
+    logger.info(f"▶️ (oil_type_list_view) Accediendo a gestión de oil_types.")
+    service = _get_oil_type_service(request)
+    
+    context = {
+        'oil_types': service.list_oil_types(),
+        'create_form': OilTypeForm(),
+        'update_form': OilTypeForm(prefix="update"),
+    }
+    return render(request, 'backoffice/oil_type_list.html', context)
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def oil_type_create_view(request):
+    """
+    Vista para procesar la creación de un nuevo tipo de aceite.
+    """
+    logger.info("➕ (oil_type_create_view) POST para crear oil_type.")
+    service = _get_oil_type_service(request)
+    form = OilTypeForm(request.POST)
+
+    if form.is_valid():
+        data = form.cleaned_data
+        success = service.create_oil_type(data)
+        if success:
+            messages.success(request, f"Tipo de aceite '{data['name']}' creado exitosamente. ✅")
+        else:
+            messages.error(request, "Error al crear el tipo de aceite. ❌")
+    else:
+        messages.error(request, f"Error de validación. {form.errors.as_text()} ❌")
+        
+    return redirect('backoffice:oil_type_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def oil_type_update_view(request, oil_type_id: int):
+    """
+    Vista para procesar la actualización de un tipo de aceite.
+    """
+    logger.info(f"🔄 (oil_type_update_view) POST para actualizar oil_type: {oil_type_id}")
+    service = _get_oil_type_service(request)
+    form = OilTypeForm(request.POST, prefix="update")
+
+    if form.is_valid():
+        data = form.cleaned_data
+        success = service.update_oil_type(oil_type_id, data)
+        if success:
+            messages.success(request, f"Tipo de aceite '{data['name']}' actualizado. ✅")
+        else:
+            messages.error(request, "Error al actualizar. ❌")
+    else:
+        messages.error(request, f"Error de validación. {form.errors.as_text()} ❌")
+        
+    return redirect('backoffice:oil_type_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def oil_type_delete_view(request, oil_type_id: int):
+    """
+    Vista para procesar la eliminación de un tipo de aceite.
+    """
+    logger.info(f"🗑️ (oil_type_delete_view) POST para eliminar oil_type: {oil_type_id}")
+    service = _get_oil_type_service(request)
+    
+    success = service.delete_oil_type(oil_type_id)
+    if success:
+        messages.success(request, "Tipo de aceite eliminado exitosamente. ✅")
+    else:
+        messages.error(request, "Error al eliminar. Es posible que esté en uso. ❌")
+        
+    return redirect('backoffice:oil_type_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["GET"])
+def get_oil_type_api(request, oil_type_id: int):
+    """
+    Endpoint de API para obtener los datos de un tipo de aceite.
+    """
+    logger.info(f"📡 (get_oil_type_api) Solicitando datos para: {oil_type_id}")
+    service = _get_oil_type_service(request)
+    item = service.get_oil_type(oil_type_id)
+    
+    if not item:
+        return HttpResponseNotFound(JsonResponse({"error": "Tipo de aceite no encontrado"}))
         
     return JsonResponse(item)
