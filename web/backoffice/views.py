@@ -906,3 +906,110 @@ def get_fuel_type_api(request, fuel_type_id: int):
         return HttpResponseNotFound(JsonResponse({"error": "Tipo de combustible no encontrado/a"}))
         
     return JsonResponse(item)
+
+from .services.transmission_type_service import TransmissionTypeService
+from .forms import TransmissionTypeForm
+
+# --- VISTAS DE TRANSMISSION TYPE ---
+
+def _get_transmission_type_service(request) -> TransmissionTypeService:
+    """Función auxiliar para instanciar el servicio."""
+    token = request.session.get("sb_access_token")
+    refresh_token = request.session.get("sb_refresh_token")
+    return TransmissionTypeService(token, refresh_token)
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+def transmission_type_list_view(request):
+    """
+    Renderiza la página de gestión de tipos de transmisión.
+    """
+    logger.info(f"▶️ (transmission_type_list_view) Accediendo a gestión de transmission_types.")
+    service = _get_transmission_type_service(request)
+    
+    context = {
+        'transmission_types': service.list_transmission_types(),
+        'create_form': TransmissionTypeForm(),
+        'update_form': TransmissionTypeForm(prefix="update"),
+    }
+    return render(request, 'backoffice/transmission_type_list.html', context)
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def transmission_type_create_view(request):
+    """
+    Vista para procesar la creación de un nuevo tipo de transmisión.
+    """
+    logger.info("➕ (transmission_type_create_view) POST para crear transmission_type.")
+    service = _get_transmission_type_service(request)
+    form = TransmissionTypeForm(request.POST)
+
+    if form.is_valid():
+        data = form.cleaned_data
+        success = service.create_transmission_type(data)
+        if success:
+            messages.success(request, f"Tipo de transmisión '{data['name']}' creado exitosamente. ✅")
+        else:
+            messages.error(request, "Error al crear el tipo de transmisión. ❌")
+    else:
+        messages.error(request, f"Error de validación. {form.errors.as_text()} ❌")
+        
+    return redirect('backoffice:transmission_type_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def transmission_type_update_view(request, transmission_type_id: int):
+    """
+    Vista para procesar la actualización de un tipo de transmisión.
+    """
+    logger.info(f"🔄 (transmission_type_update_view) POST para actualizar transmission_type: {transmission_type_id}")
+    service = _get_transmission_type_service(request)
+    form = TransmissionTypeForm(request.POST, prefix="update")
+
+    if form.is_valid():
+        data = form.cleaned_data
+        success = service.update_transmission_type(transmission_type_id, data)
+        if success:
+            messages.success(request, f"Tipo de transmisión '{data['name']}' actualizado. ✅")
+        else:
+            messages.error(request, "Error al actualizar. ❌")
+    else:
+        messages.error(request, f"Error de validación. {form.errors.as_text()} ❌")
+        
+    return redirect('backoffice:transmission_type_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def transmission_type_delete_view(request, transmission_type_id: int):
+    """
+    Vista para procesar la eliminación de un tipo de transmisión.
+    """
+    logger.info(f"🗑️ (transmission_type_delete_view) POST para eliminar transmission_type: {transmission_type_id}")
+    service = _get_transmission_type_service(request)
+    
+    success = service.delete_transmission_type(transmission_type_id)
+    if success:
+        messages.success(request, "Tipo de transmisión eliminado exitosamente. ✅")
+    else:
+        messages.error(request, "Error al eliminar. Es posible que esté en uso. ❌")
+        
+    return redirect('backoffice:transmission_type_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["GET"])
+def get_transmission_type_api(request, transmission_type_id: int):
+    """
+    Endpoint de API para obtener los datos de un tipo de transmisión.
+    """
+    logger.info(f"📡 (get_transmission_type_api) Solicitando datos para: {transmission_type_id}")
+    service = _get_transmission_type_service(request)
+    item = service.get_transmission_type(transmission_type_id)
+    
+    if not item:
+        return HttpResponseNotFound(JsonResponse({"error": "Tipo de transmisión no encontrado"}))
+        
+    return JsonResponse(item)

@@ -50,10 +50,17 @@ urlpatterns = [
     path('vehicle-statuses/delete/<int:vehicle_status_id>/', views.vehicle_status_delete_view, name='vehicle_status_delete'),
     path('api/vehicle-statuses/<int:vehicle_status_id>/', views.get_vehicle_status_api, name='api_get_vehicle_status'),
 
-    # Fuel Type (NUEVO)
+    # Tipo de Combustible
     path('fuel-types/', views.fuel_type_list_view, name='fuel_type_list'),
     path('fuel-types/create/', views.fuel_type_create_view, name='fuel_type_create'),
     path('fuel-types/update/<int:fuel_type_id>/', views.fuel_type_update_view, name='fuel_type_update'),
     path('fuel-types/delete/<int:fuel_type_id>/', views.fuel_type_delete_view, name='fuel_type_delete'),
     path('api/fuel-types/<int:fuel_type_id>/', views.get_fuel_type_api, name='api_get_fuel_type'),
+
+    # Tipo de Transmisión
+    path('transmission-types/', views.transmission_type_list_view, name='transmission_type_list'),
+    path('transmission-types/create/', views.transmission_type_create_view, name='transmission_type_create'),
+    path('transmission-types/update/<int:transmission_type_id>/', views.transmission_type_update_view, name='transmission_type_update'),
+    path('transmission-types/delete/<int:transmission_type_id>/', views.transmission_type_delete_view, name='transmission_type_delete'),
+    path('api/transmission-types/<int:transmission_type_id>/', views.get_transmission_type_api, name='api_get_transmission_type'),
 ]

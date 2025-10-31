@@ -514,5 +514,57 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // ===================================================================
+    // LÓGICA PARA TRANSMISSION TYPE (NUEVA)
+    // ===================================================================
+    const updateTransmissionTypeModalEl = document.getElementById('updateTransmissionTypeModal');
+    const deleteTransmissionTypeModalEl = document.getElementById('deleteTransmissionTypeModal');
+
+    // LÓGICA PARA RELLENAR EL FORMULARIO DE EDICIÓN
+    if (updateTransmissionTypeModalEl) {
+        const loader = document.getElementById('updateTransmissionTypeLoader');
+        const form = document.getElementById('updateTransmissionTypeForm');
+        updateTransmissionTypeModalEl.addEventListener('show.bs.modal', function (event) {
+            console.log("Modal de edición de TransmissionType detectado.");
+            loader.classList.remove('d-none');
+            form.classList.add('d-none');
+
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const itemId = row.dataset.id;
+            const apiUrl = `/administracion/api/transmission-types/${itemId}/`;
+            const formActionUrl = `/administracion/transmission-types/update/${itemId}/`;
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Datos de TransmissionType recibidos:", data);
+                    form.action = formActionUrl;
+                    form.querySelector('#id_update-id').value = data.id || '';
+                    form.querySelector('#id_update-name').value = data.name || '';
+                    loader.classList.add('d-none');
+                    form.classList.remove('d-none');
+                })
+                .catch(error => {
+                    console.error('FALLO en API de transmission_type:', error);
+                    alert('No se pudieron cargar los datos para editar.');
+                    loader.classList.add('d-none');
+                });
+        });
+    }
+
+    // LÓGICA PARA PREPARAR EL MODAL DE ELIMINACIÓN
+    if (deleteTransmissionTypeModalEl) {
+        deleteTransmissionTypeModalEl.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const itemId = row.dataset.id;
+            const itemName = row.dataset.name;
+            const formActionUrl = `/administracion/transmission-types/delete/${itemId}/`;
+            document.getElementById('deleteTransmissionTypeForm').action = formActionUrl;
+            document.getElementById('deleteTransmissionTypeName').textContent = itemName;
+        });
+    }
+
 });
 
