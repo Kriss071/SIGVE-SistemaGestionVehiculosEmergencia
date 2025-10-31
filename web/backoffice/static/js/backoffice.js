@@ -619,5 +619,58 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // ===================================================================
+    // LÓGICA PARA COOLANT TYPE (NUEVA)
+    // ===================================================================
+    const updateCoolantTypeModalEl = document.getElementById('updateCoolantTypeModal');
+    const deleteCoolantTypeModalEl = document.getElementById('deleteCoolantTypeModal');
+
+    // LÓGICA PARA RELLENAR EL FORMULARIO DE EDICIÓN
+    if (updateCoolantTypeModalEl) {
+        const loader = document.getElementById('updateCoolantTypeLoader');
+        const form = document.getElementById('updateCoolantTypeForm');
+        updateCoolantTypeModalEl.addEventListener('show.bs.modal', function (event) {
+            console.log("Modal de edición de CoolantType detectado.");
+            loader.classList.remove('d-none');
+            form.classList.add('d-none');
+
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const itemId = row.dataset.id;
+            const apiUrl = `/administracion/api/coolant-types/${itemId}/`;
+            const formActionUrl = `/administracion/coolant-types/update/${itemId}/`;
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Datos de CoolantType recibidos:", data);
+                    form.action = formActionUrl;
+                    form.querySelector('#id_update-id').value = data.id || '';
+                    form.querySelector('#id_update-name').value = data.name || '';
+                    form.querySelector('#id_update-description').value = data.description || '';
+                    loader.classList.add('d-none');
+                    form.classList.remove('d-none');
+                })
+                .catch(error => {
+                    console.error('FALLO en API de coolant_type:', error);
+                    alert('No se pudieron cargar los datos para editar.');
+                    loader.classList.add('d-none');
+                });
+        });
+    }
+
+    // LÓGICA PARA PREPARAR EL MODAL DE ELIMINACIÓN
+    if (deleteCoolantTypeModalEl) {
+        deleteCoolantTypeModalEl.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const row = button.closest('tr');
+            const itemId = row.dataset.id;
+            const itemName = row.dataset.name;
+            const formActionUrl = `/administracion/coolant-types/delete/${itemId}/`;
+            document.getElementById('deleteCoolantTypeForm').action = formActionUrl;
+            document.getElementById('deleteCoolantTypeName').textContent = itemName;
+        });
+    }
+
 });
 

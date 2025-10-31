@@ -70,4 +70,11 @@ urlpatterns = [
     path('oil-types/update/<int:oil_type_id>/', views.oil_type_update_view, name='oil_type_update'),
     path('oil-types/delete/<int:oil_type_id>/', views.oil_type_delete_view, name='oil_type_delete'),
     path('api/oil-types/<int:oil_type_id>/', views.get_oil_type_api, name='api_get_oil_type'),
+
+    # Tipo de Refigerante
+    path('coolant-types/', views.coolant_type_list_view, name='coolant_type_list'),
+    path('coolant-types/create/', views.coolant_type_create_view, name='coolant_type_create'),
+    path('coolant-types/update/<int:coolant_type_id>/', views.coolant_type_update_view, name='coolant_type_update'),
+    path('coolant-types/delete/<int:coolant_type_id>/', views.coolant_type_delete_view, name='coolant_type_delete'),
+    path('api/coolant-types/<int:coolant_type_id>/', views.get_coolant_type_api, name='api_get_coolant_type'),
 ]

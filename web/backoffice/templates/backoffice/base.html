@@ -83,6 +83,11 @@
                                <i class="bi bi-droplet-half me-2"></i> Tipos de Aceite
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'coolant_type' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'backoffice:coolant_type_list' %}">
+                               <i class="bi bi-thermometer-half me-2"></i> Refrigerantes
+                            </a>
+                        </li>
                     </ul>
                     <hr>
                      <ul class="nav flex-column mb-2">

@@ -23,6 +23,8 @@ from .services.fuel_type_service import FuelTypeService
 from .forms import FuelTypeForm
 from .services.oil_type_service import OilTypeService
 from .forms import OilTypeForm
+from .services.coolant_type_service import CoolantTypeService
+from .forms import CoolantTypeForm
 
 # Configura el logger para este módulo
 logger = logging.getLogger(__name__)
@@ -1116,5 +1118,108 @@ def get_oil_type_api(request, oil_type_id: int):
     
     if not item:
         return HttpResponseNotFound(JsonResponse({"error": "Tipo de aceite no encontrado"}))
+        
+    return JsonResponse(item)
+
+
+def _get_coolant_type_service(request) -> CoolantTypeService:
+    """Función auxiliar para instanciar el servicio."""
+    token = request.session.get("sb_access_token")
+    refresh_token = request.session.get("sb_refresh_token")
+    return CoolantTypeService(token, refresh_token)
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+def coolant_type_list_view(request):
+    """
+    Renderiza la página de gestión de tipos de refrigerante.
+    """
+    logger.info(f"▶️ (coolant_type_list_view) Accediendo a gestión de coolant_types.")
+    service = _get_coolant_type_service(request)
+    
+    context = {
+        'coolant_types': service.list_coolant_types(),
+        'create_form': CoolantTypeForm(),
+        'update_form': CoolantTypeForm(prefix="update"),
+    }
+    return render(request, 'backoffice/coolant_type_list.html', context)
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def coolant_type_create_view(request):
+    """
+    Vista para procesar la creación de un nuevo tipo de refrigerante.
+    """
+    logger.info("➕ (coolant_type_create_view) POST para crear coolant_type.")
+    service = _get_coolant_type_service(request)
+    form = CoolantTypeForm(request.POST)
+
+    if form.is_valid():
+        data = form.cleaned_data
+        success = service.create_coolant_type(data)
+        if success:
+            messages.success(request, f"Tipo de refrigerante '{data['name']}' creado exitosamente. ✅")
+        else:
+            messages.error(request, "Error al crear el tipo de refrigerante. ❌")
+    else:
+        messages.error(request, f"Error de validación. {form.errors.as_text()} ❌")
+        
+    return redirect('backoffice:coolant_type_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def coolant_type_update_view(request, coolant_type_id: int):
+    """
+    Vista para procesar la actualización de un tipo de refrigerante.
+    """
+    logger.info(f"🔄 (coolant_type_update_view) POST para actualizar coolant_type: {coolant_type_id}")
+    service = _get_coolant_type_service(request)
+    form = CoolantTypeForm(request.POST, prefix="update")
+
+    if form.is_valid():
+        data = form.cleaned_data
+        success = service.update_coolant_type(coolant_type_id, data)
+        if success:
+            messages.success(request, f"Tipo de refrigerante '{data['name']}' actualizado. ✅")
+        else:
+            messages.error(request, "Error al actualizar. ❌")
+    else:
+        messages.error(request, f"Error de validación. {form.errors.as_text()} ❌")
+        
+    return redirect('backoffice:coolant_type_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["POST"])
+def coolant_type_delete_view(request, coolant_type_id: int):
+    """
+    Vista para procesar la eliminación de un tipo de refrigerante.
+    """
+    logger.info(f"🗑️ (coolant_type_delete_view) POST para eliminar coolant_type: {coolant_type_id}")
+    service = _get_coolant_type_service(request)
+    
+    success = service.delete_coolant_type(coolant_type_id)
+    if success:
+        messages.success(request, "Tipo de refrigerante eliminado exitosamente. ✅")
+    else:
+        messages.error(request, "Error al eliminar. Es posible que esté en uso. ❌")
+        
+    return redirect('backoffice:coolant_type_list')
+
+@require_supabase_login
+@require_role(BACKOFFICE_REQUIRED_ROLE)
+@require_http_methods(["GET"])
+def get_coolant_type_api(request, coolant_type_id: int):
+    """
+    Endpoint de API para obtener los datos de un tipo de refrigerante.
+    """
+    logger.info(f"📡 (get_coolant_type_api) Solicitando datos para: {coolant_type_id}")
+    service = _get_coolant_type_service(request)
+    item = service.get_coolant_type(coolant_type_id)
+    
+    if not item:
+        return HttpResponseNotFound(JsonResponse({"error": "Tipo de refrigerante no encontrado"}))
         
     return JsonResponse(item)
