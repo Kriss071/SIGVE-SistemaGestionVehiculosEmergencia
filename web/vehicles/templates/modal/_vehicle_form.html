@@ -1,157 +1,157 @@
 <div class="modal fade" id="vehicleModal" tabindex="-1" aria-labelledby="vehicleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-      <div class="modal-content">
-        
-        <form method="POST" action="{% url 'add_vehicle' %}">
-          {% csrf_token %}
-  
-          <div class="modal-header">
-            <h5 class="modal-title" id="vehicleModalLabel">Agregar Vehículo</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-          </div>
-  
-          <div class="modal-body">
-            <p class="text-muted small">Completa el formulario para agregar un nuevo vehículo.</p>
-            
-            <div class="form-floating mb-3">
-              {{ form.license_plate }}
-              <label for="{{ form.license_plate.id_for_label }}">{{ form.license_plate.label }}</label>
-            </div>
-  
-            <div class="row g-2 mb-3">
-              <div class="col-md">
-                <div class="form-floating">
-                  {{ form.fire_station_id }}
-                  <label for="{{ form.fire_station_id.id_for_label }}">{{ form.fire_station_id.label }}</label>
-                </div>
-              </div>
-              <div class="col-md">
-                <div class="form-floating">
-                  {{ form.vehicle_status_id }}
-                  <label for="{{ form.vehicle_status_id.id_for_label }}">{{ form.vehicle_status_id.label }}</label>
-                </div>
-              </div>
-            </div>
-  
-            <div class="form-floating mb-3">
-              {{ form.vehicle_type_id }}
-              <label for="{{ form.vehicle_type_id.id_for_label }}">{{ form.vehicle_type_id.label }}</label>
-            </div>
-  
-            <div class="row g-2 mb-3">
-              <div class="col-md">
-                <div class="form-floating">
-                  {{ form.brand }}
-                  <label for="{{ form.brand.id_for_label }}">{{ form.brand.label }}</label>
-                </div>
-              </div>
-              <div class="col-md">
-                <div class="form-floating">
-                  {{ form.model }}
-                  <label for="{{ form.model.id_for_label }}">{{ form.model.label }}</label>
-                </div>
-              </div>
-            </div>
-  
-            <div class="row g-2 mb-3">
-              <div class="col-md">
-                <div class="form-floating">
-                  {{ form.year }}
-                  <label for="{{ form.year.id_for_label }}">{{ form.year.label }}</label>
-                </div>
-              </div>
-              <div class="col-md">
-                <div class="form-floating">
-                  {{ form.mileage }}
-                  <label for="{{ form.mileage.id_for_label }}">{{ form.mileage.label }}</label>
-                </div>
-              </div>
-            </div>
-  
-            <div class="row g-2 mb-3">
-              <div class="col-md">
-                <div class="form-floating">
-                  {{ form.mileage_last_updated }}
-                  <label for="{{ form.mileage_last_updated.id_for_label }}">{{ form.mileage_last_updated.label }}</label>
-                </div>
-              </div>
-              <div class="col-md">
-                <div class="form-floating">
-                  {{ form.registration_date }}
-                  <label for="{{ form.registration_date.id_for_label }}">{{ form.registration_date.label }}</label>
-                </div>
-              </div>
-            </div>
-  
-            <div class="row g-2 mb-3">
-              <div class="col-md">
-                <div class="form-floating">
-                  {{ form.fuel_type_id }}
-                  <label for="{{ form.fuel_type_id.id_for_label }}">{{ form.fuel_type_id.label }}</label>
-                </div>
-              </div>
-              <div class="col-md">
-                <div class="form-floating">
-                  {{ form.transmission_type_id }}
-                  <label for="{{ form.transmission_type_id.id_for_label }}">{{ form.transmission_type_id.label }}</label>
-                </div>
-              </div>
-            </div>
-  
-            <div class="row g-2 mb-3">
-              <div class="col-md">
-                <div class="form-floating">
-                  {{ form.oil_type_id }}
-                  <label for="{{ form.oil_type_id.id_for_label }}">{{ form.oil_type_id.label }}</label>
-                </div>
-              </div>
-              <div class="col-md">
-                <div class="form-floating">
-                  {{ form.coolant_type_id }}
-                  <label for="{{ form.coolant_type_id.id_for_label }}">{{ form.coolant_type_id.label }}</label>
-                </div>
-              </div>
-            </div>
-  
-            <div class="row g-2 mb-3">
-              <div class="col-md">
-                <div class="form-floating">
-                  {{ form.engine_number }}
-                  <label for="{{ form.engine_number.id_for_label }}">{{ form.engine_number.label }}</label>
-                </div>
-              </div>
-              <div class="col-md">
-                <div class="form-floating">
-                  {{ form.vin }}
-                  <label for="{{ form.vin.id_for_label }}">{{ form.vin.label }}</label>
-                </div>
-              </div>
-            </div>
-  
-            <div class="row g-2 mb-3">
-              <div class="col-md">
-                <div class="form-floating">
-                  {{ form.oil_capacity_liters }}
-                  <label for="{{ form.oil_capacity_liters.id_for_label }}">{{ form.oil_capacity_liters.label }}</label>
-                </div>
-              </div>
-              <div class="col-md">
-                <div class="form-floating">
-                  {{ form.next_revision_date }}
-                  <label for="{{ form.next_revision_date.id_for_label }}">{{ form.next_revision_date.label }}</label>
-                </div>
-              </div>
-            </div>
-  
-          </div>
-  
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Agregar Vehículo</button>
-          </div>
-          
-        </form>
-  
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="vehicleModalLabel">Agregar Vehículo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
+
+      <div class="modal-body">
+        
+        <form method="POST" action="{% url 'add_vehicle' %}" id="addVehicleForm">
+          {% csrf_token %}
+
+          <p class="text-muted small">Completa el formulario para agregar un nuevo vehículo.</p>
+
+          <div class="form-floating mb-3">
+            {{ form.license_plate }}
+            <label for="{{ form.license_plate.id_for_label }}">{{ form.license_plate.label }}</label>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-md">
+              <div class="form-floating">
+                {{ form.fire_station_id }}
+                <label for="{{ form.fire_station_id.id_for_label }}">{{ form.fire_station_id.label }}</label>
+              </div>
+            </div>
+            <div class="col-md">
+              <div class="form-floating">
+                {{ form.vehicle_status_id }}
+                <label for="{{ form.vehicle_status_id.id_for_label }}">{{ form.vehicle_status_id.label }}</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-floating mb-3">
+            {{ form.vehicle_type_id }}
+            <label for="{{ form.vehicle_type_id.id_for_label }}">{{ form.vehicle_type_id.label }}</label>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-md">
+              <div class="form-floating">
+                {{ form.brand }}
+                <label for="{{ form.brand.id_for_label }}">{{ form.brand.label }}</label>
+              </div>
+            </div>
+            <div class="col-md">
+              <div class="form-floating">
+                {{ form.model }}
+                <label for="{{ form.model.id_for_label }}">{{ form.model.label }}</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-md">
+              <div class="form-floating">
+                {{ form.year }}
+                <label for="{{ form.year.id_for_label }}">{{ form.year.label }}</label>
+              </div>
+            </div>
+            <div class="col-md">
+              <div class="form-floating">
+                {{ form.mileage }}
+                <label for="{{ form.mileage.id_for_label }}">{{ form.mileage.label }}</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-md">
+              <div class="form-floating">
+                {{ form.mileage_last_updated }}
+                <label for="{{ form.mileage_last_updated.id_for_label }}">{{ form.mileage_last_updated.label }}</label>
+              </div>
+            </div>
+            <div class="col-md">
+              <div class="form-floating">
+                {{ form.registration_date }}
+                <label for="{{ form.registration_date.id_for_label }}">{{ form.registration_date.label }}</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-md">
+              <div class="form-floating">
+                {{ form.fuel_type_id }}
+                <label for="{{ form.fuel_type_id.id_for_label }}">{{ form.fuel_type_id.label }}</label>
+              </div>
+            </div>
+            <div class="col-md">
+              <div class="form-floating">
+                {{ form.transmission_type_id }}
+                <label for="{{ form.transmission_type_id.id_for_label }}">{{ form.transmission_type_id.label }}</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-md">
+              <div class="form-floating">
+                {{ form.oil_type_id }}
+                <label for="{{ form.oil_type_id.id_for_label }}">{{ form.oil_type_id.label }}</label>
+              </div>
+            </div>
+            <div class="col-md">
+              <div class="form-floating">
+                {{ form.coolant_type_id }}
+                <label for="{{ form.coolant_type_id.id_for_label }}">{{ form.coolant_type_id.label }}</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-md">
+              <div class="form-floating">
+                {{ form.engine_number }}
+                <label for="{{ form.engine_number.id_for_label }}">{{ form.engine_number.label }}</label>
+              </div>
+            </div>
+            <div class="col-md">
+              <div class="form-floating">
+                {{ form.vin }}
+                <label for="{{ form.vin.id_for_label }}">{{ form.vin.label }}</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-md">
+              <div class="form-floating">
+                {{ form.oil_capacity_liters }}
+                <label for="{{ form.oil_capacity_liters.id_for_label }}">{{ form.oil_capacity_liters.label }}</label>
+              </div>
+            </div>
+            <div class="col-md">
+              <div class="form-floating">
+                {{ form.next_revision_date }}
+                <label for="{{ form.next_revision_date.id_for_label }}">{{ form.next_revision_date.label }}</label>
+              </div>
+            </div>
+          </div>
+
+        </form>
+        </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary" form="addVehicleForm">Agregar Vehículo</button>
+      </div>
+
     </div>
   </div>
+</div>

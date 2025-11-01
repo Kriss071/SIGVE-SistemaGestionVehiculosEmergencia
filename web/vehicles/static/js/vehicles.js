@@ -18,13 +18,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Manejo de Modales
 
-    const creationModalInstance = UI.modalCreacion 
-        ? new bootstrap.Modal(UI.modalCreacion) 
+    const creationModalInstance = UI.modalCreacion
+        ? new bootstrap.Modal(UI.modalCreacion)
         : null;
-        
-    const detailModalInstance = UI.modalDetalle 
-        ? new bootstrap.Modal(UI.modalDetalle) 
+
+    const detailModalInstance = UI.modalDetalle
+        ? new bootstrap.Modal(UI.modalDetalle)
         : null;
+
+    UI.vehicleList.addEventListener('show.bs.dropdown', (event) => {
+        const card = event.target.closest('.vehicle-card');
+        if (card) {
+            // Eleva la tarjeta para que su dropdown se muestre por encima de las otras
+            card.style.position = 'relative'; // Necesario para que z-index funcione
+            card.style.zIndex = '100';        // Un z-index alto
+        }
+    });
+
+    // Escucha cuando CUALQUIER dropdown en la lista se está cerrando
+    UI.vehicleList.addEventListener('hide.bs.dropdown', (event) => {
+        const card = event.target.closest('.vehicle-card');
+        if (card) {
+            // Devuelve la tarjeta a su estado normal
+            card.style.zIndex = 'auto';
+        }
+    });
 
     // Manejo de Toast
 
@@ -55,30 +73,39 @@ document.addEventListener("DOMContentLoaded", () => {
         const vehicleHTML = vehicles.map(vehicle => `
             <div class="card mb-3 vehicle-card" data-license-plate="${vehicle.license_plate}">
                 <div class="row g-0">
-                    <!-- Imagen del vehículo -->
                     <div class="col-md-2 d-flex align-items-center justify-content-center p-2">
                         <img src="${vehicle.imagen_url || '/static/img/img_not_found.jpg'}" 
                              class="img-fluid rounded" 
                              alt="${vehicle.brand} ${vehicle.model}">
                     </div>
-    
-                    <!-- Información principal -->
-                    <div class="col-md-9">
-                        <div class="card-body">
-                            <h5 class="card-title mb-1">${vehicle.license_plate}</h5>
-                            <p class="card-text mb-0"><small class="text-muted">${vehicle.brand} - ${vehicle.model} (${vehicle.year})</small></p>
-                            <p class="card-text">
-                                ${vehicle.vehicle_type_name ? `<span class="badge bg-secondary">${vehicle.vehicle_type_name}</span>` : ''}
-                                ${vehicle.vehicle_status_name ? `<span class="badge bg-success">${vehicle.vehicle_status_name}</span>` : ''}
-                            </p>
+                    <div class="col-md-10">
+                        
+                        <div class="card-body d-flex justify-content-between align-items-start">
+                            
+                            <div class="vehicle-card-content">
+                                <h5 class="card-title mb-1">${vehicle.license_plate}</h5>
+                                <p class="card-text mb-0"><small class="text-muted">${vehicle.brand} - ${vehicle.model} (${vehicle.year})</small></p>
+                                <p class="card-text">
+                                    ${vehicle.vehicle_type_name ? `<span class="badge bg-secondary">${vehicle.vehicle_type_name}</span>` : ''}
+                                    ${vehicle.vehicle_status_name ? `<span class="badge bg-success">${vehicle.vehicle_status_name}</span>` : ''}
+                                </p>
+                            </div>
+                            
+                            <div class="dropdown">
+                                <a href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" class="text-secondary">
+                                    <i class="bi bi-three-dots-vertical fs-5"></i>
+                                </a>
+                              
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                  <li><a class="dropdown-item" href="#"><i class="bi bi-pencil-fill me-2"></i> Editar</a></li>
+                                  <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-trash-fill me-2"></i> Borrar</a></li>
+                                </ul>
+                            </div>
+
                         </div>
                     </div>
-    
-                    <!-- Icono de acciones -->
-                    <div class="col-md-1 d-flex align-items-center justify-content-center">
-                        <i class="bi bi-three-dots-vertical"></i>
+
                     </div>
-                </div>
             </div>
         `).join('');
 
@@ -228,7 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
     //Busca vehículos en el servidor.
     const fetchVehicles = async (query = "") => {
         UI.vehicleList.innerHTML = "";
-        UI.loader.classList.remove("hidden");
+        UI.loader.classList.remove("d-none");
 
         try {
             const res = await fetch(`/vehiculos/search/?q=${encodeURIComponent(query)}`);
@@ -240,7 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Error al buscar vehículos:", err);
             renderVehicles([]);
         } finally {
-            UI.loader.classList.add("hidden");
+            UI.loader.classList.add("d-none");
         }
     };
 
@@ -257,6 +284,11 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const handleVehicleListClick = async (e) => {
+        const dropdown = e.target.closest(".dropdown");
+        if (dropdown) {
+            return;
+        }
+
         const card = e.target.closest(".vehicle-card");
         if (!card) return;
 
@@ -265,9 +297,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         detailModalInstance?.show();
         UI.vehicleDetailContent.innerHTML = `
-            <div class="modal-loader">
-                <div class="spinner"></div>
-                <p>Cargando detalles...</p>
+            <div class="d-flex justify-content-center align-items-center" style="min-height: 200px;">
+                <div class="spinner-border text-danger" role="status">
+                    <span class="visually-hidden">Cargando detalles...</span>
+                </div>
             </div>
         `;
 
@@ -281,6 +314,7 @@ document.addEventListener("DOMContentLoaded", () => {
             renderVehicleDetail(vehicle);
         } catch (err) {
             console.error("Error cargando detalle del vehículo:", err);
+            UI.vehicleDetailContent.innerHTML = `<div class="alert alert-danger">No se pudo cargar el detalle del vehículo.</div>`;
             alert("No se pudo cargar el detalle del vehículo. Inténtalo nuevamente.");
         }
     };
