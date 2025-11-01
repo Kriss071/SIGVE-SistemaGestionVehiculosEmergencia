@@ -65,3 +65,16 @@ class VehicleService(ABC):
         """
         pass
     
+    @abstractmethod
+    def delete_vehicle(self, license_plate: str) -> bool:
+        """
+        Método abstracto para eliminar un vehículo por su patente.
+
+        Args:
+            license_plate: La patente (matrícula) del vehículo a eliminar.
+
+        Returns:
+            True si la eliminación fue exitosa, False en caso contrario.
+        """
+        pass
+    

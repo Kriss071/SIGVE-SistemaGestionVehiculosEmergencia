@@ -4,6 +4,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const UI = {
         modalCreacion: document.getElementById("vehicleModal"),
         modalDetalle: document.getElementById("vehicleDetailModal"),
+        modalConfirmacion: document.getElementById("confirmationModal"),
+        modalMensaje: document.getElementById("messageModal"),
         btnAddVehicle: document.getElementById("btnAddVehicle"),
         searchForm: document.getElementById("vehicleSearchForm"),
         searchInput: document.getElementById("vehicleSearchInput"),
@@ -24,6 +26,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const detailModalInstance = UI.modalDetalle
         ? new bootstrap.Modal(UI.modalDetalle)
+        : null;
+
+    const confirmationModalInstance = UI.modalConfirmacion
+        ? new bootstrap.Modal(UI.modalConfirmacion)
+        : null;
+
+    const messageModalInstance = UI.modalMensaje
+        ? new bootstrap.Modal(UI.modalMensaje)
         : null;
 
     UI.vehicleList.addEventListener('show.bs.dropdown', (event) => {
@@ -59,6 +69,87 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
 
+    // Manejo de Modales de Mensajes
+
+    /**
+     * Muestra un modal de confirmación y retorna una promesa que se resuelve con true/false
+     * @param {string} title - Título del modal
+     * @param {string} message - Mensaje del modal
+     * @returns {Promise<boolean>} - true si se confirma, false si se cancela
+     */
+    const showConfirmation = (title, message) => {
+        return new Promise((resolve) => {
+            const titleElement = document.getElementById('confirmationModalTitle');
+            const bodyElement = document.getElementById('confirmationModalBody');
+            const confirmBtn = document.getElementById('confirmationModalConfirmBtn');
+
+            if (titleElement) titleElement.textContent = title;
+            if (bodyElement) bodyElement.textContent = message;
+
+            // Remover listeners anteriores
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+            // Agregar nuevo listener
+            newConfirmBtn.addEventListener('click', () => {
+                confirmationModalInstance?.hide();
+                resolve(true);
+            }, { once: true });
+
+            // Manejar el cierre del modal sin confirmar
+            const handleCancel = () => {
+                resolve(false);
+                UI.modalConfirmacion.removeEventListener('hidden.bs.modal', handleCancel);
+            };
+            UI.modalConfirmacion.addEventListener('hidden.bs.modal', handleCancel, { once: true });
+
+            confirmationModalInstance?.show();
+        });
+    };
+
+    /**
+     * Muestra un modal de mensaje (éxito o error)
+     * @param {string} title - Título del modal
+     * @param {string} message - Mensaje del modal
+     * @param {string} type - Tipo de mensaje: 'success', 'error', 'info', 'warning'
+     */
+    const showMessage = (title, message, type = 'info') => {
+        const titleElement = document.getElementById('messageModalTitle');
+        const bodyElement = document.getElementById('messageModalBody');
+        const iconElement = document.getElementById('messageModalIcon');
+        const headerElement = document.getElementById('messageModalHeader');
+
+        if (titleElement) titleElement.textContent = title;
+        if (bodyElement) bodyElement.textContent = message;
+
+        // Configurar icono y colores según el tipo
+        if (iconElement && headerElement) {
+            // Limpiar clases anteriores
+            iconElement.className = 'bi me-2';
+            headerElement.className = 'modal-header';
+
+            switch (type) {
+                case 'success':
+                    iconElement.classList.add('bi-check-circle-fill', 'text-success');
+                    headerElement.classList.add('bg-success', 'bg-opacity-10', 'border-success');
+                    break;
+                case 'error':
+                    iconElement.classList.add('bi-x-circle-fill', 'text-danger');
+                    headerElement.classList.add('bg-danger', 'bg-opacity-10', 'border-danger');
+                    break;
+                case 'warning':
+                    iconElement.classList.add('bi-exclamation-triangle-fill', 'text-warning');
+                    headerElement.classList.add('bg-warning', 'bg-opacity-10', 'border-warning');
+                    break;
+                default: // info
+                    iconElement.classList.add('bi-info-circle-fill', 'text-info');
+                    headerElement.classList.add('bg-info', 'bg-opacity-10', 'border-info');
+            }
+        }
+
+        messageModalInstance?.show();
+    };
+
     // Renderizado
 
     // Renderiza la lista de vehículos en el DOM.
@@ -69,6 +160,10 @@ document.addEventListener("DOMContentLoaded", () => {
             UI.vehicleList.innerHTML = `<div class="alert alert-info">No hay vehículos registrados.</div>`;
             return;
         }
+
+        // Obtener el rol del usuario del atributo data
+        const userRole = document.querySelector('[data-user-role]')?.dataset.userRole;
+        const isAdmin = userRole === 'Administrador';
 
         const vehicleHTML = vehicles.map(vehicle => `
             <div class="card mb-3 vehicle-card" data-license-plate="${vehicle.license_plate}">
@@ -98,7 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
                               
                                 <ul class="dropdown-menu dropdown-menu-end">
                                   <li><a class="dropdown-item" href="#"><i class="bi bi-pencil-fill me-2"></i> Editar</a></li>
-                                  <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-trash-fill me-2"></i> Borrar</a></li>
+                                  ${isAdmin ? `<li><a class="dropdown-item text-danger delete-vehicle-btn" href="#" data-license-plate="${vehicle.license_plate}"><i class="bi bi-trash-fill me-2"></i> Borrar</a></li>` : ''}
                                 </ul>
                             </div>
 
@@ -248,6 +343,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             </fieldset>
         </form>
+        <input type="hidden" id="detail_current_license_plate" value="${vehicle.license_plate || ''}">
     `;
     };
 
@@ -263,11 +359,108 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const data = await res.json();
             renderVehicles(data.vehicles || []);
+            // Re-vincular eventos de eliminación después de renderizar
+            attachDeleteEventListeners();
         } catch (err) {
             console.error("Error al buscar vehículos:", err);
             renderVehicles([]);
         } finally {
             UI.loader.classList.add("d-none");
+        }
+    };
+
+    // Función para eliminar un vehículo
+    const deleteVehicle = async (licensePlate) => {
+        if (!licensePlate) {
+            showMessage('Error', 'No se pudo obtener la patente del vehículo.', 'error');
+            return false;
+        }
+
+        // Confirmar eliminación
+        const confirmMessage = `¿Estás seguro de que deseas eliminar el vehículo con patente "${licensePlate}"?\n\nEsta acción no se puede deshacer.`;
+        const confirmed = await showConfirmation('Eliminar Vehículo', confirmMessage);
+        
+        if (!confirmed) {
+            return false;
+        }
+
+        try {
+            // Enviar petición de eliminación usando POST (más compatible que DELETE)
+            const formData = new FormData();
+            formData.append('license_plate', licensePlate);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]')?.value || '');
+
+            const res = await fetch('/vehiculos/delete/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                }
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({ message: 'Error desconocido' }));
+                throw new Error(errorData.message || 'Error al eliminar el vehículo');
+            }
+
+            const data = await res.json();
+            
+            if (data.success) {
+                // Cerrar el modal de detalle si está abierto
+                detailModalInstance?.hide();
+                
+                // Recargar la lista de vehículos
+                fetchVehicles(UI.searchInput.value.trim());
+                
+                // Mostrar mensaje de éxito
+                showMessage('Éxito', data.message || 'Vehículo eliminado correctamente', 'success');
+                return true;
+            } else {
+                throw new Error(data.message || 'No se pudo eliminar el vehículo');
+            }
+        } catch (err) {
+            console.error("Error al eliminar vehículo:", err);
+            showMessage('Error', `Error al eliminar el vehículo: ${err.message}`, 'error');
+            return false;
+        }
+    };
+
+    // Vincular eventos de eliminación a los botones del dropdown
+    const attachDeleteEventListeners = () => {
+        // Eliminar listeners anteriores para evitar duplicados
+        document.querySelectorAll('.delete-vehicle-btn').forEach(btn => {
+            btn.removeEventListener('click', handleDeleteClick);
+        });
+
+        // Agregar nuevos listeners
+        document.querySelectorAll('.delete-vehicle-btn').forEach(btn => {
+            btn.addEventListener('click', handleDeleteClick);
+        });
+    };
+
+    // Manejador de clic en botón eliminar del dropdown
+    const handleDeleteClick = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const licensePlate = e.currentTarget.dataset.licensePlate || e.currentTarget.dataset.license_plate;
+        if (licensePlate) {
+            await deleteVehicle(licensePlate);
+        }
+    };
+
+    // Manejador de clic en botón eliminar del modal
+    const handleModalDeleteClick = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const licensePlateInput = document.getElementById('detail_current_license_plate');
+        const licensePlate = licensePlateInput?.value;
+        
+        if (licensePlate) {
+            await deleteVehicle(licensePlate);
+        } else {
+            showMessage('Error', 'No se pudo obtener la patente del vehículo.', 'error');
         }
     };
 
@@ -284,6 +477,11 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const handleVehicleListClick = async (e) => {
+        // Ignorar clics en botones de eliminar
+        if (e.target.closest('.delete-vehicle-btn')) {
+            return;
+        }
+
         const dropdown = e.target.closest(".dropdown");
         if (dropdown) {
             return;
@@ -312,10 +510,24 @@ document.addEventListener("DOMContentLoaded", () => {
             const vehicle = data.vehicle || data;
 
             renderVehicleDetail(vehicle);
+            
+            // Mostrar u ocultar botón eliminar según el rol del usuario
+            const modalDeleteBtn = document.getElementById('modalDeleteVehicleBtn');
+            if (modalDeleteBtn) {
+                // Obtener el rol del usuario del atributo data
+                const userRole = document.querySelector('[data-user-role]')?.dataset.userRole;
+                if (userRole === 'Administrador') {
+                    modalDeleteBtn.style.display = 'inline-block';
+                    modalDeleteBtn.removeEventListener('click', handleModalDeleteClick);
+                    modalDeleteBtn.addEventListener('click', handleModalDeleteClick);
+                } else {
+                    modalDeleteBtn.style.display = 'none';
+                }
+            }
         } catch (err) {
             console.error("Error cargando detalle del vehículo:", err);
             UI.vehicleDetailContent.innerHTML = `<div class="alert alert-danger">No se pudo cargar el detalle del vehículo.</div>`;
-            alert("No se pudo cargar el detalle del vehículo. Inténtalo nuevamente.");
+            showMessage('Error', 'No se pudo cargar el detalle del vehículo. Inténtalo nuevamente.', 'error');
         }
     };
 
@@ -324,6 +536,9 @@ document.addEventListener("DOMContentLoaded", () => {
     UI.searchForm.addEventListener("submit", handleSearchSubmit);
     UI.searchInput.addEventListener("input", handleSearchInput);
     UI.vehicleList.addEventListener("click", handleVehicleListClick);
+
+    // Vincular eventos de eliminación inicialmente (para vehículos renderizados en el servidor)
+    attachDeleteEventListeners();
 
     // Inicialización de Toast
     showToasts();

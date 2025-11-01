@@ -204,3 +204,51 @@ def vehicle_detail_api(request):
 
     logger.info(f"✅ (vehicle_detail_api) Detalles encontrados para: {license_plate}")
     return JsonResponse({"vehicle": vehicle})
+
+
+@require_supabase_login
+@require_role("Administrador")
+@require_http_methods(["DELETE", "POST"])
+def delete_vehicle_api(request):
+    """
+    Endpoint de API para eliminar un vehículo.
+
+    Recibe el parámetro 'license_plate' mediante POST o DELETE y elimina
+    el vehículo de la base de datos. Solo los administradores pueden
+    realizar esta acción.
+
+    Args:
+        request: El objeto HttpRequest de Django.
+
+    Returns:
+        JsonResponse: Un objeto JSON con el resultado de la operación.
+        HttpResponseBadRequest: Si falta el parámetro 'license_plate'.
+        HttpResponseNotFound: Si no se encuentra el vehículo.
+    """
+    # Obtener license_plate de POST o del cuerpo de DELETE
+    if request.method == "POST":
+        license_plate = request.POST.get("license_plate") or request.GET.get("license_plate")
+    else:  # DELETE
+        import json
+        try:
+            body = json.loads(request.body) if request.body else {}
+            license_plate = body.get("license_plate") or request.GET.get("license_plate")
+        except json.JSONDecodeError:
+            license_plate = request.GET.get("license_plate")
+
+    if not license_plate:
+        logger.warning("🚫 (delete_vehicle_api) Petición sin el parámetro 'license_plate'.")
+        return HttpResponseBadRequest("Falta el parámetro 'license_plate'")
+
+    logger.info(f"🗑️ (delete_vehicle_api) Eliminando vehículo con patente: {license_plate}")
+    token = request.session.get("sb_access_token")
+    refresh_token = request.session.get("sb_refresh_token")
+    service = SupabaseVehicleService(token, refresh_token)
+
+    success = service.delete_vehicle(license_plate)
+    if not success:
+        logger.warning(f"❌ (delete_vehicle_api) No se pudo eliminar el vehículo con patente: {license_plate}")
+        return HttpResponseNotFound("Vehículo no encontrado o no se pudo eliminar")
+
+    logger.info(f"✅ (delete_vehicle_api) Vehículo eliminado exitosamente: {license_plate}")
+    return JsonResponse({"success": True, "message": f"Vehículo '{license_plate}' eliminado correctamente"})

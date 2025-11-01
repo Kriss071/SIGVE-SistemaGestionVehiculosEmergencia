@@ -368,3 +368,48 @@ class SupabaseVehicleService(BaseService, VehicleService):
             # Capturar errores durante la obtención del vehículo
             logger.error(f"❌ Error al obtener vehículo '{license_plate}': {e}", exc_info=True)
             return None # Devolver None en caso de error
+
+    def delete_vehicle(self, license_plate: str) -> bool:
+        """
+        Elimina un vehículo de la base de datos Supabase por su patente.
+
+        Realiza una eliminación directa en la tabla 'vehicle' usando la patente
+        como identificador. Verifica que el vehículo exista antes de intentar eliminarlo.
+
+        Args:
+            license_plate: La patente (string) del vehículo a eliminar.
+
+        Returns:
+            True si la eliminación fue exitosa, False si el vehículo no existe
+            o si ocurre un error durante la eliminación.
+        """
+        try:
+            logger.info(f"🗑️ Intentando eliminar vehículo con patente: '{license_plate}'")
+            
+            # Verificar que el vehículo existe antes de eliminarlo
+            vehicle = self.get_vehicle(license_plate)
+            if not vehicle:
+                logger.warning(f"⚠️ No se puede eliminar: vehículo con patente '{license_plate}' no encontrado.")
+                return False
+
+            # Realizar la eliminación en Supabase
+            response = (
+                self.client.table("vehicle")
+                .delete()
+                .eq("license_plate", license_plate)
+                .execute()
+            )
+
+            # Verificar que la eliminación fue exitosa
+            # Supabase devuelve los datos eliminados en response.data
+            if response.data and len(response.data) > 0:
+                logger.info(f"✅ Vehículo eliminado exitosamente: {license_plate}")
+                return True
+            else:
+                logger.warning(f"⚠️ La eliminación no devolvió datos para la patente: '{license_plate}'")
+                return False
+
+        except Exception as e:
+            # Capturar errores durante la eliminación (ej. errores de red, constraints de BD)
+            logger.error(f"❌ Error al eliminar vehículo '{license_plate}': {e}", exc_info=True)
+            return False
