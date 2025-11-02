@@ -17,6 +17,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const TYPING_DELAY = 400;
     let typingTimer;
+    
+    // Estado del modal de detalle
+    let isEditMode = false;
+    let originalVehicleData = null;
+    let currentLicensePlate = null;
+    let pendingEditMode = false; // Para saber si debe entrar en modo edición después de cargar
 
     // Manejo de Modales
 
@@ -35,6 +41,34 @@ document.addEventListener("DOMContentLoaded", () => {
     const messageModalInstance = UI.modalMensaje
         ? new bootstrap.Modal(UI.modalMensaje)
         : null;
+
+    // Función para ocultar todos los botones del modal (durante carga)
+    const hideModalButtons = () => {
+        const viewModeButtons = document.getElementById('viewModeButtons');
+        const editModeButtons = document.getElementById('editModeButtons');
+        if (viewModeButtons) viewModeButtons.style.display = 'none';
+        if (editModeButtons) editModeButtons.style.display = 'none';
+    };
+
+    // Resetear estado cuando se cierra el modal de detalle
+    if (UI.modalDetalle) {
+        UI.modalDetalle.addEventListener('hidden.bs.modal', () => {
+            isEditMode = false;
+            pendingEditMode = false;
+            originalVehicleData = null;
+            currentLicensePlate = null;
+            // Ocultar botones al cerrar
+            hideModalButtons();
+        });
+        
+        // También resetear cuando se empieza a abrir el modal
+        UI.modalDetalle.addEventListener('show.bs.modal', () => {
+            // Si no hay un pendingEditMode activo, resetear el modo
+            if (!pendingEditMode) {
+                isEditMode = false;
+            }
+        });
+    }
 
     UI.vehicleList.addEventListener('show.bs.dropdown', (event) => {
         const card = event.target.closest('.vehicle-card');
@@ -192,7 +226,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 </a>
                               
                                 <ul class="dropdown-menu dropdown-menu-end">
-                                  <li><a class="dropdown-item" href="#"><i class="bi bi-pencil-fill me-2"></i> Editar</a></li>
+                                  ${isAdmin ? `<li><a class="dropdown-item edit-vehicle-btn" href="#" data-license-plate="${vehicle.license_plate}"><i class="bi bi-pencil-fill me-2"></i> Editar</a></li>` : ''}
                                   ${isAdmin ? `<li><a class="dropdown-item text-danger delete-vehicle-btn" href="#" data-license-plate="${vehicle.license_plate}"><i class="bi bi-trash-fill me-2"></i> Borrar</a></li>` : ''}
                                 </ul>
                             </div>
@@ -208,8 +242,135 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
 
+    // Función para actualizar los botones del modal según el modo
+    const updateModalButtons = () => {
+        const viewModeButtons = document.getElementById('viewModeButtons');
+        const editModeButtons = document.getElementById('editModeButtons');
+        const modalDeleteBtn = document.getElementById('modalDeleteVehicleBtn');
+        const modalEditBtn = document.getElementById('modalEditVehicleBtn');
+        
+        const userRole = document.querySelector('[data-user-role]')?.dataset.userRole;
+        const isAdmin = userRole === 'Administrador';
+
+        if (isEditMode) {
+            // Modo edición: mostrar botones Cancelar y Guardar
+            if (viewModeButtons) viewModeButtons.style.display = 'none';
+            if (editModeButtons) editModeButtons.style.display = 'block';
+        } else {
+            // Modo visualización: mostrar botones Eliminar y Editar
+            if (viewModeButtons) viewModeButtons.style.display = 'block';
+            if (editModeButtons) editModeButtons.style.display = 'none';
+            
+            // Mostrar botones solo si es administrador
+            if (modalDeleteBtn) modalDeleteBtn.style.display = isAdmin ? 'inline-block' : 'none';
+            if (modalEditBtn) modalEditBtn.style.display = isAdmin ? 'inline-block' : 'none';
+        }
+    };
+
+    // Función para habilitar/deshabilitar el formulario
+    const toggleFormEdit = (enable) => {
+        const fieldset = document.getElementById('vehicleDetailFieldset');
+        if (fieldset) {
+            fieldset.disabled = !enable;
+        }
+    };
+
+    // Función para entrar en modo edición
+    const enterEditMode = () => {
+        isEditMode = true;
+        toggleFormEdit(true);
+        updateModalButtons();
+    };
+
+    // Función para salir del modo edición
+    const exitEditMode = () => {
+        isEditMode = false;
+        toggleFormEdit(false);
+        updateModalButtons();
+    };
+
+    // Función para cancelar edición y restaurar datos originales
+    const cancelEdit = () => {
+        if (originalVehicleData) {
+            renderVehicleDetail(originalVehicleData, false);
+            exitEditMode();
+            // Vincular eventos nuevamente
+            attachModalEventListeners();
+        }
+    };
+
+    // Función para recolectar datos del formulario
+    const collectFormData = () => {
+        return {
+            license_plate: currentLicensePlate,
+            brand: document.getElementById('detail_brand')?.value || '',
+            model: document.getElementById('detail_model')?.value || '',
+            year: parseInt(document.getElementById('detail_year')?.value) || null,
+            mileage: parseInt(document.getElementById('detail_mileage')?.value) || null,
+            engine_number: document.getElementById('detail_engine_number')?.value || '',
+            vin: document.getElementById('detail_vin')?.value || '',
+            oil_capacity_liters: parseFloat(document.getElementById('detail_oil_capacity')?.value) || null,
+            mileage_last_updated: document.getElementById('detail_mileage_last_updated')?.value || '',
+            registration_date: document.getElementById('detail_registration_date')?.value || '',
+            next_revision_date: document.getElementById('detail_next_revision_date')?.value || ''
+        };
+    };
+
+    // Función para guardar cambios
+    const saveVehicleChanges = async () => {
+        if (!currentLicensePlate) {
+            showMessage('Error', 'No se pudo identificar el vehículo a actualizar.', 'error');
+            return;
+        }
+
+        const formData = collectFormData();
+
+        try {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+            const res = await fetch('/vehiculos/update/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({ message: 'Error desconocido' }));
+                throw new Error(errorData.message || 'Error al actualizar el vehículo');
+            }
+
+            const data = await res.json();
+
+            if (data.success) {
+                // Actualizar datos originales con los nuevos
+                originalVehicleData = data.vehicle;
+                
+                // Salir del modo edición
+                exitEditMode();
+                
+                // Recargar los detalles con los datos actualizados
+                renderVehicleDetail(data.vehicle, false);
+                attachModalEventListeners();
+                
+                // Recargar la lista de vehículos
+                fetchVehicles(UI.searchInput.value.trim());
+                
+                // Mostrar mensaje de éxito
+                showMessage('Éxito', data.message || 'Vehículo actualizado correctamente', 'success');
+            } else {
+                throw new Error(data.message || 'No se pudo actualizar el vehículo');
+            }
+        } catch (err) {
+            console.error("Error al actualizar vehículo:", err);
+            showMessage('Error', `Error al actualizar el vehículo: ${err.message}`, 'error');
+        }
+    };
+
     // Rellena el contenido del modal de detalle del vehículo.
-    const renderVehicleDetail = (vehicle) => {
+    const renderVehicleDetail = (vehicle, enterEditAfterRender = false) => {
         UI.vehicleDetailContent.innerHTML = `
         <div class="text-center mb-3">
             <img src="${vehicle.imagen_url || '/static/img/img_not_found.jpg'}" 
@@ -345,6 +506,18 @@ document.addEventListener("DOMContentLoaded", () => {
         </form>
         <input type="hidden" id="detail_current_license_plate" value="${vehicle.license_plate || ''}">
     `;
+        
+        // Actualizar estado
+        currentLicensePlate = vehicle.license_plate;
+        originalVehicleData = vehicle;
+        
+        // Si debe entrar en modo edición después de renderizar
+        if (enterEditAfterRender || pendingEditMode) {
+            isEditMode = false; // Resetear antes de entrar al modo edición
+            pendingEditMode = false;
+        } else {
+            isEditMode = false;
+        }
     };
 
 
@@ -425,7 +598,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // Vincular eventos de eliminación a los botones del dropdown
+    // Vincular eventos de eliminación y edición a los botones del dropdown
     const attachDeleteEventListeners = () => {
         // Eliminar listeners anteriores para evitar duplicados
         document.querySelectorAll('.delete-vehicle-btn').forEach(btn => {
@@ -435,6 +608,12 @@ document.addEventListener("DOMContentLoaded", () => {
         // Agregar nuevos listeners
         document.querySelectorAll('.delete-vehicle-btn').forEach(btn => {
             btn.addEventListener('click', handleDeleteClick);
+        });
+
+        // Vincular eventos de edición
+        document.querySelectorAll('.edit-vehicle-btn').forEach(btn => {
+            btn.removeEventListener('click', handleEditClick);
+            btn.addEventListener('click', handleEditClick);
         });
     };
 
@@ -464,36 +643,44 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // Manejo de Eventos
-    const handleSearchSubmit = (e) => {
+    // Manejador de clic en botón editar del modal
+    const handleModalEditClick = (e) => {
         e.preventDefault();
-        clearTimeout(typingTimer);
-        fetchVehicles(UI.searchInput.value.trim());
+        e.stopPropagation();
+        enterEditMode();
     };
 
-    const handleSearchInput = () => {
-        clearTimeout(typingTimer);
-        typingTimer = setTimeout(() => fetchVehicles(UI.searchInput.value.trim()), TYPING_DELAY);
+    // Manejador de clic en botón cancelar edición
+    const handleCancelEditClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        cancelEdit();
     };
 
-    const handleVehicleListClick = async (e) => {
-        // Ignorar clics en botones de eliminar
-        if (e.target.closest('.delete-vehicle-btn')) {
-            return;
-        }
+    // Manejador de clic en botón guardar cambios
+    const handleSaveVehicleClick = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        await saveVehicleChanges();
+    };
 
-        const dropdown = e.target.closest(".dropdown");
-        if (dropdown) {
-            return;
-        }
+    // Manejador de clic en botón editar del dropdown
+    const handleEditClick = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const licensePlate = e.currentTarget.dataset.licensePlate || e.currentTarget.dataset.license_plate;
+        if (!licensePlate) return;
 
-        const card = e.target.closest(".vehicle-card");
-        if (!card) return;
+        // Marcar que debe entrar en modo edición después de cargar
+        pendingEditMode = true;
 
-        // Obtener la patente del nuevo atributo data
-        const licensePlate = card.dataset.licensePlate || card.dataset.license_plate;
-
+        // Abrir el modal de detalle
         detailModalInstance?.show();
+        
+        // Ocultar botones mientras carga
+        hideModalButtons();
+        
         UI.vehicleDetailContent.innerHTML = `
             <div class="d-flex justify-content-center align-items-center" style="min-height: 200px;">
                 <div class="spinner-border text-danger" role="status">
@@ -509,25 +696,112 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await res.json();
             const vehicle = data.vehicle || data;
 
-            renderVehicleDetail(vehicle);
+            // Renderizar con la bandera de entrar en modo edición
+            renderVehicleDetail(vehicle, true);
+            attachModalEventListeners();
             
-            // Mostrar u ocultar botón eliminar según el rol del usuario
-            const modalDeleteBtn = document.getElementById('modalDeleteVehicleBtn');
-            if (modalDeleteBtn) {
-                // Obtener el rol del usuario del atributo data
-                const userRole = document.querySelector('[data-user-role]')?.dataset.userRole;
-                if (userRole === 'Administrador') {
-                    modalDeleteBtn.style.display = 'inline-block';
-                    modalDeleteBtn.removeEventListener('click', handleModalDeleteClick);
-                    modalDeleteBtn.addEventListener('click', handleModalDeleteClick);
-                } else {
-                    modalDeleteBtn.style.display = 'none';
-                }
-            }
+            // Entrar directamente en modo edición
+            enterEditMode();
         } catch (err) {
             console.error("Error cargando detalle del vehículo:", err);
             UI.vehicleDetailContent.innerHTML = `<div class="alert alert-danger">No se pudo cargar el detalle del vehículo.</div>`;
             showMessage('Error', 'No se pudo cargar el detalle del vehículo. Inténtalo nuevamente.', 'error');
+            pendingEditMode = false; // Resetear en caso de error
+            updateModalButtons(); // Actualizar botones después de error
+        }
+    };
+
+    // Función para vincular todos los eventos del modal
+    const attachModalEventListeners = () => {
+        const modalDeleteBtn = document.getElementById('modalDeleteVehicleBtn');
+        const modalEditBtn = document.getElementById('modalEditVehicleBtn');
+        const modalCancelBtn = document.getElementById('modalCancelEditBtn');
+        const modalSaveBtn = document.getElementById('modalSaveVehicleBtn');
+
+        if (modalDeleteBtn) {
+            modalDeleteBtn.removeEventListener('click', handleModalDeleteClick);
+            modalDeleteBtn.addEventListener('click', handleModalDeleteClick);
+        }
+
+        if (modalEditBtn) {
+            modalEditBtn.removeEventListener('click', handleModalEditClick);
+            modalEditBtn.addEventListener('click', handleModalEditClick);
+        }
+
+        if (modalCancelBtn) {
+            modalCancelBtn.removeEventListener('click', handleCancelEditClick);
+            modalCancelBtn.addEventListener('click', handleCancelEditClick);
+        }
+
+        if (modalSaveBtn) {
+            modalSaveBtn.removeEventListener('click', handleSaveVehicleClick);
+            modalSaveBtn.addEventListener('click', handleSaveVehicleClick);
+        }
+
+        // Actualizar visibilidad de botones
+        updateModalButtons();
+    };
+
+    // Manejo de Eventos
+    const handleSearchSubmit = (e) => {
+        e.preventDefault();
+        clearTimeout(typingTimer);
+        fetchVehicles(UI.searchInput.value.trim());
+    };
+
+    const handleSearchInput = () => {
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => fetchVehicles(UI.searchInput.value.trim()), TYPING_DELAY);
+    };
+
+    const handleVehicleListClick = async (e) => {
+        // Ignorar clics en botones de eliminar o editar
+        if (e.target.closest('.delete-vehicle-btn') || e.target.closest('.edit-vehicle-btn')) {
+            return;
+        }
+
+        const dropdown = e.target.closest(".dropdown");
+        if (dropdown) {
+            return;
+        }
+
+        const card = e.target.closest(".vehicle-card");
+        if (!card) return;
+
+        // Obtener la patente del nuevo atributo data
+        const licensePlate = card.dataset.licensePlate || card.dataset.license_plate;
+
+        // Asegurarse de no estar en modo edición pendiente
+        pendingEditMode = false;
+        isEditMode = false; // Resetear explícitamente
+
+        detailModalInstance?.show();
+        
+        // Ocultar botones mientras carga
+        hideModalButtons();
+        
+        UI.vehicleDetailContent.innerHTML = `
+            <div class="d-flex justify-content-center align-items-center" style="min-height: 200px;">
+                <div class="spinner-border text-danger" role="status">
+                    <span class="visually-hidden">Cargando detalles...</span>
+                </div>
+            </div>
+        `;
+
+        try {
+            const res = await fetch(`/vehiculos/detail/?license_plate=${encodeURIComponent(licensePlate)}`);
+            if (!res.ok) throw new Error("No se pudo obtener la información del vehículo");
+
+            const data = await res.json();
+            const vehicle = data.vehicle || data;
+
+            renderVehicleDetail(vehicle, false);
+            attachModalEventListeners();
+        } catch (err) {
+            console.error("Error cargando detalle del vehículo:", err);
+            UI.vehicleDetailContent.innerHTML = `<div class="alert alert-danger">No se pudo cargar el detalle del vehículo.</div>`;
+            showMessage('Error', 'No se pudo cargar el detalle del vehículo. Inténtalo nuevamente.', 'error');
+            updateModalButtons(); // Actualizar botones después de error
         }
     };
 

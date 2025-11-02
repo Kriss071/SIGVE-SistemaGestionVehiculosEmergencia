@@ -13,10 +13,25 @@
           </div>
   
         <div class="modal-footer">
-          <button type="button" class="btn btn-danger" id="modalDeleteVehicleBtn" style="display: none;">
-            <i class="bi bi-trash-fill me-2"></i> Eliminar Vehículo
-          </button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <!-- Botones en modo visualización -->
+          <div id="viewModeButtons">
+            <button type="button" class="btn btn-danger" id="modalDeleteVehicleBtn" style="display: none;">
+              <i class="bi bi-trash-fill me-2"></i> Eliminar Vehículo
+            </button>
+            <button type="button" class="btn btn-primary" id="modalEditVehicleBtn" style="display: none;">
+              <i class="bi bi-pencil-fill me-2"></i> Editar Vehículo
+            </button>
+          </div>
+          
+          <!-- Botones en modo edición -->
+          <div id="editModeButtons" style="display: none;">
+            <button type="button" class="btn btn-secondary" id="modalCancelEditBtn">
+              <i class="bi bi-x-circle me-2"></i> Cancelar
+            </button>
+            <button type="button" class="btn btn-success" id="modalSaveVehicleBtn">
+              <i class="bi bi-check-circle-fill me-2"></i> Guardar Cambios
+            </button>
+          </div>
         </div>
         
       </div>

@@ -78,3 +78,18 @@ class VehicleService(ABC):
         """
         pass
     
+    @abstractmethod
+    def update_vehicle(self, license_plate: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Método abstracto para actualizar un vehículo existente.
+
+        Args:
+            license_plate: La patente (matrícula) del vehículo a actualizar.
+            data: Un diccionario con los datos actualizados del vehículo.
+
+        Returns:
+            Un diccionario con los datos del vehículo actualizado si fue exitoso,
+            o None si no se pudo actualizar.
+        """
+        pass
+    

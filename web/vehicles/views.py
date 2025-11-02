@@ -252,3 +252,86 @@ def delete_vehicle_api(request):
 
     logger.info(f"✅ (delete_vehicle_api) Vehículo eliminado exitosamente: {license_plate}")
     return JsonResponse({"success": True, "message": f"Vehículo '{license_plate}' eliminado correctamente"})
+
+
+@require_supabase_login
+@require_role("Administrador")
+@require_http_methods(["PUT", "POST"])
+def update_vehicle_api(request):
+    """
+    Endpoint de API para actualizar un vehículo existente.
+
+    Recibe los datos actualizados del vehículo mediante POST o PUT.
+    Solo los administradores pueden realizar esta acción.
+
+    Args:
+        request: El objeto HttpRequest de Django.
+
+    Returns:
+        JsonResponse: Un objeto JSON con el resultado de la operación.
+        HttpResponseBadRequest: Si faltan parámetros requeridos.
+        HttpResponseNotFound: Si no se encuentra el vehículo.
+    """
+    import json
+    
+    # Obtener datos según el método
+    if request.method == "POST":
+        license_plate = request.POST.get("license_plate")
+        # Intentar obtener datos como JSON si están en el body
+        try:
+            if request.body:
+                body_data = json.loads(request.body)
+                data = body_data
+                license_plate = data.get("license_plate", license_plate)
+            else:
+                data = dict(request.POST)
+                # Limpiar listas de valores únicos
+                data = {k: v[0] if isinstance(v, list) and len(v) == 1 else v for k, v in data.items()}
+        except json.JSONDecodeError:
+            data = dict(request.POST)
+            data = {k: v[0] if isinstance(v, list) and len(v) == 1 else v for k, v in data.items()}
+    else:  # PUT
+        try:
+            data = json.loads(request.body) if request.body else {}
+            license_plate = data.get("license_plate")
+        except json.JSONDecodeError:
+            logger.warning("🚫 (update_vehicle_api) Error al decodificar JSON del body.")
+            return HttpResponseBadRequest("Datos inválidos")
+
+    if not license_plate:
+        logger.warning("🚫 (update_vehicle_api) Petición sin el parámetro 'license_plate'.")
+        return HttpResponseBadRequest("Falta el parámetro 'license_plate'")
+
+    logger.info(f"🔄 (update_vehicle_api) Actualizando vehículo con patente: {license_plate}")
+    token = request.session.get("sb_access_token")
+    refresh_token = request.session.get("sb_refresh_token")
+    service = SupabaseVehicleService(token, refresh_token)
+
+    # Procesar los datos para asegurar que los tipos son correctos
+    for key in ['fire_station_id', 'vehicle_type_id', 'vehicle_status_id', 'fuel_type_id', 
+                'transmission_type_id', 'oil_type_id', 'coolant_type_id']:
+        if key in data and data.get(key):
+            try:
+                data[key] = int(data[key])
+            except (ValueError, TypeError):
+                data[key] = None
+        elif key in data:
+            data[key] = None
+
+    # Eliminar claves con strings vacíos
+    for key, value in list(data.items()):
+        if isinstance(value, str) and not value.strip() and key not in ['license_plate']:
+            data[key] = None
+
+    updated_vehicle = service.update_vehicle(license_plate, data)
+    
+    if not updated_vehicle:
+        logger.warning(f"❌ (update_vehicle_api) No se pudo actualizar el vehículo con patente: {license_plate}")
+        return HttpResponseNotFound("Vehículo no encontrado o no se pudo actualizar")
+
+    logger.info(f"✅ (update_vehicle_api) Vehículo actualizado exitosamente: {license_plate}")
+    return JsonResponse({
+        "success": True, 
+        "message": f"Vehículo '{license_plate}' actualizado correctamente",
+        "vehicle": updated_vehicle
+    })

@@ -413,3 +413,76 @@ class SupabaseVehicleService(BaseService, VehicleService):
             # Capturar errores durante la eliminación (ej. errores de red, constraints de BD)
             logger.error(f"❌ Error al eliminar vehículo '{license_plate}': {e}", exc_info=True)
             return False
+
+    def update_vehicle(self, license_plate: str, data: dict[str, Any]) -> dict[str, Any] | None:
+        """
+        Actualiza un vehículo existente en la base de datos Supabase.
+
+        Realiza pre-procesamiento de los datos similar a add_vehicle:
+        - Convierte objetos `date` y `datetime` a strings en formato ISO 8601.
+        - Convierte strings vacíos o compuestos solo de espacios en blanco a `None`.
+        - Convierte Decimal a float.
+
+        Args:
+            license_plate: La patente del vehículo a actualizar.
+            data: Un diccionario con los datos actualizados del vehículo.
+
+        Returns:
+            Un diccionario con los datos del vehículo actualizado si fue exitoso,
+            o None si no se pudo actualizar.
+        """
+        try:
+            logger.info(f"🔄 Intentando actualizar vehículo con patente: '{license_plate}'")
+            
+            # Verificar que el vehículo existe
+            vehicle = self.get_vehicle(license_plate)
+            if not vehicle:
+                logger.warning(f"⚠️ No se puede actualizar: vehículo con patente '{license_plate}' no encontrado.")
+                return None
+
+            # Procesar los datos
+            processed_data = {}
+            
+            for key, value in data.items():
+                # Saltar campos que no se deben actualizar
+                if key in ['id', 'license_plate']:
+                    logger.debug(f"🗑️ Campo '{key}' será excluido de la actualización.")
+                    continue
+                
+                # Convertir fechas/datetimes a string ISO
+                if isinstance(value, (date, datetime)):
+                    processed_data[key] = value.isoformat()
+                    logger.debug(f"🔄 Campo '{key}' convertido a ISO format: {processed_data[key]}")
+                # Convertir Decimal a float
+                elif isinstance(value, Decimal):
+                    processed_data[key] = float(value)
+                    logger.debug(f"🔄 Campo '{key}' (Decimal) convertido a float: {processed_data[key]}")
+                # Convertir strings vacíos a None
+                elif isinstance(value, str) and not value.strip():
+                    processed_data[key] = None
+                    logger.debug(f"🔄 Campo string vacío '{key}' convertido a None.")
+                else:
+                    processed_data[key] = value
+
+            # Actualizar en Supabase
+            response = (
+                self.client.table("vehicle")
+                .update(processed_data)
+                .eq("license_plate", license_plate)
+                .execute()
+            )
+            
+            logger.debug(f"📊 Respuesta cruda de Supabase (update_vehicle): {response.data}")
+
+            # Verificar si la operación fue exitosa
+            if response.data and len(response.data) > 0:
+                logger.info(f"✅ Vehículo actualizado exitosamente: {license_plate}")
+                # Obtener los datos completos actualizados
+                return self.get_vehicle(license_plate)
+            else:
+                logger.warning("⚠️ Supabase no devolvió datos después de la actualización.")
+                return None
+
+        except Exception as e:
+            logger.error(f"❌ Error al actualizar vehículo '{license_plate}': {e}", exc_info=True)
+            return None
