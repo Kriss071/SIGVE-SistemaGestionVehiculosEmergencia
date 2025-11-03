@@ -41,7 +41,7 @@ class DashboardService(SigveBaseService):
                 available_vehicles = available_count.count or 0
             
             # Contar vehículos en mantención
-            maintenance_status = client.table("vehicle_status").select("id").eq("name", "En Mantención").maybe_single().execute()
+            maintenance_status = client.table("vehicle_status").select("id").eq("name", "En Taller").maybe_single().execute()
             in_maintenance_vehicles = 0
             if maintenance_status.data:
                 maintenance_count = client.table("vehicle").select("id", count="exact").eq("vehicle_status_id", maintenance_status.data['id']).execute()

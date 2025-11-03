@@ -1,0 +1,165 @@
+<!-- Modal para Crear/Editar Taller -->
+<div class="modal fade" id="workshopModal" tabindex="-1" aria-labelledby="workshopModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="workshopModalLabel">
+                    <i class="bi bi-wrench"></i> <span id="workshopModalTitle">Crear Taller</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form method="post" action="{% url 'sigve:workshop_create' %}" id="workshopForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <!-- Mensajes de error del formulario -->
+                    <div id="workshopFormErrors" class="alert alert-danger d-none" role="alert">
+                        <ul class="mb-0" id="errorList"></ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_name" class="form-label">Nombre del Taller <span class="text-danger">*</span></label>
+                        <input type="text" 
+                               class="form-control" 
+                               name="name" 
+                               id="id_name" 
+                               placeholder="Ej: Mecánica Rápida"
+                               required>
+                        <small class="text-muted">Nombre oficial del taller</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_address" class="form-label">Dirección</label>
+                        <input type="text" 
+                               class="form-control" 
+                               name="address" 
+                               id="id_address" 
+                               placeholder="Ej: Av. Principal 123">
+                        <small class="text-muted">Dirección física del taller</small>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_phone" class="form-label">Teléfono</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="phone" 
+                                   id="id_phone" 
+                                   placeholder="Ej: +56912345678">
+                            <small class="text-muted">Teléfono de contacto</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="id_email" class="form-label">Email</label>
+                            <input type="email" 
+                                   class="form-control" 
+                                   name="email" 
+                                   id="id_email" 
+                                   placeholder="Ej: contacto@taller.cl">
+                            <small class="text-muted">Email de contacto</small>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info alert-permanent" role="alert">
+                        <i class="bi bi-info-circle"></i> 
+                        <small>Los campos marcados con <span class="text-danger">*</span> son obligatorios</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="workshopSubmitBtn">
+                        <i class="bi bi-check-lg"></i> Guardar Taller
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Script para manejar el formulario del modal de taller
+(function() {
+    const workshopForm = document.getElementById('workshopForm');
+    const workshopModal = document.getElementById('workshopModal');
+    const submitBtn = document.getElementById('workshopSubmitBtn');
+    const errorsContainer = document.getElementById('workshopFormErrors');
+    const errorList = document.getElementById('errorList');
+    
+    if (workshopForm) {
+        workshopForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Deshabilitar el botón y mostrar estado de carga
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+            
+            // Limpiar errores previos
+            errorsContainer.classList.add('d-none');
+            errorList.innerHTML = '';
+            
+            // Obtener los datos del formulario
+            const formData = new FormData(workshopForm);
+            
+            // Enviar el formulario mediante fetch
+            fetch(workshopForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (response.redirected) {
+                    // Si hay redirección, es que fue exitoso
+                    window.location.href = response.url;
+                    return null;
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data) {
+                    if (data.success) {
+                        // Cerrar el modal y recargar la página
+                        const modalInstance = bootstrap.Modal.getInstance(workshopModal);
+                        modalInstance.hide();
+                        window.location.reload();
+                    } else if (data.errors) {
+                        // Mostrar errores
+                        errorsContainer.classList.remove('d-none');
+                        for (const [field, errors] of Object.entries(data.errors)) {
+                            errors.forEach(error => {
+                                const li = document.createElement('li');
+                                li.textContent = `${field}: ${error}`;
+                                errorList.appendChild(li);
+                            });
+                        }
+                        // Restaurar botón
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar Taller';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                errorsContainer.classList.remove('d-none');
+                errorList.innerHTML = '<li>Ocurrió un error al guardar el taller. Por favor, intenta nuevamente.</li>';
+                // Restaurar botón
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar Taller';
+            });
+        });
+    }
+    
+    // Limpiar el formulario cuando se cierra el modal
+    if (workshopModal) {
+        workshopModal.addEventListener('hidden.bs.modal', function() {
+            workshopForm.reset();
+            errorsContainer.classList.add('d-none');
+            errorList.innerHTML = '';
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar Taller';
+        });
+    }
+})();
+</script>
+

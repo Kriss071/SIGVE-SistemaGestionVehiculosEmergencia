@@ -46,6 +46,9 @@ urlpatterns = [
     path('users/', views.users_list, name='users_list'),
     path('users/<str:user_id>/edit/', views.user_edit, name='user_edit'),
     path('users/<str:user_id>/deactivate/', views.user_deactivate, name='user_deactivate'),
+    
+    # API Endpoints
+    path('api/communes/', views.api_get_communes, name='api_get_communes'),
 ]
 
 

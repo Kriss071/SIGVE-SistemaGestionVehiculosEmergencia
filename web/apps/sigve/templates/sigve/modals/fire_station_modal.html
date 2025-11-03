@@ -1,0 +1,180 @@
+<!-- Modal para Crear/Editar Cuartel -->
+<div class="modal fade" id="fireStationModal" tabindex="-1" aria-labelledby="fireStationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="fireStationModalLabel">
+                    <i class="bi bi-fire"></i> <span id="fireStationModalTitle">Crear Cuartel</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form method="post" action="{% url 'sigve:fire_station_create' %}" id="fireStationForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <!-- Mensajes de error del formulario -->
+                    <div id="fireStationFormErrors" class="alert alert-danger d-none" role="alert">
+                        <ul class="mb-0" id="fireStationErrorList"></ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_fs_name" class="form-label">Nombre del Cuartel <span class="text-danger">*</span></label>
+                        <input type="text" 
+                               class="form-control" 
+                               name="name" 
+                               id="id_fs_name" 
+                               placeholder="Ej: Primera Compañía"
+                               required>
+                        <small class="text-muted">Nombre oficial del cuartel de bomberos</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_fs_address" class="form-label">Dirección <span class="text-danger">*</span></label>
+                        <input type="text" 
+                               class="form-control" 
+                               name="address" 
+                               id="id_fs_address" 
+                               placeholder="Ej: Calle Bomberos 456"
+                               required>
+                        <small class="text-muted">Dirección física del cuartel</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_fs_commune_id" class="form-label">Comuna <span class="text-danger">*</span></label>
+                        <select class="form-select" name="commune_id" id="id_fs_commune_id" required>
+                            <option value="">Cargando comunas...</option>
+                        </select>
+                        <small class="text-muted">Comuna donde se ubica el cuartel</small>
+                    </div>
+                    
+                    <div class="alert alert-danger alert-permanent" role="alert">
+                        <i class="bi bi-info-circle"></i> 
+                        <small>Los campos marcados con <span class="text-danger">*</span> son obligatorios</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-danger" id="fireStationSubmitBtn">
+                        <i class="bi bi-check-lg"></i> Guardar Cuartel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Script para manejar el formulario del modal de cuartel
+(function() {
+    const fireStationForm = document.getElementById('fireStationForm');
+    const fireStationModal = document.getElementById('fireStationModal');
+    const submitBtn = document.getElementById('fireStationSubmitBtn');
+    const errorsContainer = document.getElementById('fireStationFormErrors');
+    const errorList = document.getElementById('fireStationErrorList');
+    const communeSelect = document.getElementById('id_fs_commune_id');
+    
+    // Cargar comunas cuando se abre el modal
+    if (fireStationModal) {
+        fireStationModal.addEventListener('show.bs.modal', function() {
+            // Cargar comunas si no están cargadas
+            if (communeSelect && communeSelect.options.length === 1) {
+                fetch('/sigve/api/communes/')
+                    .then(response => response.json())
+                    .then(data => {
+                        communeSelect.innerHTML = '<option value="">Seleccionar comuna...</option>';
+                        if (data.communes) {
+                            data.communes.forEach(commune => {
+                                const option = document.createElement('option');
+                                option.value = commune.id;
+                                option.textContent = `${commune.name} - ${commune.province_name}, ${commune.region_name}`;
+                                communeSelect.appendChild(option);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error cargando comunas:', error);
+                        communeSelect.innerHTML = '<option value="">Error al cargar comunas</option>';
+                    });
+            }
+        });
+    }
+    
+    if (fireStationForm) {
+        fireStationForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Deshabilitar el botón y mostrar estado de carga
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+            
+            // Limpiar errores previos
+            errorsContainer.classList.add('d-none');
+            errorList.innerHTML = '';
+            
+            // Obtener los datos del formulario
+            const formData = new FormData(fireStationForm);
+            
+            // Enviar el formulario mediante fetch
+            fetch(fireStationForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (response.redirected) {
+                    // Si hay redirección, es que fue exitoso
+                    window.location.href = response.url;
+                    return null;
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data) {
+                    if (data.success) {
+                        // Cerrar el modal y recargar la página
+                        const modalInstance = bootstrap.Modal.getInstance(fireStationModal);
+                        modalInstance.hide();
+                        window.location.reload();
+                    } else if (data.errors) {
+                        // Mostrar errores
+                        errorsContainer.classList.remove('d-none');
+                        for (const [field, errors] of Object.entries(data.errors)) {
+                            errors.forEach(error => {
+                                const li = document.createElement('li');
+                                li.textContent = `${field}: ${error}`;
+                                errorList.appendChild(li);
+                            });
+                        }
+                        // Restaurar botón
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar Cuartel';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                errorsContainer.classList.remove('d-none');
+                errorList.innerHTML = '<li>Ocurrió un error al guardar el cuartel. Por favor, intenta nuevamente.</li>';
+                // Restaurar botón
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar Cuartel';
+            });
+        });
+    }
+    
+    // Limpiar el formulario cuando se cierra el modal
+    if (fireStationModal) {
+        fireStationModal.addEventListener('hidden.bs.modal', function() {
+            fireStationForm.reset();
+            errorsContainer.classList.add('d-none');
+            errorList.innerHTML = '';
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar Cuartel';
+        });
+    }
+})();
+</script>
+

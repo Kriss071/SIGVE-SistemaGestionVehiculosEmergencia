@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 def dashboard(request):
     """Vista principal del panel de administración SIGVE."""
     context = {
-        'page_title': 'Dashboard SIGVE',
+        'page_title': 'Dashboard',
         'active_page': 'dashboard'
     }
     
@@ -133,9 +133,22 @@ def workshop_create(request):
             
             if workshop:
                 messages.success(request, f'✅ Taller "{data["name"]}" creado correctamente.')
+                
+                # Si es una petición AJAX, responder con JSON
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': True, 'message': f'Taller "{data["name"]}" creado correctamente.'})
+                
                 return redirect('sigve:workshops_list')
             else:
                 messages.error(request, '❌ Error al crear el taller.')
+                
+                # Si es una petición AJAX, responder con JSON
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el taller.']}})
+        else:
+            # Si hay errores de validación y es AJAX, responder con JSON
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = WorkshopForm()
     
@@ -237,9 +250,22 @@ def fire_station_create(request):
             
             if fire_station:
                 messages.success(request, f'✅ Cuartel "{data["name"]}" creado correctamente.')
+                
+                # Si es una petición AJAX, responder con JSON
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': True, 'message': f'Cuartel "{data["name"]}" creado correctamente.'})
+                
                 return redirect('sigve:fire_stations_list')
             else:
                 messages.error(request, '❌ Error al crear el cuartel.')
+                
+                # Si es una petición AJAX, responder con JSON
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el cuartel.']}})
+        else:
+            # Si hay errores de validación y es AJAX, responder con JSON
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = FireStationForm()
     
@@ -343,9 +369,22 @@ def spare_part_create(request):
             
             if spare_part:
                 messages.success(request, f'✅ Repuesto "{data["name"]}" creado correctamente.')
+                
+                # Si es una petición AJAX, responder con JSON
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': True, 'message': f'Repuesto "{data["name"]}" creado correctamente.'})
+                
                 return redirect('sigve:spare_parts_list')
             else:
                 messages.error(request, '❌ Error al crear el repuesto.')
+                
+                # Si es una petición AJAX, responder con JSON
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el repuesto.']}})
+        else:
+            # Si hay errores de validación y es AJAX, responder con JSON
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = SparePartForm()
     
@@ -727,3 +766,35 @@ def user_deactivate(request, user_id):
         messages.error(request, '❌ Error al desactivar el usuario.')
     
     return redirect('sigve:users_list')
+
+
+# ===== API ENDPOINTS =====
+
+@require_supabase_login
+@require_role("Admin SIGVE")
+def api_get_communes(request):
+    """
+    API endpoint para obtener todas las comunas con información de provincia y región.
+    Utilizado por los modales para cargar opciones dinámicamente.
+    """
+    communes = FireStationService.get_all_communes()
+    
+    # Formatear los datos para el frontend
+    communes_data = []
+    for commune in communes:
+        commune_info = {
+            'id': commune['id'],
+            'name': commune['name'],
+            'province_name': commune.get('province', {}).get('name', '') if isinstance(commune.get('province'), dict) else '',
+            'region_name': ''
+        }
+        
+        # Obtener la región desde la provincia
+        if isinstance(commune.get('province'), dict):
+            province_data = commune.get('province')
+            if isinstance(province_data.get('region'), dict):
+                commune_info['region_name'] = province_data.get('region', {}).get('name', '')
+        
+        communes_data.append(commune_info)
+    
+    return JsonResponse({'communes': communes_data})

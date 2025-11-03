@@ -118,15 +118,15 @@
                         <span><i class="bi bi-inbox"></i> Solicitudes Pendientes</span>
                         <span class="badge bg-warning text-dark">{{ pending_requests_count }}</span>
                     </a>
-                    <a href="{% url 'sigve:workshop_create' %}" class="btn btn-outline-primary d-flex align-items-center">
+                    <button type="button" class="btn btn-outline-primary d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#workshopModal">
                         <i class="bi bi-plus-circle me-2"></i> Crear Taller
-                    </a>
-                    <a href="{% url 'sigve:fire_station_create' %}" class="btn btn-outline-danger d-flex align-items-center">
+                    </button>
+                    <button type="button" class="btn btn-outline-danger d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#fireStationModal">
                         <i class="bi bi-plus-circle me-2"></i> Crear Cuartel
-                    </a>
-                    <a href="{% url 'sigve:spare_part_create' %}" class="btn btn-outline-success d-flex align-items-center">
+                    </button>
+                    <button type="button" class="btn btn-outline-success d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#sparePartModal">
                         <i class="bi bi-plus-circle me-2"></i> Crear Repuesto
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>
@@ -178,6 +178,12 @@
         </div>
     </div>
 </div>
+
+<!-- Modales -->
+{% include 'sigve/modals/workshop_modal.html' %}
+{% include 'sigve/modals/fire_station_modal.html' %}
+{% include 'sigve/modals/spare_part_modal.html' %}
+
 {% endblock %}
 
 {% block extra_js %}

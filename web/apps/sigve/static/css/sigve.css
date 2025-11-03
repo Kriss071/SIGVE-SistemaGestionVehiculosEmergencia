@@ -302,4 +302,6 @@ footer {
     border-width: 0.2em;
 }
 
-
+.container-fluid{
+    --bs-gutter-x: 3.5rem;
+}
