@@ -1,4 +1,9 @@
 {% extends 'sigve/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -92,7 +97,10 @@
                 <h5 class="card-title mb-0"><i class="bi bi-pie-chart"></i> Estado de Vehículos</h5>
             </div>
             <div class="card-body">
-                <canvas id="vehiclesChart" style="max-height: 250px;"></canvas>
+                <canvas id="vehiclesChart"
+                        data-available="{{ available_vehicles }}" 
+                        data-maintenance="{{ in_maintenance_vehicles }}">
+                </canvas>
                 <div class="mt-3">
                     <div class="d-flex justify-content-between mb-2">
                         <span><i class="bi bi-circle-fill text-success"></i> Disponibles</span>
@@ -168,7 +176,7 @@
                 <h5 class="card-title mb-0"><i class="bi bi-geo-alt"></i> Mapa (Próximamente)</h5>
             </div>
             <div class="card-body">
-                <div class="bg-light border rounded d-flex align-items-center justify-content-center" style="height: 300px;">
+                <div class="bg-light border rounded d-flex align-items-center justify-content-center map-placeholder-wrapper">
                     <div class="text-center text-muted">
                         <i class="bi bi-map display-1"></i>
                         <p class="mt-2">Mapa interactivo en desarrollo</p>
@@ -188,30 +196,7 @@
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script>
-    // Gráfico de torta para estado de vehículos
-    const ctx = document.getElementById('vehiclesChart');
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Disponibles', 'En Mantención'],
-            datasets: [{
-                data: [{{ available_vehicles }}, {{ in_maintenance_vehicles }}],
-                backgroundColor: ['#198754', '#ffc107'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            }
-        }
-    });
-</script>
+<script src="{% static 'js/dashboard.js' %}"></script>
 {% endblock %}
 
 
