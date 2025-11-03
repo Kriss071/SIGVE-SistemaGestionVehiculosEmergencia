@@ -7,13 +7,39 @@ from .decorators import require_supabase_login
 from .services.auth_service import AuthService
 from .services.roles_services import RolesService
 
-logger = logging.getLogger(__name__) 
+logger = logging.getLogger(__name__)
+
+
+def get_redirect_url_by_role(role: str) -> str:
+    """
+    Determina la URL de redirección basada en el rol del usuario.
+    
+    Args:
+        role (str): El rol del usuario.
+        
+    Returns:
+        str: El nombre de la URL a la que se debe redirigir.
+    """
+    # Mapeo de roles a URLs de redirección
+    role_redirects = {
+        'Super Admin': 'sigve:dashboard',  # Super Admin va al panel SIGVE por defecto
+        'Admin SIGVE': 'sigve:dashboard',  # Admin SIGVE va a su panel
+        'Admin Taller': 'vehicle_list',
+        # 'Mecánico': 'workshop:maintenance',
+        # 'Jefe Cuartel': 'fire_station:dashboard',
+    }
+    
+    # Obtener la URL de redirección según el rol, o usar 'vehicle_list' por defecto
+    redirect_url = role_redirects.get(role, 'vehicle_list')
+    logger.info(f"🔀 Rol '{role}' será redirigido a '{redirect_url}'")
+    
+    return redirect_url 
 
 def login_view(request):
     """
     Gestiona el proceso de inicio de sesión del usuario.
 
-    - Si el usuario ya está autenticado (tiene token en sesión), redirige a 'vehicle_list'.
+    - Si el usuario ya está autenticado (tiene token en sesión), redirige según su rol.
     - Si es método GET, muestra el formulario de login.
     - Si es método POST:
         - Valida el formulario.
@@ -22,20 +48,23 @@ def login_view(request):
             - Limpia la sesión anterior.
             - Guarda los tokens, email, ID y rol del usuario en la sesión de Django.
             - Establece la sesión para que expire al cerrar el navegador.
-            - Muestra un mensaje de éxito y redirige a 'vehicle_list'.
-        - Si la autenticación falla o el formulario es inválido, muestra errores.
+            - Muestra un mensaje de éxito y redirige según el rol del usuario.
+        - Si la autenticación falla (credenciales incorrectas), muestra el formulario con errores.
+        - Si el formulario es inválido, muestra errores de validación.
 
     Args:
         request: El objeto HttpRequest de Django.
 
     Returns:
-        HttpResponse: Renderiza el template de login o redirige a 'vehicle_list'.
+        HttpResponse: Renderiza el template de login con errores o redirige según el rol.
     """
 
     # 1. Redirigir si ya está logueado
     if request.session.get("sb_access_token"):
-        logger.debug("👤 (login_view) Usuario ya autenticado, redirigiendo a 'vehicle_list'.")
-        return redirect("vehicle_list")
+        user_role = request.session.get("sb_user_role", "Usuario")
+        redirect_url = get_redirect_url_by_role(user_role)
+        logger.debug(f"👤 (login_view) Usuario ya autenticado con rol '{user_role}', redirigiendo a '{redirect_url}'.")
+        return redirect(redirect_url)
 
     # 2. Procesar el envío del formulario (POST)
     if request.method == "POST":
@@ -51,8 +80,8 @@ def login_view(request):
             # 2b. Manejar fallo de autenticación
             if error or not session:
                 logger.warning(f"🚫 (login_view) Fallo de autenticación para {email}: {error}")
-                messages.error(request, error or "Error desconocido al intentar iniciar sesión.")
-                return render(request, "accounts/unauthorized.html", {"form": form})
+                messages.error(request, error or "Credenciales inválidas. Por favor, verifica tu email y contraseña.")
+                return render(request, "accounts/login.html", {"form": form})
 
             # 2c. Autenticación exitosa: Configurar sesión de Django
             logger.info(f"🔑 (login_view) Autenticación exitosa para {email}.")
@@ -78,12 +107,16 @@ def login_view(request):
                 request.session["sb_user_role"] = "Usuario" # Rol genérico en caso de error
 
             logger.debug(f"ℹ️ (login_view) Sesión configurada: ID={user_id}, Rol={request.session['sb_user_role']}")
-            messages.success(request, "¡Sesión iniciada correctamente!")
-            return redirect("vehicle_list") # Redirigir a la lista de vehículos
+            
+            # 2e. Determinar URL de redirección según el rol
+            redirect_url = get_redirect_url_by_role(request.session['sb_user_role'])
+            messages.success(request, f"¡Bienvenido! Has iniciado sesión como {request.session['sb_user_role']}")
+            
+            return redirect(redirect_url)
         else:
             # 2e. Formulario inválido
             logger.warning("⚠️ (login_view) Formulario de login inválido.")
-            messages.error(request, "Datos inválidos. Por favor, revisa el formulario.")
+            messages.error(request, "Credenciales inválidas. Por favor, verifica tu email y contraseña.")
 
     # 3. Mostrar el formulario vacío (GET o POST inválido)
     else:

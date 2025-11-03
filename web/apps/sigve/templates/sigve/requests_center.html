@@ -1,0 +1,178 @@
+{% extends 'sigve/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4"><i class="bi bi-inbox"></i> Centro de Solicitudes</h1>
+    </div>
+</div>
+
+<!-- Pestañas de Estado -->
+<ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {% if current_status == 'pendiente' %}active{% endif %}" 
+           href="?status=pendiente">
+            <i class="bi bi-clock"></i> Pendientes
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {% if current_status == 'aprobada' %}active{% endif %}" 
+           href="?status=aprobada">
+            <i class="bi bi-check-circle"></i> Aprobadas
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {% if current_status == 'rechazada' %}active{% endif %}" 
+           href="?status=rechazada">
+            <i class="bi bi-x-circle"></i> Rechazadas
+        </a>
+    </li>
+</ul>
+
+<!-- Tabla de Solicitudes -->
+<div class="card">
+    <div class="card-body">
+        {% if requests %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tipo</th>
+                        <th>Datos Solicitados</th>
+                        <th>Solicitante</th>
+                        <th>Fecha</th>
+                        {% if current_status == 'pendiente' %}
+                        <th class="text-end">Acciones</th>
+                        {% endif %}
+                        {% if current_status != 'pendiente' %}
+                        <th>Notas Admin</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for request in requests %}
+                    <tr>
+                        <td><strong>#{{ request.id }}</strong></td>
+                        <td>
+                            <span class="badge bg-info">
+                                {{ request.request_type.name }}
+                            </span>
+                        </td>
+                        <td>
+                            <small class="text-muted">
+                                {% if request.requested_data.name %}
+                                    <strong>Nombre:</strong> {{ request.requested_data.name }}<br>
+                                {% endif %}
+                                {% if request.requested_data.sku %}
+                                    <strong>SKU:</strong> {{ request.requested_data.sku }}<br>
+                                {% endif %}
+                                {% if request.requested_data.brand %}
+                                    <strong>Marca:</strong> {{ request.requested_data.brand }}
+                                {% endif %}
+                            </small>
+                        </td>
+                        <td>
+                            {% if request.requesting_user %}
+                                {{ request.requesting_user.first_name }} {{ request.requesting_user.last_name }}
+                            {% else %}
+                                <em class="text-muted">N/A</em>
+                            {% endif %}
+                        </td>
+                        <td>{{ request.created_at|date:"d/m/Y H:i" }}</td>
+                        {% if current_status == 'pendiente' %}
+                        <td class="text-end">
+                            <button type="button" class="btn btn-sm btn-success" 
+                                    onclick="approveRequest({{ request.id }})">
+                                <i class="bi bi-check-lg"></i> Aprobar
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#rejectModal{{ request.id }}">
+                                <i class="bi bi-x-lg"></i> Rechazar
+                            </button>
+                        </td>
+                        {% endif %}
+                        {% if current_status != 'pendiente' %}
+                        <td>
+                            <small>{{ request.admin_notes|default:"Sin notas" }}</small>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    
+                    <!-- Modal de Rechazo -->
+                    {% if current_status == 'pendiente' %}
+                    <div class="modal fade" id="rejectModal{{ request.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Rechazar Solicitud #{{ request.id }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="post" action="{% url 'sigve:reject_request' request.id %}">
+                                    {% csrf_token %}
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label for="admin_notes{{ request.id }}" class="form-label">
+                                                Motivo del Rechazo
+                                            </label>
+                                            <textarea class="form-control" 
+                                                      id="admin_notes{{ request.id }}" 
+                                                      name="admin_notes" 
+                                                      rows="4" 
+                                                      required
+                                                      placeholder="Explica por qué se rechaza esta solicitud..."></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                            Cancelar
+                                        </button>
+                                        <button type="submit" class="btn btn-danger">
+                                            <i class="bi bi-x-lg"></i> Rechazar
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <p class="text-muted mt-3">No hay solicitudes {{ current_status }}s</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function approveRequest(requestId) {
+        if (confirm('¿Estás seguro de aprobar esta solicitud? Esto creará el registro en la tabla correspondiente.')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/sigve/requests/${requestId}/approve/`;
+            
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfToken) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken.value;
+                form.appendChild(csrfInput);
+            }
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+</script>
+{% endblock %}
+
+

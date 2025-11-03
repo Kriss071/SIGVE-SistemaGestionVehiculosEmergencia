@@ -1,0 +1,124 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ page_title }} - SIGVE{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- Custom CSS -->
+    <link href="{% static 'css/sigve.css' %}" rel="stylesheet">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navegación -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'sigve:dashboard' %}">
+                <i class="bi bi-fire"></i> SIGVE Admin
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="{% url 'sigve:dashboard' %}">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'requests' %}active{% endif %}" href="{% url 'sigve:requests_center' %}">
+                            <i class="bi bi-inbox"></i> Solicitudes
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if active_page in 'workshops,fire_stations' %}active{% endif %}" href="#" id="clientsDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-building"></i> Clientes
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'sigve:workshops_list' %}"><i class="bi bi-wrench"></i> Talleres</a></li>
+                            <li><a class="dropdown-item" href="{% url 'sigve:fire_stations_list' %}"><i class="bi bi-fire"></i> Cuarteles</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if active_page in 'spare_parts,suppliers,catalogs' %}active{% endif %}" href="#" id="catalogsDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-box-seam"></i> Catálogos
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'sigve:spare_parts_list' %}"><i class="bi bi-gear"></i> Repuestos</a></li>
+                            <li><a class="dropdown-item" href="{% url 'sigve:suppliers_list' %}"><i class="bi bi-truck"></i> Proveedores</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">Tablas Lookup</h6></li>
+                            <li><a class="dropdown-item" href="{% url 'sigve:catalog_list' 'vehicle_type' %}">Tipos de Vehículo</a></li>
+                            <li><a class="dropdown-item" href="{% url 'sigve:catalog_list' 'vehicle_status' %}">Estados de Vehículo</a></li>
+                            <li><a class="dropdown-item" href="{% url 'sigve:catalog_list' 'fuel_type' %}">Tipos de Combustible</a></li>
+                            <li><a class="dropdown-item" href="{% url 'sigve:catalog_list' 'transmission_type' %}">Tipos de Transmisión</a></li>
+                            <li><a class="dropdown-item" href="{% url 'sigve:catalog_list' 'oil_type' %}">Tipos de Aceite</a></li>
+                            <li><a class="dropdown-item" href="{% url 'sigve:catalog_list' 'coolant_type' %}">Tipos de Refrigerante</a></li>
+                            <li><a class="dropdown-item" href="{% url 'sigve:catalog_list' 'task_type' %}">Tipos de Tarea</a></li>
+                            <li><a class="dropdown-item" href="{% url 'sigve:catalog_list' 'role' %}">Roles</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'users' %}active{% endif %}" href="{% url 'sigve:users_list' %}">
+                            <i class="bi bi-people"></i> Usuarios
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ request.session.sb_user_role|default:"Admin" }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mensajes de Django -->
+    {% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Contenido Principal -->
+    <div class="container-fluid py-4">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-light text-center text-muted py-3 mt-5">
+        <div class="container">
+            <p class="mb-0">&copy; 2025 SIGVE - Sistema de Gestión de Vehículos de Emergencia</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    
+    <!-- Custom JS -->
+    <script src="{% static 'js/sigve.js' %}"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+
+

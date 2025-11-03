@@ -1,0 +1,70 @@
+{% extends 'sigve/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'sigve:fire_stations_list' %}">Cuarteles</a></li>
+                <li class="breadcrumb-item active">{{ page_title }}</li>
+            </ol>
+        </nav>
+        <h1 class="mb-4">{{ page_title }}</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        {{ form.name.label_tag }}
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                        <div class="text-danger">{{ form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.address.label_tag }}
+                        {{ form.address }}
+                        {% if form.address.errors %}
+                        <div class="text-danger">{{ form.address.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="commune_id" class="form-label">Comuna</label>
+                        <select class="form-select" name="commune_id" id="commune_id" required>
+                            <option value="">Seleccionar comuna...</option>
+                            {% for commune in communes %}
+                            <option value="{{ commune.id }}" 
+                                    {% if fire_station and fire_station.commune_id == commune.id %}selected{% endif %}>
+                                {{ commune.name }} - {{ commune.province.name }}, {{ commune.province.region.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if form.commune_id.errors %}
+                        <div class="text-danger">{{ form.commune_id.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-check-lg"></i> Guardar
+                        </button>
+                        <a href="{% url 'sigve:fire_stations_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-lg"></i> Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

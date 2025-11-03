@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     'accounts',
     'vehicles',
     'maintenance',
-    'backoffice'
+    'backoffice',
+    'apps.sigve'
 ]
 
 MIDDLEWARE = [

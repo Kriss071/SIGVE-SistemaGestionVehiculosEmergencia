@@ -6,5 +6,6 @@ urlpatterns = [
     path('', include('accounts.urls')),
     path('vehiculos/', include('vehicles.urls')),
     path('mantencion/', include('maintenance.urls')),
-    path('administracion/', include(('backoffice.urls', 'backoffice'), namespace='backoffice'))
+    path('administracion/', include(('backoffice.urls', 'backoffice'), namespace='backoffice')),
+    path('sigve/', include(('apps.sigve.urls', 'sigve'), namespace='sigve'))
 ]

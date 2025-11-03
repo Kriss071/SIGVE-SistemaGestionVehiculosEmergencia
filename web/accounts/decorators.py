@@ -160,7 +160,7 @@ def require_role(required_role):
                     if not role_resp.data:
                         logger.warning(f"⚠️ (require_role) Usuario {user_id} no encontrado en 'user_profile'. Acceso denegado.")
                         messages.error(request, "No tienes permisos (perfil de usuario no encontrado).")
-                        return redirect('login') 
+                        return redirect('unauthorized') 
                     
                     role_relation_data = role_resp.data.get('role')
                     if isinstance(role_relation_data, dict):
@@ -186,23 +186,24 @@ def require_role(required_role):
                             logger.warning(f"⚠️ (require_role) Usuario {user_id} sin 'role_id'.")
                             
                     # Comparar el rol obtenido con el requerido
-                    if user_role_name != required_role:
+                    # Super Admin tiene acceso a todo el sistema
+                    if user_role_name == 'Super Admin':
+                        logger.info(f"✅ (require_role) Acceso concedido para {user_id} (Super Admin tiene acceso total)")
+                    elif user_role_name != required_role:
                         logger.warning(f"🚫 (require_role) Acceso denegado: '{user_role_name}' != '{required_role}'.")
                         messages.error(request, f"Acceso denegado. Se requiere el rol: '{required_role}'")
-                        return redirect('login') 
-                    
-                    logger.info(f"✅ (require_role) Acceso concedido para {user_id} (Rol: '{user_role_name}')")
+                        return redirect('unauthorized') 
+                    else:
+                        logger.info(f"✅ (require_role) Acceso concedido para {user_id} (Rol: '{user_role_name}')")
                     
                 except Exception as e:
                     logger.error(f"❌ (require_role) Error verificando rol para {user_id} (req: '{required_role}'): {e}", exc_info=True)
                     messages.error(request, "Error al verificar permisos.")
-                    # Considerar si limpiar sesión aquí es apropiado o solo redirigir
-                    # request.session.flush() 
-                    return redirect('login')
+                    return redirect('unauthorized')
             else:
                 # Salvaguarda, aunque no debería ocurrir
                 logger.error("❌ (require_role) _get_authenticated_user devolvió un objeto sin 'id' o None.")
-                return redirect('login')
+                return redirect('unauthorized')
 
             # Ejecutar la vista original si el rol coincide
             return view_func(request, *args, **kwargs)

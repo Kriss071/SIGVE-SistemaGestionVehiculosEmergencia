@@ -6,11 +6,48 @@
 {% block content %}
 <div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-6 text-center">
-            <h1>🚫 Acceso No Autorizado</h1>
-            <p class="mt-4">Lo sentimos, no tienes permisos para acceder a esta sección.</p>
-            <p>Por favor, contacta al administrador si crees que esto es un error.</p>
-            <a href="{% url 'login' %}" class="btn btn-primary mt-3">Volver al Inicio</a>
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body text-center p-5">
+                    <div class="mb-4">
+                        <i class="bi bi-shield-x" style="font-size: 5rem; color: #dc3545;"></i>
+                    </div>
+                    
+                    <h1 class="mb-3">🚫 Acceso No Autorizado</h1>
+                    
+                    {% if request.session.sb_user_role %}
+                    <div class="alert alert-warning" role="alert">
+                        <strong>Tu rol actual:</strong> {{ request.session.sb_user_role }}
+                    </div>
+                    {% endif %}
+                    
+                    <p class="lead">Lo sentimos, no tienes permisos para acceder a esta sección.</p>
+                    <p class="text-muted">Esta área está restringida a usuarios con roles específicos.</p>
+                    
+                    <hr class="my-4">
+                    
+                    <p class="mb-4">
+                        <small class="text-muted">
+                            Si crees que deberías tener acceso a esta sección, por favor contacta al administrador del sistema.
+                        </small>
+                    </p>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        {% if request.session.sb_access_token %}
+                        <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Volver Atrás
+                        </a>
+                        <a href="{% url 'logout' %}" class="btn btn-primary">
+                            <i class="bi bi-box-arrow-left"></i> Cerrar Sesión
+                        </a>
+                        {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-primary">
+                            <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

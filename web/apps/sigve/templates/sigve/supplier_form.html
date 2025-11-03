@@ -1,0 +1,80 @@
+{% extends 'sigve/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'sigve:suppliers_list' %}">Proveedores</a></li>
+                <li class="breadcrumb-item active">{{ page_title }}</li>
+            </ol>
+        </nav>
+        <h1 class="mb-4">{{ page_title }}</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            {{ form.name.label_tag }}
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                            <div class="text-danger">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            {{ form.rut.label_tag }}
+                            {{ form.rut }}
+                            {% if form.rut.errors %}
+                            <div class="text-danger">{{ form.rut.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.address.label_tag }}
+                        {{ form.address }}
+                        {% if form.address.errors %}
+                        <div class="text-danger">{{ form.address.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.phone.label_tag }}
+                            {{ form.phone }}
+                            {% if form.phone.errors %}
+                            <div class="text-danger">{{ form.phone.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.email.label_tag }}
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                            <div class="text-danger">{{ form.email.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-info">
+                            <i class="bi bi-check-lg"></i> Guardar
+                        </button>
+                        <a href="{% url 'sigve:suppliers_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-lg"></i> Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
