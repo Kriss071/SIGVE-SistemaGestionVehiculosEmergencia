@@ -118,10 +118,10 @@
                         <span><i class="bi bi-inbox"></i> Solicitudes Pendientes</span>
                         <span class="badge bg-warning text-dark">{{ pending_requests_count }}</span>
                     </a>
-                    <button type="button" class="btn btn-outline-primary d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#workshopModal">
+                    <button type="button" class="btn btn-outline-primary d-flex align-items-center" onclick="WorkshopModal.open('create', null, 'dashboard')">
                         <i class="bi bi-plus-circle me-2"></i> Crear Taller
                     </button>
-                    <button type="button" class="btn btn-outline-danger d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#fireStationModal">
+                    <button type="button" class="btn btn-outline-danger d-flex align-items-center" onclick="FireStationModal.open('create', null, 'dashboard')">
                         <i class="bi bi-plus-circle me-2"></i> Crear Cuartel
                     </button>
                     <button type="button" class="btn btn-outline-success d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#sparePartModal">

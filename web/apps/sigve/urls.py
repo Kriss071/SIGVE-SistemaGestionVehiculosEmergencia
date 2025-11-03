@@ -49,6 +49,8 @@ urlpatterns = [
     
     # API Endpoints
     path('api/communes/', views.api_get_communes, name='api_get_communes'),
+    path('api/workshops/<int:workshop_id>/', views.api_get_workshop, name='api_get_workshop'),
+    path('api/fire-stations/<int:fire_station_id>/', views.api_get_fire_station, name='api_get_fire_station'),
 ]
 
 

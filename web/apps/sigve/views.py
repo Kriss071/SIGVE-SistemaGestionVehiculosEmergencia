@@ -121,6 +121,9 @@ def workshop_create(request):
     """Crear un nuevo taller."""
     if request.method == 'POST':
         form = WorkshopForm(request.POST)
+        source = request.POST.get('source', 'list')  # 'dashboard' o 'list'
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
         if form.is_valid():
             data = {
                 'name': form.cleaned_data['name'],
@@ -132,21 +135,24 @@ def workshop_create(request):
             workshop = WorkshopService.create_workshop(data)
             
             if workshop:
-                # Si es una petición AJAX, responder con JSON
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({'success': True, 'message': f'Taller "{data["name"]}" creado correctamente.'})
+                # Si viene del dashboard y es AJAX, devolver JSON (sin redirección)
+                if source == 'dashboard' and is_ajax:
+                    return JsonResponse({
+                        'success': True, 
+                        'message': f'✅ Taller "{data["name"]}" creado correctamente.'
+                    })
                 
+                # Si viene de la lista o no es AJAX, redirigir normalmente
                 messages.success(request, f'✅ Taller "{data["name"]}" creado correctamente.')
                 return redirect('sigve:workshops_list')
             else:
-                # Si es una petición AJAX, responder con JSON
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                # Error al crear
+                if is_ajax:
                     return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el taller.']}})
-                
                 messages.error(request, '❌ Error al crear el taller.')
         else:
-            # Si hay errores de validación y es AJAX, responder con JSON
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            # Errores de validación
+            if is_ajax:
                 return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = WorkshopForm()
@@ -167,11 +173,16 @@ def workshop_edit(request, workshop_id):
     workshop = WorkshopService.get_workshop(workshop_id)
     
     if not workshop:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'Taller no encontrado.'})
         messages.error(request, '❌ Taller no encontrado.')
         return redirect('sigve:workshops_list')
     
     if request.method == 'POST':
         form = WorkshopForm(request.POST)
+        source = request.POST.get('source', 'list')  # 'dashboard' o 'list'
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
         if form.is_valid():
             data = {
                 'name': form.cleaned_data['name'],
@@ -183,10 +194,25 @@ def workshop_edit(request, workshop_id):
             success = WorkshopService.update_workshop(workshop_id, data)
             
             if success:
+                # Si viene del dashboard y es AJAX, devolver JSON (sin redirección)
+                if source == 'dashboard' and is_ajax:
+                    return JsonResponse({
+                        'success': True,
+                        'message': '✅ Taller actualizado correctamente.'
+                    })
+                
+                # Si viene de la lista o no es AJAX, redirigir normalmente
                 messages.success(request, '✅ Taller actualizado correctamente.')
                 return redirect('sigve:workshops_list')
             else:
+                # Error al actualizar
+                if is_ajax:
+                    return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el taller.']}})
                 messages.error(request, '❌ Error al actualizar el taller.')
+        else:
+            # Errores de validación
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = WorkshopForm(initial=workshop)
     
@@ -238,6 +264,9 @@ def fire_station_create(request):
     
     if request.method == 'POST':
         form = FireStationForm(request.POST)
+        source = request.POST.get('source', 'list')
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
         if form.is_valid():
             data = {
                 'name': form.cleaned_data['name'],
@@ -248,21 +277,20 @@ def fire_station_create(request):
             fire_station = FireStationService.create_fire_station(data)
             
             if fire_station:
-                # Si es una petición AJAX, responder con JSON
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({'success': True, 'message': f'Cuartel "{data["name"]}" creado correctamente.'})
+                if source == 'dashboard' and is_ajax:
+                    return JsonResponse({
+                        'success': True,
+                        'message': f'✅ Cuartel "{data["name"]}" creado correctamente.'
+                    })
                 
                 messages.success(request, f'✅ Cuartel "{data["name"]}" creado correctamente.')
                 return redirect('sigve:fire_stations_list')
             else:
-                # Si es una petición AJAX, responder con JSON
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                if is_ajax:
                     return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el cuartel.']}})
-                
                 messages.error(request, '❌ Error al crear el cuartel.')
         else:
-            # Si hay errores de validación y es AJAX, responder con JSON
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            if is_ajax:
                 return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = FireStationForm()
@@ -285,11 +313,16 @@ def fire_station_edit(request, fire_station_id):
     communes = FireStationService.get_all_communes()
     
     if not fire_station:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'Cuartel no encontrado.'})
         messages.error(request, '❌ Cuartel no encontrado.')
         return redirect('sigve:fire_stations_list')
     
     if request.method == 'POST':
         form = FireStationForm(request.POST)
+        source = request.POST.get('source', 'list')
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
         if form.is_valid():
             data = {
                 'name': form.cleaned_data['name'],
@@ -300,10 +333,21 @@ def fire_station_edit(request, fire_station_id):
             success = FireStationService.update_fire_station(fire_station_id, data)
             
             if success:
+                if source == 'dashboard' and is_ajax:
+                    return JsonResponse({
+                        'success': True,
+                        'message': '✅ Cuartel actualizado correctamente.'
+                    })
+                
                 messages.success(request, '✅ Cuartel actualizado correctamente.')
                 return redirect('sigve:fire_stations_list')
             else:
+                if is_ajax:
+                    return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el cuartel.']}})
                 messages.error(request, '❌ Error al actualizar el cuartel.')
+        else:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = FireStationForm(initial=fire_station)
     
@@ -795,3 +839,43 @@ def api_get_communes(request):
         communes_data.append(commune_info)
     
     return JsonResponse({'communes': communes_data})
+
+
+@require_supabase_login
+@require_role("Admin SIGVE")
+def api_get_workshop(request, workshop_id):
+    """
+    API endpoint para obtener los datos de un taller específico.
+    """
+    workshop = WorkshopService.get_workshop(workshop_id)
+    
+    if workshop:
+        return JsonResponse({
+            'success': True,
+            'workshop': workshop
+        })
+    else:
+        return JsonResponse({
+            'success': False,
+            'error': 'Taller no encontrado'
+        }, status=404)
+
+
+@require_supabase_login
+@require_role("Admin SIGVE")
+def api_get_fire_station(request, fire_station_id):
+    """
+    API endpoint para obtener los datos de un cuartel específico.
+    """
+    fire_station = FireStationService.get_fire_station(fire_station_id)
+    
+    if fire_station:
+        return JsonResponse({
+            'success': True,
+            'fire_station': fire_station
+        })
+    else:
+        return JsonResponse({
+            'success': False,
+            'error': 'Cuartel no encontrado'
+        }, status=404)

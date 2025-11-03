@@ -5,9 +5,9 @@
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1><i class="bi bi-fire"></i> Gestión de Cuarteles</h1>
-            <a href="{% url 'sigve:fire_station_create' %}" class="btn btn-danger">
+            <button type="button" class="btn btn-danger" onclick="FireStationModal.open('create')">
                 <i class="bi bi-plus-circle"></i> Crear Cuartel
-            </a>
+            </button>
         </div>
     </div>
 </div>
@@ -16,7 +16,7 @@
     <div class="card-body">
         {% if fire_stations %}
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table">
                 <thead>
                     <tr>
                         <th>Nombre</th>
@@ -29,7 +29,7 @@
                 </thead>
                 <tbody>
                     {% for station in fire_stations %}
-                    <tr>
+                    <tr onclick="FireStationModal.open('view', {{ station.id }})">
                         <td><strong>{{ station.name }}</strong></td>
                         <td>{{ station.address }}</td>
                         <td>{{ station.commune.name|default:"—" }}</td>
@@ -42,12 +42,13 @@
                         </td>
                         <td><span class="badge bg-secondary">{{ station.vehicles_count }}</span></td>
                         <td class="text-end">
-                            <a href="{% url 'sigve:fire_station_edit' station.id %}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-pencil"></i> Editar
-                            </a>
                             <button type="button" class="btn btn-sm btn-outline-danger" 
-                                    onclick="deleteFireStation({{ station.id }})">
+                                    onclick="event.stopPropagation(); confirmDeleteFireStation({{ station.id }})">
                                 <i class="bi bi-trash"></i> Eliminar
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                    onclick="event.stopPropagation(); FireStationModal.open('edit', {{ station.id }})">
+                                <i class="bi bi-pencil"></i> Editar
                             </button>
                         </td>
                     </tr>
@@ -59,14 +60,18 @@
         <div class="text-center py-5">
             <i class="bi bi-fire display-1 text-muted"></i>
             <p class="text-muted mt-3">No hay cuarteles registrados</p>
-            <a href="{% url 'sigve:fire_station_create' %}" class="btn btn-danger">
+            <button type="button" class="btn btn-danger" onclick="FireStationModal.open('create')">
                 <i class="bi bi-plus-circle"></i> Crear Primer Cuartel
-            </a>
+            </button>
         </div>
         {% endif %}
     </div>
 </div>
 
+<!-- Incluir el modal de cuartel -->
+{% include 'sigve/modals/fire_station_modal.html' %}
+
+<!-- Form oculto para eliminar -->
 <form id="deleteForm" method="post" style="display: none;">
     {% csrf_token %}
 </form>
@@ -74,14 +79,13 @@
 
 {% block extra_js %}
 <script>
-    function deleteFireStation(stationId) {
-        if (confirm('¿Estás seguro de eliminar este cuartel? Esta acción no se puede deshacer.')) {
-            const form = document.getElementById('deleteForm');
-            form.action = `/sigve/fire-stations/${stationId}/delete/`;
-            form.submit();
-        }
+// Función para confirmar eliminación de cuartel
+function confirmDeleteFireStation(stationId) {
+    if (confirm('¿Estás seguro de eliminar este cuartel? Esta acción no se puede deshacer y puede afectar a vehículos asociados.')) {
+        const form = document.getElementById('deleteForm');
+        form.action = `/sigve/fire-stations/${stationId}/delete/`;
+        form.submit();
     }
+}
 </script>
 {% endblock %}
-
-
