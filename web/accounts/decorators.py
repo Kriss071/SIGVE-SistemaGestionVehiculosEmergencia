@@ -123,7 +123,7 @@ def require_role(required_role):
 
     Args:
         required_role (str): El nombre exacto del rol requerido (sensible a mayúsculas/minúsculas). 
-                             Ej: "Admin SIGVE", "Admin Taller", "Mecánico".
+                             Ej: "Admin SIGVE", "Admin Taller", "Mecánico", "Jefe Cuartel".
 
     Returns:
         Una función decoradora que toma la función de vista como argumento.
