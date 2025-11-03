@@ -1,11 +1,16 @@
 {% extends 'sigve/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/workshop_modal.css' %}">
+{% endblock%}
 
 {% block content %}
 <div class="row">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1><i class="bi bi-wrench"></i> Gestión de Talleres</h1>
-            <button type="button" class="btn btn-primary" onclick="WorkshopModal.open('create')">
+            <button type="button" class="btn btn-primary" onclick="WorkshopModal.open('create', null, 'list')">
                 <i class="bi bi-plus-circle"></i> Crear Taller
             </button>
         </div>
@@ -15,6 +20,12 @@
 <div class="card">
     <div class="card-body">
         {% if workshops %}
+        
+        <!-- Input de Búsqueda -->
+        <div class="mb-3">
+            <input type="text" id="tableSearchInput" class="form-control" placeholder="Buscar en talleres...">
+        </div>
+
         <div class="table-responsive">
             <table class="table">
                 <thead>
@@ -37,7 +48,11 @@
                         <td><span class="badge bg-secondary">{{ workshop.employees_count }}</span></td>
                         <td class="text-end">
                             <button type="button" class="btn btn-sm btn-outline-danger" 
-                                    onclick="event.stopPropagation(); confirmDeleteWorkshop({{ workshop.id }})">
+                                    onclick="event.stopPropagation(); DeleteModal.open({
+                                        formAction: '/sigve/workshops/{{ workshop.id }}/delete/',
+                                        itemName: '{{ workshop.name|escapejs }}',
+                                        warningText: '¿Estás seguro de eliminar el taller {{ workshop.name|escapejs }}?'
+                                    })">
                                 <i class="bi bi-trash"></i> Eliminar
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-primary" 
@@ -54,7 +69,7 @@
         <div class="text-center py-5">
             <i class="bi bi-wrench display-1 text-muted"></i>
             <p class="text-muted mt-3">No hay talleres registrados</p>
-            <button type="button" class="btn btn-primary" onclick="WorkshopModal.open('create')">
+            <button type="button" class="btn btn-primary" onclick="WorkshopModal.open('create', null, 'list')">
                 <i class="bi bi-plus-circle"></i> Crear Primer Taller
             </button>
         </div>
@@ -62,26 +77,20 @@
     </div>
 </div>
 
-<!-- Incluir el modal de taller -->
+<!-- Incluir el modal de taller y eliminar -->
 {% include 'sigve/modals/workshop_modal.html' %}
+{% include 'sigve/modals/delete_confirmation_modal.html' %}
 
 <!-- Form oculto para eliminar -->
 <form id="deleteForm" method="post" style="display: none;">
     {% csrf_token %}
 </form>
+
 {% endblock %}
 
 {% block extra_js %}
-<script>
-// Función para confirmar eliminación de taller
-function confirmDeleteWorkshop(workshopId) {
-    if (confirm('¿Estás seguro de eliminar este taller? Esta acción no se puede deshacer y puede afectar a empleados asociados.')) {
-        const form = document.getElementById('deleteForm');
-        form.action = `/sigve/workshops/${workshopId}/delete/`;
-        form.submit();
-    }
-}
-</script>
+<script src="{% static 'js/modal.js' %}"></script>
+<script src="{% static 'js/workshop.js' %}"></script>
 {% endblock %}
 
 

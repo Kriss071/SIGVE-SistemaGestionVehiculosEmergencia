@@ -9,9 +9,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-cerrar alertas después de 5 segundos
     autoCloseAlerts();
     
-    // Confirmar acciones destructivas
-    confirmDestructiveActions();
-    
     // Tooltip de Bootstrap
     initializeTooltips();
     
@@ -28,22 +25,6 @@ function autoCloseAlerts() {
             const bsAlert = new bootstrap.Alert(alert);
             bsAlert.close();
         }, 5000);
-    });
-}
-
-// ===== Confirmar Acciones Destructivas =====
-function confirmDestructiveActions() {
-    const destructiveButtons = document.querySelectorAll('[data-confirm]');
-    
-    destructiveButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            const message = this.getAttribute('data-confirm') || '¿Estás seguro de realizar esta acción?';
-            
-            if (!confirm(message)) {
-                e.preventDefault();
-                return false;
-            }
-        });
     });
 }
 

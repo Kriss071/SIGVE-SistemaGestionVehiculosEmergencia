@@ -1,0 +1,14 @@
+#workshopModal .form-control[readonly],
+#workshopModal .form-control:read-only {
+    background-color: #e9ecef !important;
+    opacity: 1 !important;
+    cursor: not-allowed !important;
+    color: #6c757d !important;
+}
+
+#workshopModal .form-control[readonly]:focus,
+#workshopModal .form-control:read-only:focus {
+    background-color: #e9ecef !important;
+    border-color: #ced4da !important;
+    box-shadow: none !important;
+}
