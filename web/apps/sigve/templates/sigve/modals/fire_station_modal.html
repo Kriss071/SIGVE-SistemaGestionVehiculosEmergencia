@@ -11,11 +11,6 @@
             <form method="post" action="{% url 'sigve:fire_station_create' %}" id="fireStationForm">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <!-- Mensajes de error del formulario -->
-                    <div id="fireStationFormErrors" class="alert alert-danger d-none" role="alert">
-                        <ul class="mb-0" id="fireStationErrorList"></ul>
-                    </div>
-                    
                     <div class="mb-3">
                         <label for="id_fs_name" class="form-label">Nombre del Cuartel <span class="text-danger">*</span></label>
                         <input type="text" 
@@ -46,9 +41,8 @@
                         <small class="text-muted">Comuna donde se ubica el cuartel</small>
                     </div>
                     
-                    <div class="alert alert-danger alert-permanent" role="alert">
-                        <i class="bi bi-info-circle"></i> 
-                        <small>Los campos marcados con <span class="text-danger">*</span> son obligatorios</small>
+                    <div class="alert alert-danger alert-permanent border-0" role="alert">
+                        <small><i class="bi bi-info-circle me-1"></i>Los campos marcados con <span class="text-danger">*</span> son obligatorios</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -70,8 +64,6 @@
     const fireStationForm = document.getElementById('fireStationForm');
     const fireStationModal = document.getElementById('fireStationModal');
     const submitBtn = document.getElementById('fireStationSubmitBtn');
-    const errorsContainer = document.getElementById('fireStationFormErrors');
-    const errorList = document.getElementById('fireStationErrorList');
     const communeSelect = document.getElementById('id_fs_commune_id');
     
     // Cargar comunas cuando se abre el modal
@@ -108,10 +100,6 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
             
-            // Limpiar errores previos
-            errorsContainer.classList.add('d-none');
-            errorList.innerHTML = '';
-            
             // Obtener los datos del formulario
             const formData = new FormData(fireStationForm);
             
@@ -134,20 +122,21 @@
             .then(data => {
                 if (data) {
                     if (data.success) {
-                        // Cerrar el modal y recargar la página
+                        // Mostrar toast de éxito
+                        SIGVENotifications.success(data.message || 'Cuartel creado correctamente');
+                        
+                        // Cerrar el modal
                         const modalInstance = bootstrap.Modal.getInstance(fireStationModal);
                         modalInstance.hide();
-                        window.location.reload();
+                        
+                        // Recargar después de mostrar el toast
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
                     } else if (data.errors) {
-                        // Mostrar errores
-                        errorsContainer.classList.remove('d-none');
-                        for (const [field, errors] of Object.entries(data.errors)) {
-                            errors.forEach(error => {
-                                const li = document.createElement('li');
-                                li.textContent = `${field}: ${error}`;
-                                errorList.appendChild(li);
-                            });
-                        }
+                        // Mostrar errores como toasts
+                        SIGVENotifications.showValidationErrors(data.errors);
+                        
                         // Restaurar botón
                         submitBtn.disabled = false;
                         submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar Cuartel';
@@ -156,8 +145,8 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                errorsContainer.classList.remove('d-none');
-                errorList.innerHTML = '<li>Ocurrió un error al guardar el cuartel. Por favor, intenta nuevamente.</li>';
+                SIGVENotifications.error('Ocurrió un error al guardar el cuartel. Por favor, intenta nuevamente.');
+                
                 // Restaurar botón
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar Cuartel';
@@ -169,8 +158,6 @@
     if (fireStationModal) {
         fireStationModal.addEventListener('hidden.bs.modal', function() {
             fireStationForm.reset();
-            errorsContainer.classList.add('d-none');
-            errorList.innerHTML = '';
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar Cuartel';
         });

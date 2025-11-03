@@ -11,11 +11,6 @@
             <form method="post" action="{% url 'sigve:spare_part_create' %}" id="sparePartForm">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <!-- Mensajes de error del formulario -->
-                    <div id="sparePartFormErrors" class="alert alert-danger d-none" role="alert">
-                        <ul class="mb-0" id="sparePartErrorList"></ul>
-                    </div>
-                    
                     <div class="row">
                         <div class="col-md-8 mb-3">
                             <label for="id_sp_name" class="form-label">Nombre del Repuesto <span class="text-danger">*</span></label>
@@ -83,8 +78,6 @@
     const sparePartForm = document.getElementById('sparePartForm');
     const sparePartModal = document.getElementById('sparePartModal');
     const submitBtn = document.getElementById('sparePartSubmitBtn');
-    const errorsContainer = document.getElementById('sparePartFormErrors');
-    const errorList = document.getElementById('sparePartErrorList');
     
     if (sparePartForm) {
         sparePartForm.addEventListener('submit', function(e) {
@@ -93,10 +86,6 @@
             // Deshabilitar el botón y mostrar estado de carga
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
-            
-            // Limpiar errores previos
-            errorsContainer.classList.add('d-none');
-            errorList.innerHTML = '';
             
             // Obtener los datos del formulario
             const formData = new FormData(sparePartForm);
@@ -120,20 +109,21 @@
             .then(data => {
                 if (data) {
                     if (data.success) {
-                        // Cerrar el modal y recargar la página
+                        // Mostrar toast de éxito
+                        SIGVENotifications.success(data.message || 'Repuesto creado correctamente');
+                        
+                        // Cerrar el modal
                         const modalInstance = bootstrap.Modal.getInstance(sparePartModal);
                         modalInstance.hide();
-                        window.location.reload();
+                        
+                        // Recargar después de mostrar el toast
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
                     } else if (data.errors) {
-                        // Mostrar errores
-                        errorsContainer.classList.remove('d-none');
-                        for (const [field, errors] of Object.entries(data.errors)) {
-                            errors.forEach(error => {
-                                const li = document.createElement('li');
-                                li.textContent = `${field}: ${error}`;
-                                errorList.appendChild(li);
-                            });
-                        }
+                        // Mostrar errores como toasts
+                        SIGVENotifications.showValidationErrors(data.errors);
+                        
                         // Restaurar botón
                         submitBtn.disabled = false;
                         submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar Repuesto';
@@ -142,8 +132,8 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                errorsContainer.classList.remove('d-none');
-                errorList.innerHTML = '<li>Ocurrió un error al guardar el repuesto. Por favor, intenta nuevamente.</li>';
+                SIGVENotifications.error('Ocurrió un error al guardar el repuesto. Por favor, intenta nuevamente.');
+                
                 // Restaurar botón
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar Repuesto';
@@ -155,8 +145,6 @@
     if (sparePartModal) {
         sparePartModal.addEventListener('hidden.bs.modal', function() {
             sparePartForm.reset();
-            errorsContainer.classList.add('d-none');
-            errorList.innerHTML = '';
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Guardar Repuesto';
         });

@@ -11,7 +11,6 @@ class WorkshopForm(forms.Form):
     address = forms.CharField(
         max_length=255,
         label="Dirección",
-        required=False,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Av. Principal 123'})
     )
     phone = forms.CharField(

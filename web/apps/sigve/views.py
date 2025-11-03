@@ -132,19 +132,18 @@ def workshop_create(request):
             workshop = WorkshopService.create_workshop(data)
             
             if workshop:
-                messages.success(request, f'✅ Taller "{data["name"]}" creado correctamente.')
-                
                 # Si es una petición AJAX, responder con JSON
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({'success': True, 'message': f'Taller "{data["name"]}" creado correctamente.'})
                 
+                messages.success(request, f'✅ Taller "{data["name"]}" creado correctamente.')
                 return redirect('sigve:workshops_list')
             else:
-                messages.error(request, '❌ Error al crear el taller.')
-                
                 # Si es una petición AJAX, responder con JSON
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el taller.']}})
+                
+                messages.error(request, '❌ Error al crear el taller.')
         else:
             # Si hay errores de validación y es AJAX, responder con JSON
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -249,19 +248,18 @@ def fire_station_create(request):
             fire_station = FireStationService.create_fire_station(data)
             
             if fire_station:
-                messages.success(request, f'✅ Cuartel "{data["name"]}" creado correctamente.')
-                
                 # Si es una petición AJAX, responder con JSON
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({'success': True, 'message': f'Cuartel "{data["name"]}" creado correctamente.'})
                 
+                messages.success(request, f'✅ Cuartel "{data["name"]}" creado correctamente.')
                 return redirect('sigve:fire_stations_list')
             else:
-                messages.error(request, '❌ Error al crear el cuartel.')
-                
                 # Si es una petición AJAX, responder con JSON
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el cuartel.']}})
+                
+                messages.error(request, '❌ Error al crear el cuartel.')
         else:
             # Si hay errores de validación y es AJAX, responder con JSON
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -368,19 +366,18 @@ def spare_part_create(request):
             spare_part = CatalogService.create_spare_part(data)
             
             if spare_part:
-                messages.success(request, f'✅ Repuesto "{data["name"]}" creado correctamente.')
-                
                 # Si es una petición AJAX, responder con JSON
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({'success': True, 'message': f'Repuesto "{data["name"]}" creado correctamente.'})
                 
+                messages.success(request, f'✅ Repuesto "{data["name"]}" creado correctamente.')
                 return redirect('sigve:spare_parts_list')
             else:
-                messages.error(request, '❌ Error al crear el repuesto.')
-                
                 # Si es una petición AJAX, responder con JSON
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el repuesto.']}})
+                
+                messages.error(request, '❌ Error al crear el repuesto.')
         else:
             # Si hay errores de validación y es AJAX, responder con JSON
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':

@@ -87,14 +87,11 @@
         </div>
     </nav>
 
-    <!-- Mensajes de Django -->
+    <!-- Mensajes de Django (convertidos a toasts via JavaScript) -->
     {% if messages %}
-    <div class="container mt-3">
+    <div class="d-none">
         {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+        <div class="django-message" data-type="{{ message.tags }}">{{ message }}</div>
         {% endfor %}
     </div>
     {% endif %}
@@ -110,6 +107,9 @@
             <p class="mb-0">&copy; 2025 SIGVE - Sistema de Gestión de Vehículos de Emergencia</p>
         </div>
     </footer>
+
+    <!-- Sistema de Notificaciones Toasts -->
+    {% include 'sigve/components/toast_container.html' %}
 
     <!-- Bootstrap 5 JS Bundle -->
     <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>

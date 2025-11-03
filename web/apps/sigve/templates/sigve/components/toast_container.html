@@ -1,0 +1,173 @@
+<!-- Container de Toasts - Sistema unificado de notificaciones -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999">
+    <!-- Los toasts se insertarán aquí dinámicamente -->
+</div>
+
+<script>
+// Sistema unificado de notificaciones
+window.SIGVENotifications = (function() {
+    'use strict';
+    
+    const TOAST_DURATION = 5000; // 5 segundos
+    
+    /**
+     * Muestra una notificación toast
+     * @param {string} message - El mensaje a mostrar
+     * @param {string} type - Tipo: 'success', 'error', 'warning', 'info'
+     * @param {number} duration - Duración en ms (opcional)
+     */
+    function show(message, type = 'info', duration = TOAST_DURATION) {
+        const toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            console.error('Toast container not found');
+            return;
+        }
+        
+        // Mapeo de tipos a clases de Bootstrap
+        const typeConfig = {
+            'success': {
+                bg: 'bg-success',
+                icon: 'bi-check-circle-fill',
+                title: 'Éxito'
+            },
+            'error': {
+                bg: 'bg-danger',
+                icon: 'bi-exclamation-triangle-fill',
+                title: 'Error'
+            },
+            'warning': {
+                bg: 'bg-warning',
+                icon: 'bi-exclamation-circle-fill',
+                title: 'Advertencia'
+            },
+            'info': {
+                bg: 'bg-info',
+                icon: 'bi-info-circle-fill',
+                title: 'Información'
+            }
+        };
+        
+        const config = typeConfig[type] || typeConfig.info;
+        const toastId = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Crear el HTML del toast
+        const toastHTML = `
+            <div id="${toastId}" class="toast align-items-center text-white ${config.bg} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi ${config.icon} me-2"></i>
+                        ${escapeHtml(message)}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        `;
+        
+        // Insertar el toast
+        toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+        
+        // Obtener el elemento y mostrarlo
+        const toastElement = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastElement, {
+            autohide: true,
+            delay: duration
+        });
+        
+        toast.show();
+        
+        // Remover el elemento del DOM después de ocultarlo
+        toastElement.addEventListener('hidden.bs.toast', function() {
+            toastElement.remove();
+        });
+    }
+    
+    /**
+     * Escapa HTML para prevenir XSS
+     */
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    /**
+     * Muestra un mensaje de éxito
+     */
+    function success(message) {
+        show(message, 'success');
+    }
+    
+    /**
+     * Muestra un mensaje de error
+     */
+    function error(message) {
+        show(message, 'error');
+    }
+    
+    /**
+     * Muestra un mensaje de advertencia
+     */
+    function warning(message) {
+        show(message, 'warning');
+    }
+    
+    /**
+     * Muestra un mensaje informativo
+     */
+    function info(message) {
+        show(message, 'info');
+    }
+    
+    /**
+     * Muestra múltiples errores de validación
+     */
+    function showValidationErrors(errors) {
+        if (typeof errors === 'object') {
+            for (const [field, fieldErrors] of Object.entries(errors)) {
+                if (Array.isArray(fieldErrors)) {
+                    fieldErrors.forEach(err => {
+                        error(`${field}: ${err}`);
+                    });
+                } else {
+                    error(`${field}: ${fieldErrors}`);
+                }
+            }
+        } else {
+            error(errors);
+        }
+    }
+    
+    // API pública
+    return {
+        show,
+        success,
+        error,
+        warning,
+        info,
+        showValidationErrors
+    };
+})();
+
+// Procesar mensajes de Django al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    // Convertir mensajes de Django en toasts
+    const djangoMessages = document.querySelectorAll('.django-message');
+    djangoMessages.forEach(function(messageElement) {
+        const type = messageElement.dataset.type || 'info';
+        const message = messageElement.textContent.trim();
+        
+        // Mapear tags de Django a tipos de toast
+        const typeMap = {
+            'error': 'error',
+            'success': 'success',
+            'warning': 'warning',
+            'info': 'info',
+            'debug': 'info'
+        };
+        
+        SIGVENotifications.show(message, typeMap[type] || 'info');
+        messageElement.remove();
+    });
+});
+</script>
+

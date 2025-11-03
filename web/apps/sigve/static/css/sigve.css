@@ -305,3 +305,35 @@ footer {
 .container-fluid{
     --bs-gutter-x: 3.5rem;
 }
+
+/* === Toasts === */
+.toast-container {
+    z-index: 9999;
+}
+
+.toast {
+    min-width: 300px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+    border-radius: 0.5rem;
+}
+
+.toast-body {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* === Alertas Permanentes === */
+.alert-permanent {
+    margin-bottom: 0;
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+}
+
+.alert-permanent .btn-close {
+    display: none;
+}
+
+/* Ajuste para modales */
+.modal-body .alert-permanent:last-child {
+    margin-bottom: 0;
+}
