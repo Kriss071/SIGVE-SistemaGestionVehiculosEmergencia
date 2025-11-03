@@ -47,9 +47,10 @@ Table workshop {
 }
 
 // ==== Tablas de Catalogo (Lookup) ====
+// Contienen las opciones para los menús desplegables
 
 Table vehicle_type {
-  Note: 'Tipos de vehículos (ej: Carro Bomba, Camioneta)'
+  Note: ' Tipos de vehículos (ej: Carro Bomba, Camioneta)'
   id integer                      [primary key]
   name varchar                    [not null, unique]
   description text
@@ -73,7 +74,7 @@ Table vehicle_status_log {
   id integer                      [primary key]
 
   vehicle_id integer              [ref: > vehicle.id, not null]
-  changed_by_user_id uuid         [ref: > user_profile.id, note: 'Usuario que registró el cambio']
+  changed_by_employee_id uuid     [ref: > employee.id, note: 'Empleado que registró el cambio']
   vehicle_status_id integer       [ref: > vehicle_status.id, not null]
   
   change_date timestamp           [not null, note: 'Momento exacto del cambio']
@@ -147,6 +148,7 @@ Table vehicle {
 
   created_at timestamp [not null]
   updated_at timestamp
+
 }
 
 // ==== Tablas de Mantenciones ====
@@ -165,7 +167,7 @@ Table maintenance_order {
   Note: 'Representa una orden de trabajo (visita) de un vehículo a un taller'
   id integer                      [primary key]
 
-  assigned_mechanic_id uuid       [ref: > user_profile.id, note: 'Mecánico asignado a la orden']  
+  employee_id uuid                [ref: > employee.id, note: 'Mecánico asignado a la orden']
   workshop_id integer             [ref: > workshop.id, not null]
   vehicle_id integer              [ref: > vehicle.id, not null]
 
@@ -204,41 +206,46 @@ Table supplier {
   phone varchar
   email varchar
 
-  workshop_id integer             [ref: > workshop.id, note: 'Proveedor local (nulo si es global)']
-
   created_at timestamp            [not null]
   updated_at timestamp
 }
 
 Table spare_part {
-  Note: 'Catálogo Maestro de repuestos (Gestionado por SIGVE)'
+  Note: 'Catálogo de repuestos'
   id integer                      [primary key]
   name varchar                    [not null, note: 'Nombre de la pieza']
-  sku varchar                     [not null, unique, note: 'SKU Oficial de SIGVE']
+  sku varchar                     [not null, unique]
   brand varchar                   [note: 'Marca de la pieza']
   description text
+  current_cost decimal            [not null]
+
+  supplier_id integer             [ref: > supplier.id, note: 'Proveedor']
+
   created_at timestamp [not null]
   updated_at timestamp
 }
 
-Table workshop_inventory {
-  Note: 'Stock de un repuesto maestro en un taller específico'
+// NO SE APLICO RESTRICCIÓN
+Table spare_part_stock {
+  Note: 'Stock de repuestos en cada taller'
   id integer                      [primary key]
 
-  spare_part_id integer           [ref: > spare_part.id, not null, note: 'Referencia al catálogo maestro']
-  workshop_id integer             [ref: > workshop.id, not null, note: 'Taller dueño de este stock']
-  supplier_id integer             [ref: > supplier.id, note: 'Proveedor al que este taller le compra este repuesto']
-  last_updated_by_user_id uuid    [ref: > user_profile.id, note: 'Usuario que actualizó el stock']
+  spare_part_id integer           [ref: > spare_part.id, not null]
+  workshop_id integer             [ref: > workshop.id, not null]
+  last_updated_by_employee_id uuid [ref: > employee.id, note: 'Empleado que actualizó el stock']
 
-  quantity integer                [not null, default: 0, note: 'Cantidad en bodega']
-  current_cost decimal            [not null, default: 0, note: 'Costo de compra para ESTE taller']
+
+  quantity integer                [not null, default: 0]
   location varchar                [note: 'Ubicación física en bodega (ej: Estante A-3)']
-  workshop_sku varchar            [note: 'SKU interno del taller (opcional)']
 
-  updated_at timestamp             [note: 'Última vez que se actualizó este stock']
+  updated_at timestamp            [note: 'Última vez que se actualizó este stock']
+
+// Restricción para asegurar que solo haya una fila por repuesto/taller
+// Se define a nivel de base de datos
+// unique(spare_part_id, workshop_id)
 
   Indexes {
-    (spare_part_id, workshop_id) [unique, note: 'Un repuesto maestro por taller']
+    (spare_part_id, workshop_id) [unique, note: 'Un repuesto por taller']
   }
 }
 
@@ -247,18 +254,19 @@ Table maintenance_task_part {
   id integer                      [primary key]
 
   maintenance_task_id integer     [ref: > maintenance_task.id, not null]
-  workshop_inventory_id integer   [ref: > workshop_inventory.id, not null]
+  spare_part_id integer           [ref: > spare_part.id, not null]
 
   quantity_used integer           [not null, default: 1]
-  cost_per_unit decimal           [note: 'Costo del repuesto al momento de usarlo (log histórico)']
+  cost_per_unit decimal           [note: 'Costo del repuesto al momento de usarlo']
 
   created_at timestamp            [not null]
+// Esta tabla no tiene updated_at, un log no debe modificarse.
 }
 
 // ==== Tablas de gestión de usuarios ====
 
 Table role {
-  Note: 'Roles de usuario (ej: Admin SIGVE, Admin Taller, Mecánico, Jefe Cuartel)'
+  Note: 'Roles de usuario (ej: Admin, Mecánico, Gerente)'
   id integer                      [primary key]
   name varchar                    [not null, unique]
   description text
@@ -267,27 +275,8 @@ Table role {
   updated_at timestamp
 }
 
-Table request_type {
-  id integer                      [primary key]
-  name varchar                    [not null, unique]
-  description text
-  target_table varchar            [not null]
-  form_schema jsonb               [not null]
-}
-
-Table data_request{
-  id integer                      [primary key]
-  requesting_user_id uuid         
-  request_type_id integer         [not null]
-  requested_data jsonb            [not null]
-  status varchar                  [not null]
-  admin_notes text
-  created_at timestamp            [not null]
-  updated_at timestamp
-}
-
-Table user_profile {
-  Note: 'Perfil de usuario. Extiende auth.users. Puede ser Admin, de Taller o de Cuartel.'
+Table employee {
+  Note: 'Perfil de empleado. Extiende la tabla auth.users de Supabase'
   id uuid                         [primary key, ref: > auth.users.id]
 
   first_name varchar              [not null]
@@ -297,8 +286,7 @@ Table user_profile {
   is_active boolean               [not null, default: true]
 
   role_id integer                 [ref: > role.id, not null]
-  workshop_id integer             [ref: > workshop.id, note: 'Taller (nulo si es Admin o de Cuartel)']
-  fire_station_id integer         [ref: > fire_station.id, note: 'Cuartel (nulo si es Admin o de Taller)']
+  workshop_id integer             [ref: > workshop.id, note: 'Taller principal (nulo si es Admin global)']
 
   created_at timestamp [not null]
   updated_at timestamp
