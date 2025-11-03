@@ -118,12 +118,12 @@ def require_role(required_role):
     Decorador de fábrica para vistas de Django que requieren un rol específico.
 
     Utiliza _get_authenticated_user para la autenticación inicial. Si es exitosa,
-    consulta la tabla `employee` (uniéndola con `role`) para obtener el nombre 
+    consulta la tabla `user_profile` (uniéndola con `role`) para obtener el nombre 
     del rol actual del usuario y lo compara con `required_role`.
 
     Args:
         required_role (str): El nombre exacto del rol requerido (sensible a mayúsculas/minúsculas). 
-                             Ej: "Administrador", "Mecanico".
+                             Ej: "Admin SIGVE", "Admin Taller", "Mecánico".
 
     Returns:
         Una función decoradora que toma la función de vista como argumento.
@@ -145,9 +145,9 @@ def require_role(required_role):
                     logger.debug(f"👤 (require_role) Verificando si {user_id} tiene el rol '{required_role}'...")
                     supabase = get_supabase() # Re-obtener cliente por si acaso
                     
-                    # Buscar el rol del usuario desde la tabla 'employee' uniéndola con 'role'
+                    # Buscar el rol del usuario desde la tabla 'user_profile' uniéndola con 'role'
                     role_resp = (
-                        supabase.table("employee")
+                        supabase.table("user_profile")
                         .select("role_id, role:role_id(name)") 
                         .eq("id", user_id)                   
                         .maybe_single()                      
@@ -156,10 +156,10 @@ def require_role(required_role):
                     
                     user_role_name = '' 
                     
-                    # Verificar si se encontró el empleado y extraer el nombre del rol
+                    # Verificar si se encontró el perfil de usuario y extraer el nombre del rol
                     if not role_resp.data:
-                        logger.warning(f"⚠️ (require_role) Usuario {user_id} no encontrado en 'employee'. Acceso denegado.")
-                        messages.error(request, "No tienes permisos (registro de empleado no encontrado).")
+                        logger.warning(f"⚠️ (require_role) Usuario {user_id} no encontrado en 'user_profile'. Acceso denegado.")
+                        messages.error(request, "No tienes permisos (perfil de usuario no encontrado).")
                         return redirect('login') 
                     
                     role_relation_data = role_resp.data.get('role')
@@ -183,7 +183,7 @@ def require_role(required_role):
                             else:
                                  logger.warning(f"⚠️ (require_role) No se encontró nombre para role_id={role_id}.")
                         else:
-                            logger.warning(f"⚠️ (require_role) Empleado {user_id} sin 'role_id'.")
+                            logger.warning(f"⚠️ (require_role) Usuario {user_id} sin 'role_id'.")
                             
                     # Comparar el rol obtenido con el requerido
                     if user_role_name != required_role:
