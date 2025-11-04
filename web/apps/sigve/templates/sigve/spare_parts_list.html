@@ -1,13 +1,18 @@
 {% extends 'sigve/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/spare_part_modal.css' %}">
+{% endblock%}
 
 {% block content %}
 <div class="row">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1><i class="bi bi-gear"></i> Catálogo de Repuestos</h1>
-            <a href="{% url 'sigve:spare_part_create' %}" class="btn btn-success">
+            <button type="button" class="btn btn-success" onclick="SparePartModal.open('create', null, 'list')">
                 <i class="bi bi-plus-circle"></i> Crear Repuesto
-            </a>
+            </button>
         </div>
     </div>
 </div>
@@ -15,8 +20,13 @@
 <div class="card">
     <div class="card-body">
         {% if spare_parts %}
+
+        <div class="mb-3">
+            <input type="text" id="tableSearchInput" class="form-control" placeholder="Buscar en repuestos...">
+        </div>
+
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table" id="sparePartsTable">
                 <thead>
                     <tr>
                         <th>Nombre</th>
@@ -28,18 +38,23 @@
                 </thead>
                 <tbody>
                     {% for part in spare_parts %}
-                    <tr>
+                    <tr onclick="SparePartModal.open('view', {{ part.id }})">
                         <td><strong>{{ part.name }}</strong></td>
                         <td><code>{{ part.sku }}</code></td>
                         <td>{{ part.brand|default:"—" }}</td>
                         <td><small class="text-muted">{{ part.description|truncatewords:10|default:"—" }}</small></td>
                         <td class="text-end">
-                            <a href="{% url 'sigve:spare_part_edit' part.id %}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-pencil"></i> Editar
-                            </a>
                             <button type="button" class="btn btn-sm btn-outline-danger" 
-                                    onclick="deleteSparePart({{ part.id }})">
+                                    onclick="event.stopPropagation(); DeleteModal.open({
+                                        formAction: '/sigve/spare-parts/{{ part.id }}/delete/',
+                                        itemName: '{{ part.name|escapejs }}',
+                                        warningText: '¿Estás seguro de eliminar el repuesto {{ part.name|escapejs }}?'
+                                    })">
                                 <i class="bi bi-trash"></i> Eliminar
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                    onclick="event.stopPropagation(); SparePartModal.open('edit', {{ part.id }})">
+                                <i class="bi bi-pencil"></i> Editar
                             </button>
                         </td>
                     </tr>
@@ -51,29 +66,26 @@
         <div class="text-center py-5">
             <i class="bi bi-gear display-1 text-muted"></i>
             <p class="text-muted mt-3">No hay repuestos registrados</p>
-            <a href="{% url 'sigve:spare_part_create' %}" class="btn btn-success">
+            <button type="button" class="btn btn-success" onclick="SparePartModal.open('create', null, 'list')">
                 <i class="bi bi-plus-circle"></i> Crear Primer Repuesto
-            </a>
+            </button>
         </div>
         {% endif %}
     </div>
 </div>
 
+<!-- Incluir el modal de repuesto y eliminar -->
+{% include 'sigve/modals/spare_part_modal.html' %}
+{% include 'sigve/modals/delete_confirmation_modal.html' %}
+
+<!-- Form oculto para eliminar -->
 <form id="deleteForm" method="post" style="display: none;">
     {% csrf_token %}
 </form>
+
 {% endblock %}
 
 {% block extra_js %}
-<script>
-    function deleteSparePart(partId) {
-        if (confirm('¿Estás seguro de eliminar este repuesto? Esta acción no se puede deshacer.')) {
-            const form = document.getElementById('deleteForm');
-            form.action = `/sigve/spare-parts/${partId}/delete/`;
-            form.submit();
-        }
-    }
-</script>
+<script src="{% static 'js/modal.js' %}"></script>
+<script src="{% static 'js/spare_part.js' %}"></script>
 {% endblock %}
-
-

@@ -3,6 +3,9 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/workshop_modal.css' %}">
+<link rel="stylesheet" href="{% static 'css/fire_station_modal.css' %}">
+<link rel="stylesheet" href="{% static 'css/spare_part_modal.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -132,7 +135,7 @@
                     <button type="button" class="btn btn-outline-danger d-flex align-items-center" onclick="FireStationModal.open('create', null, 'dashboard')">
                         <i class="bi bi-plus-circle me-2"></i> Crear Cuartel
                     </button>
-                    <button type="button" class="btn btn-outline-success d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#sparePartModal">
+                    <button type="button" class="btn btn-outline-success d-flex align-items-center" onclick="SparePartModal.open('create', null, 'dashboard')">
                         <i class="bi bi-plus-circle me-2"></i> Crear Repuesto
                     </button>
                 </div>
@@ -191,11 +194,21 @@
 {% include 'sigve/modals/workshop_modal.html' %}
 {% include 'sigve/modals/fire_station_modal.html' %}
 {% include 'sigve/modals/spare_part_modal.html' %}
+{% include 'sigve/modals/delete_confirmation_modal.html' %}
+
+<!-- Form oculto para eliminar -->
+<form id="deleteForm" method="post" style="display: none;">
+    {% csrf_token %}
+</form>
 
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{% static 'js/modal.js' %}"></script>
+<script src="{% static 'js/workshop.js' %}"></script>
+<script src="{% static 'js/fire_station.js' %}"></script>
+<script src="{% static 'js/spare_part.js' %}"></script>
 <script src="{% static 'js/dashboard.js' %}"></script>
 {% endblock %}
 

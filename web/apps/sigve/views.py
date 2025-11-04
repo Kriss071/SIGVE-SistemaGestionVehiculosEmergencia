@@ -41,6 +41,9 @@ def dashboard(request):
     # Obtener solicitudes pendientes
     context['pending_requests_count'] = DashboardService.get_pending_requests_count()
     
+    # Contexto necesario para los modales
+    context['communes'] = FireStationService.get_all_communes()
+    
     return render(request, 'sigve/dashboard.html', context)
 
 
@@ -250,7 +253,8 @@ def fire_stations_list(request):
     context = {
         'page_title': 'Gestión de Cuarteles',
         'active_page': 'fire_stations',
-        'fire_stations': FireStationService.get_all_fire_stations()
+        'fire_stations': FireStationService.get_all_fire_stations(),
+        'communes': FireStationService.get_all_communes()
     }
     
     return render(request, 'sigve/fire_stations_list.html', context)
@@ -399,6 +403,9 @@ def spare_part_create(request):
     """Crear un nuevo repuesto maestro."""
     if request.method == 'POST':
         form = SparePartForm(request.POST)
+        source = request.POST.get('source', 'list')
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
         if form.is_valid():
             data = {
                 'name': form.cleaned_data['name'],
@@ -410,21 +417,26 @@ def spare_part_create(request):
             spare_part = CatalogService.create_spare_part(data)
             
             if spare_part:
-                # Si es una petición AJAX, responder con JSON
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({'success': True, 'message': f'Repuesto "{data["name"]}" creado correctamente.'})
+                if source == 'dashboard' and is_ajax:
+                    return JsonResponse({
+                        'success': True,
+                        'message': f'✅ Repuesto "{data["name"]}" creado correctamente.'
+                    })
+                
+                if is_ajax:
+                    return JsonResponse({
+                        'success': True,
+                        'message': f'✅ Repuesto "{data["name"]}" creado correctamente.'
+                    })
                 
                 messages.success(request, f'✅ Repuesto "{data["name"]}" creado correctamente.')
                 return redirect('sigve:spare_parts_list')
             else:
-                # Si es una petición AJAX, responder con JSON
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                if is_ajax:
                     return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el repuesto.']}})
-                
                 messages.error(request, '❌ Error al crear el repuesto.')
         else:
-            # Si hay errores de validación y es AJAX, responder con JSON
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            if is_ajax:
                 return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = SparePartForm()
@@ -445,11 +457,16 @@ def spare_part_edit(request, spare_part_id):
     spare_part = CatalogService.get_spare_part(spare_part_id)
     
     if not spare_part:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'Repuesto no encontrado.'})
         messages.error(request, '❌ Repuesto no encontrado.')
         return redirect('sigve:spare_parts_list')
     
     if request.method == 'POST':
         form = SparePartForm(request.POST)
+        source = request.POST.get('source', 'list')
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
         if form.is_valid():
             data = {
                 'name': form.cleaned_data['name'],
@@ -461,10 +478,27 @@ def spare_part_edit(request, spare_part_id):
             success = CatalogService.update_spare_part(spare_part_id, data)
             
             if success:
+                if source == 'dashboard' and is_ajax:
+                    return JsonResponse({
+                        'success': True,
+                        'message': '✅ Repuesto actualizado correctamente.'
+                    })
+                
+                if is_ajax:
+                    return JsonResponse({
+                        'success': True,
+                        'message': '✅ Repuesto actualizado correctamente.'
+                    })
+                
                 messages.success(request, '✅ Repuesto actualizado correctamente.')
                 return redirect('sigve:spare_parts_list')
             else:
+                if is_ajax:
+                    return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el repuesto.']}})
                 messages.error(request, '❌ Error al actualizar el repuesto.')
+        else:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = SparePartForm(initial=spare_part)
     
@@ -878,4 +912,24 @@ def api_get_fire_station(request, fire_station_id):
         return JsonResponse({
             'success': False,
             'error': 'Cuartel no encontrado'
+        }, status=404)
+
+
+@require_supabase_login
+@require_role("Admin SIGVE")
+def api_get_spare_part(request, spare_part_id):
+    """
+    API endpoint para obtener los datos de un repuesto específico.
+    """
+    spare_part = CatalogService.get_spare_part(spare_part_id)
+    
+    if spare_part:
+        return JsonResponse({
+            'success': True,
+            'spare_part': spare_part
+        })
+    else:
+        return JsonResponse({
+            'success': False,
+            'error': 'Repuesto no encontrado'
         }, status=404)

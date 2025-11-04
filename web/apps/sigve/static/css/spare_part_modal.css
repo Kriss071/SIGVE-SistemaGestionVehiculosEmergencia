@@ -1,0 +1,23 @@
+/* Estilos para campos readonly en el modal de repuesto */
+#sparePartModal .form-control[readonly],
+#sparePartModal .form-control:read-only,
+#sparePartModal .form-select[disabled] {
+    background-color: #e9ecef !important;
+    opacity: 1 !important;
+    cursor: not-allowed !important;
+    color: #6c757d !important;
+}
+
+#sparePartModal .form-control[readonly]:focus,
+#sparePartModal .form-control:read-only:focus,
+#sparePartModal .form-select[disabled]:focus {
+    background-color: #e9ecef !important;
+    border-color: #ced4da !important;
+    box-shadow: none !important;
+}
+
+/* Estilos adicionales para textarea readonly */
+#sparePartModal textarea.form-control[readonly] {
+    resize: none;
+}
+

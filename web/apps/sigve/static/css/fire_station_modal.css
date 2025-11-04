@@ -1,0 +1,22 @@
+/* Estilos para campos readonly en el modal de cuartel */
+#fireStationModal .form-control[readonly],
+#fireStationModal .form-control:read-only,
+#fireStationModal .form-select[disabled] {
+    background-color: #e9ecef !important;
+    opacity: 1 !important;
+    cursor: not-allowed !important;
+    color: #6c757d !important;
+}
+
+#fireStationModal .form-control[readonly]:focus,
+#fireStationModal .form-control:read-only:focus,
+#fireStationModal .form-select[disabled]:focus {
+    background-color: #e9ecef !important;
+    border-color: #ced4da !important;
+    box-shadow: none !important;
+}
+
+/* Estilos adicionales para textarea readonly */
+#fireStationModal textarea.form-control[readonly] {
+    resize: none;
+}

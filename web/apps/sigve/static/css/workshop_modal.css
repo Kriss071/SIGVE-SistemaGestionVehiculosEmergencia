@@ -1,5 +1,7 @@
+/* Estilos para campos readonly en el modal de taller */
 #workshopModal .form-control[readonly],
-#workshopModal .form-control:read-only {
+#workshopModal .form-control:read-only,
+#workshopModal .form-select[disabled] {
     background-color: #e9ecef !important;
     opacity: 1 !important;
     cursor: not-allowed !important;
@@ -7,8 +9,14 @@
 }
 
 #workshopModal .form-control[readonly]:focus,
-#workshopModal .form-control:read-only:focus {
+#workshopModal .form-control:read-only:focus,
+#workshopModal .form-select[disabled]:focus {
     background-color: #e9ecef !important;
     border-color: #ced4da !important;
     box-shadow: none !important;
+}
+
+/* Estilos adicionales para textarea readonly */
+#workshopModal textarea.form-control[readonly] {
+    resize: none;
 }
