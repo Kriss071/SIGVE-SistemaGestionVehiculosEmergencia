@@ -52,6 +52,7 @@ urlpatterns = [
     path('api/workshops/<int:workshop_id>/', views.api_get_workshop, name='api_get_workshop'),
     path('api/fire-stations/<int:fire_station_id>/', views.api_get_fire_station, name='api_get_fire_station'),
     path('api/spare-parts/<int:spare_part_id>/', views.api_get_spare_part, name='api_get_spare_part'),
+    path('api/suppliers/<int:supplier_id>/', views.api_get_supplier, name='api_get_supplier'),
 ]
 
 

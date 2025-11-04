@@ -547,6 +547,9 @@ def supplier_create(request):
     """Crear un nuevo proveedor global."""
     if request.method == 'POST':
         form = SupplierForm(request.POST)
+        source = request.POST.get('source', 'list')
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
         if form.is_valid():
             data = {
                 'name': form.cleaned_data['name'],
@@ -560,10 +563,19 @@ def supplier_create(request):
             supplier = CatalogService.create_supplier(data)
             
             if supplier:
-                messages.success(request, f'✅ Proveedor "{data["name"]}" creado correctamente.')
+                message = f'✅ Proveedor "{data["name"]}" creado correctamente.'
+                if is_ajax:
+                    return JsonResponse({'success': True, 'message': message})
+                
+                messages.success(request, message)
                 return redirect('sigve:suppliers_list')
             else:
+                if is_ajax:
+                    return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el proveedor.']}})
                 messages.error(request, '❌ Error al crear el proveedor.')
+        else:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = SupplierForm()
     
@@ -573,6 +585,7 @@ def supplier_create(request):
         'form': form
     }
     
+    # Esta vista (supplier_form.html) se mantiene como fallback
     return render(request, 'sigve/supplier_form.html', context)
 
 
@@ -583,11 +596,15 @@ def supplier_edit(request, supplier_id):
     supplier = CatalogService.get_supplier(supplier_id)
     
     if not supplier:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'Proveedor no encontrado.'})
         messages.error(request, '❌ Proveedor no encontrado.')
         return redirect('sigve:suppliers_list')
     
     if request.method == 'POST':
         form = SupplierForm(request.POST)
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
         if form.is_valid():
             data = {
                 'name': form.cleaned_data['name'],
@@ -600,10 +617,19 @@ def supplier_edit(request, supplier_id):
             success = CatalogService.update_supplier(supplier_id, data)
             
             if success:
-                messages.success(request, '✅ Proveedor actualizado correctamente.')
+                message = '✅ Proveedor actualizado correctamente.'
+                if is_ajax:
+                    return JsonResponse({'success': True, 'message': message})
+                
+                messages.success(request, message)
                 return redirect('sigve:suppliers_list')
             else:
+                if is_ajax:
+                    return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el proveedor.']}})
                 messages.error(request, '❌ Error al actualizar el proveedor.')
+        else:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = SupplierForm(initial=supplier)
     
@@ -614,6 +640,7 @@ def supplier_edit(request, supplier_id):
         'supplier': supplier
     }
     
+    # Esta vista (supplier_form.html) se mantiene como fallback
     return render(request, 'sigve/supplier_form.html', context)
 
 
@@ -932,4 +959,24 @@ def api_get_spare_part(request, spare_part_id):
         return JsonResponse({
             'success': False,
             'error': 'Repuesto no encontrado'
+        }, status=404)
+
+
+@require_supabase_login
+@require_role("Admin SIGVE")
+def api_get_supplier(request, supplier_id):
+    """
+    API endpoint para obtener los datos de un proveedor específico.
+    """
+    supplier = CatalogService.get_supplier(supplier_id)
+    
+    if supplier:
+        return JsonResponse({
+            'success': True,
+            'supplier': supplier
+        })
+    else:
+        return JsonResponse({
+            'success': False,
+            'error': 'Proveedor no encontrado'
         }, status=404)

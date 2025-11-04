@@ -1,0 +1,22 @@
+/* Estilos para campos readonly en el modal de proveedor */
+#supplierModal .form-control[readonly],
+#supplierModal .form-control:read-only,
+#supplierModal .form-select[disabled] {
+    background-color: #e9ecef !important;
+    opacity: 1 !important;
+    cursor: not-allowed !important;
+    color: #6c757d !important;
+}
+
+#supplierModal .form-control[readonly]:focus,
+#supplierModal .form-control:read-only:focus,
+#supplierModal .form-select[disabled]:focus {
+    background-color: #e9ecef !important;
+    border-color: #ced4da !important;
+    box-shadow: none !important;
+}
+
+/* Estilos adicionales para textarea readonly */
+#supplierModal textarea.form-control[readonly] {
+    resize: none;
+}

@@ -1,13 +1,18 @@
 {% extends 'sigve/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/supplier.css' %}">
+{% endblock%}
 
 {% block content %}
 <div class="row">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1><i class="bi bi-truck"></i> Proveedores Globales</h1>
-            <a href="{% url 'sigve:supplier_create' %}" class="btn btn-info">
+            <button type="button" class="btn btn-info text-white" onclick="SupplierModal.open('create', null, 'list')">
                 <i class="bi bi-plus-circle"></i> Crear Proveedor
-            </a>
+            </button>
         </div>
     </div>
 </div>
@@ -15,8 +20,13 @@
 <div class="card">
     <div class="card-body">
         {% if suppliers %}
+
+        <div class="mb-3">
+            <input type="text" id="tableSearchInput" class="form-control" placeholder="Buscar en proveedores...">
+        </div>
+
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover" id="suppliersTable">
                 <thead>
                     <tr>
                         <th>Nombre</th>
@@ -29,19 +39,24 @@
                 </thead>
                 <tbody>
                     {% for supplier in suppliers %}
-                    <tr>
+                    <tr onclick="SupplierModal.open('view', {{ supplier.id }})">
                         <td><strong>{{ supplier.name }}</strong></td>
                         <td>{{ supplier.rut|default:"—" }}</td>
                         <td>{{ supplier.address|default:"—" }}</td>
                         <td>{{ supplier.phone|default:"—" }}</td>
                         <td>{{ supplier.email|default:"—" }}</td>
                         <td class="text-end">
-                            <a href="{% url 'sigve:supplier_edit' supplier.id %}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-pencil"></i> Editar
-                            </a>
                             <button type="button" class="btn btn-sm btn-outline-danger" 
-                                    onclick="deleteSupplier({{ supplier.id }})">
+                                    onclick="event.stopPropagation(); DeleteModal.open({
+                                        formAction: '/sigve/suppliers/{{ supplier.id }}/delete/',
+                                        itemName: '{{ supplier.name|escapejs }}',
+                                        warningText: '¿Estás seguro de eliminar el proveedor {{ supplier.name|escapejs }}?'
+                                    })">
                                 <i class="bi bi-trash"></i> Eliminar
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                    onclick="event.stopPropagation(); SupplierModal.open('edit', {{ supplier.id }})">
+                                <i class="bi bi-pencil"></i> Editar
                             </button>
                         </td>
                     </tr>
@@ -53,13 +68,18 @@
         <div class="text-center py-5">
             <i class="bi bi-truck display-1 text-muted"></i>
             <p class="text-muted mt-3">No hay proveedores registrados</p>
-            <a href="{% url 'sigve:supplier_create' %}" class="btn btn-info">
+            <button type="button" class="btn btn-info" onclick="SupplierModal.open('create', null, 'list')">
                 <i class="bi bi-plus-circle"></i> Crear Primer Proveedor
-            </a>
+            </button>
         </div>
         {% endif %}
     </div>
 </div>
+
+
+<!-- Incluir el modal de taller y eliminar -->
+{% include 'sigve/modals/supplier_modal.html' %}
+{% include 'sigve/modals/delete_confirmation_modal.html' %}
 
 <form id="deleteForm" method="post" style="display: none;">
     {% csrf_token %}
@@ -67,15 +87,8 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-    function deleteSupplier(supplierId) {
-        if (confirm('¿Estás seguro de eliminar este proveedor? Esta acción no se puede deshacer.')) {
-            const form = document.getElementById('deleteForm');
-            form.action = `/sigve/suppliers/${supplierId}/delete/`;
-            form.submit();
-        }
-    }
-</script>
+<script src="{% static 'js/modal.js' %}"></script>
+<script src="{% static 'js/supplier.js' %}"></script>
 {% endblock %}
 
 
