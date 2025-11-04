@@ -1,13 +1,19 @@
 {% extends 'sigve/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/catalog.css' %}">
+{% endblock%}
 
 {% block content %}
 <div class="row">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1><i class="bi bi-list-ul"></i> {{ catalog_display_name }}</h1>
-            <a href="{% url 'sigve:catalog_create' catalog_name %}" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> Crear
-            </a>
+            <button type="button" class="btn btn-primary" 
+                    onclick="CatalogModal.open('create', '{{ catalog_name }}', '{{ catalog_singular_name }}', null, 'list', '{{ catalog_icon }}', '{{ catalog_placeholder|escapejs }}')">
+                <i class="bi bi-plus-circle"></i> Crear {{ catalog_singular_name }}
+            </button>
         </div>
     </div>
 </div>
@@ -15,8 +21,13 @@
 <div class="card">
     <div class="card-body">
         {% if items %}
+
+        <div class="mb-3">
+            <input type="text" id="tableSearchInput" class="form-control" placeholder="Buscar en {{ catalog_display_name|lower }}...">
+        </div>
+
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover" id="catalogTable">
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -27,16 +38,23 @@
                 </thead>
                 <tbody>
                     {% for item in items %}
-                    <tr>
+                    <tr onclick="CatalogModal.open('view', '{{ catalog_name }}', '{{ catalog_singular_name }}', {{ item.id }}, 'list', '{{ catalog_icon }}', '{{ catalog_placeholder|escapejs }}')">
                         <td><span class="badge bg-secondary">{{ item.id }}</span></td>
                         <td><strong>{{ item.name }}</strong></td>
                         <td><small class="text-muted">{{ item.description|truncatewords:15|default:"—" }}</small></td>
                         <td class="text-end">
-                            <a href="{% url 'sigve:catalog_edit' catalog_name item.id %}" class="btn btn-sm btn-outline-primary">
+                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                    onclick="event.stopPropagation(); CatalogModal.open('edit', '{{ catalog_name }}', '{{ catalog_singular_name }}', {{ item.id }}, 'list', '{{ catalog_icon }}', '{{ catalog_placeholder|escapejs }}')">
                                 <i class="bi bi-pencil"></i> Editar
-                            </a>
+                            </button>
                             <button type="button" class="btn btn-sm btn-outline-danger" 
-                                    onclick="deleteCatalogItem({{ item.id }})">
+                                    onclick="event.stopPropagation(); ConfirmationModal.open({
+                                        formAction: '{% url 'sigve:catalog_delete' catalog_name item.id %}',
+                                        warningText: '¿Estás seguro de eliminar \'{{ item.name|escapejs }}\'? Esta acción no se puede deshacer.',
+                                        title: 'Confirmar Eliminación',
+                                        btnClass: 'btn-danger',
+                                        btnText: 'Sí, Eliminar'
+                                    })">
                                 <i class="bi bi-trash"></i> Eliminar
                             </button>
                         </td>
@@ -49,29 +67,28 @@
         <div class="text-center py-5">
             <i class="bi bi-list-ul display-1 text-muted"></i>
             <p class="text-muted mt-3">No hay items registrados</p>
-            <a href="{% url 'sigve:catalog_create' catalog_name %}" class="btn btn-primary">
+            <button type="button" class="btn btn-primary" 
+                    onclick="CatalogModal.open('create', '{{ catalog_name }}', '{{ catalog_singular_name }}', null, 'list', '{{ catalog_icon }}', '{{ catalog_placeholder|escapejs }}')">
                 <i class="bi bi-plus-circle"></i> Crear Primer Item
-            </a>
+            </button>
         </div>
         {% endif %}
     </div>
 </div>
 
-<form id="deleteForm" method="post" style="display: none;">
+
+{% include 'sigve/modals/catalog_modal.html' %}
+{% include 'sigve/modals/confirmation_modal.html' %}
+
+<form id="confirmationForm" method="post" style="display: none;">
     {% csrf_token %}
 </form>
+
 {% endblock %}
 
 {% block extra_js %}
-<script>
-    function deleteCatalogItem(itemId) {
-        if (confirm('¿Estás seguro de eliminar este item? Esta acción no se puede deshacer.')) {
-            const form = document.getElementById('deleteForm');
-            form.action = `/sigve/catalogs/{{ catalog_name }}/${itemId}/delete/`;
-            form.submit();
-        }
-    }
-</script>
+<script src="{% static 'js/modal.js' %}"></script>
+<script src="{% static 'js/catalog.js' %}"></script>
 {% endblock %}
 
 

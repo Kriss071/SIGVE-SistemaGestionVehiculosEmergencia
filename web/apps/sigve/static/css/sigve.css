@@ -351,3 +351,7 @@ footer {
 .modal-body .alert-permanent:last-child {
     margin-bottom: 0;
 }
+
+.dropdown-menu{
+    min-width: 200px;
+}

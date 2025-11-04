@@ -1,0 +1,56 @@
+<div class="modal fade" id="catalogModal" tabindex="-1" aria-labelledby="catalogModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="catalogModalLabel">
+                    <i id="catalogModalIcon" class="bi bi-list-ul"></i> <span id="catalogModalTitle">Crear Item</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            
+            <div id="catalogModalLoading" class="text-center py-5" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-3 text-muted">Cargando información del item...</p>
+            </div>
+            
+            <form method="post" action="" id="catalogForm" class="needs-validation" style="display: none;" novalidate>
+                {% csrf_token %}
+                <input type="hidden" name="item_id" id="catalogItemId">
+                <input type="hidden" name="source" id="catalogSource" value="list">
+                
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="id_name" class="form-label">Nombre <span class="text-danger">*</span></label>
+                        <input type="text" 
+                               class="form-control" 
+                               name="name" 
+                               id="id_name" 
+                               placeholder="Ej: Gasolina 95"
+                               required>
+                        <div class="invalid-feedback">
+                            Por favor, ingresa un nombre para el item.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_description" class="form-label">Descripción</label>
+                        <textarea class="form-control" 
+                                  name="description" 
+                                  id="id_description" 
+                                  rows="3"
+                                  placeholder="Ingresa una descripción (opcional)"></textarea>
+                        <small class="text-muted">Descripción breve del item</small>
+                    </div>
+
+                    <div class="alert alert-primary alert-permanent border-0" role="alert">
+                        <small><i class="bi bi-info-circle me-1"></i>El campo marcado con <span class="text-danger">*</span> es obligatorio</small>
+                    </div>
+                </div>
+                <div class="modal-footer" id="catalogModalFooter">
+                    </div>
+            </form>
+        </div>
+    </div>
+</div>

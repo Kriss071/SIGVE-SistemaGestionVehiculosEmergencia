@@ -56,6 +56,7 @@ urlpatterns = [
     path('api/spare-parts/<int:spare_part_id>/', views.api_get_spare_part, name='api_get_spare_part'),
     path('api/suppliers/<int:supplier_id>/', views.api_get_supplier, name='api_get_supplier'),
     path('api/users/<str:user_id>/', views.api_get_user, name='api_get_user'),
+    path('api/catalogs/<str:catalog_name>/<int:item_id>/', views.api_get_catalog_item, name='api_get_catalog_item')
 ]
 
 

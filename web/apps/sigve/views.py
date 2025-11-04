@@ -661,14 +661,54 @@ def supplier_delete(request, supplier_id):
 
 # Catálogos Genéricos (Lookup Tables)
 CATALOG_CONFIG = {
-    'vehicle_type': {'name': 'Tipos de Vehículo', 'singular': 'Tipo de Vehículo'},
-    'vehicle_status': {'name': 'Estados de Vehículo', 'singular': 'Estado de Vehículo'},
-    'fuel_type': {'name': 'Tipos de Combustible', 'singular': 'Tipo de Combustible'},
-    'transmission_type': {'name': 'Tipos de Transmisión', 'singular': 'Tipo de Transmisión'},
-    'oil_type': {'name': 'Tipos de Aceite', 'singular': 'Tipo de Aceite'},
-    'coolant_type': {'name': 'Tipos de Refrigerante', 'singular': 'Tipo de Refrigerante'},
-    'task_type': {'name': 'Tipos de Tarea', 'singular': 'Tipo de Tarea'},
-    'role': {'name': 'Roles de Usuario', 'singular': 'Rol'},
+    'vehicle_type': {
+        'name': 'Tipos de Vehículo', 
+        'singular': 'Tipo de Vehículo', 
+        'icon': 'bi-truck',
+        'placeholder': 'Ej: Carro Bomba, Ambulancia'
+    },
+    'vehicle_status': {
+        'name': 'Estados de Vehículo', 
+        'singular': 'Estado de Vehículo', 
+        'icon': 'bi-check-circle',
+        'placeholder': 'Ej: Operativo, En Taller'
+    },
+    'fuel_type': {
+        'name': 'Tipos de Combustible', 
+        'singular': 'Tipo de Combustible', 
+        'icon': 'bi-fuel-pump',
+        'placeholder': 'Ej: Gasolina 95, Diesel'
+    },
+    'transmission_type': {
+        'name': 'Tipos de Transmisión', 
+        'singular': 'Tipo de Transmisión', 
+        'icon': 'bi-gear',
+        'placeholder': 'Ej: Manual, Automática'
+    },
+    'oil_type': {
+        'name': 'Tipos de Aceite', 
+        'singular': 'Tipo de Aceite', 
+        'icon': 'bi-water',
+        'placeholder': 'Ej: 10W-40 Sintético'
+    },
+    'coolant_type': {
+        'name': 'Tipos de Refrigerante', 
+        'singular': 'Tipo de Refrigerante', 
+        'icon': 'bi-thermometer-half',
+        'placeholder': 'Ej: Orgánico (Rojo)'
+    },
+    'task_type': {
+        'name': 'Tipos de Tarea', 
+        'singular': 'Tipo de Tarea', 
+        'icon': 'bi-card-checklist',
+        'placeholder': 'Ej: Cambio de Aceite'
+    },
+    'role': {
+        'name': 'Roles de Usuario', 
+        'singular': 'Rol', 
+        'icon': 'bi-person-badge',
+        'placeholder': 'Ej: Admin Taller, Conductor'
+    },
 }
 
 
@@ -687,6 +727,9 @@ def catalog_list(request, catalog_name):
         'active_page': 'catalogs',
         'catalog_name': catalog_name,
         'catalog_display_name': config['name'],
+        'catalog_singular_name': config['singular'],
+        'catalog_icon': config.get('icon', 'bi-list-ul'),
+        'catalog_placeholder': config.get('placeholder', 'Ej: Nuevo Item'),
         'items': CatalogService.get_catalog_items(catalog_name)
     }
     
@@ -696,12 +739,15 @@ def catalog_list(request, catalog_name):
 @require_supabase_login
 @require_role("Admin SIGVE")
 def catalog_create(request, catalog_name):
-    """Crear un item de catálogo."""
+    """Crear un item de catálogo (ahora compatible con AJAX)."""
     if catalog_name not in CATALOG_CONFIG:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'Catálogo no encontrado.'}, status=404)
         messages.error(request, '❌ Catálogo no encontrado.')
         return redirect('sigve:dashboard')
     
     config = CATALOG_CONFIG[catalog_name]
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     
     if request.method == 'POST':
         form = CatalogItemForm(request.POST)
@@ -714,13 +760,22 @@ def catalog_create(request, catalog_name):
             item = CatalogService.create_catalog_item(catalog_name, data)
             
             if item:
-                messages.success(request, f'✅ {config["singular"]} creado correctamente.')
+                message = f'✅ {config["singular"]} creado correctamente.'
+                if is_ajax:
+                    return JsonResponse({'success': True, 'message': message})
+                messages.success(request, message)
                 return redirect('sigve:catalog_list', catalog_name=catalog_name)
             else:
+                if is_ajax:
+                    return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el item.']}})
                 messages.error(request, '❌ Error al crear el item.')
+        else:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = CatalogItemForm()
     
+    # Fallback para renderizado no-ajax (si se mantiene catalog_form.html)
     context = {
         'page_title': f'Crear {config["singular"]}',
         'active_page': 'catalogs',
@@ -735,15 +790,20 @@ def catalog_create(request, catalog_name):
 @require_supabase_login
 @require_role("Admin SIGVE")
 def catalog_edit(request, catalog_name, item_id):
-    """Editar un item de catálogo."""
+    """Editar un item de catálogo (ahora compatible con AJAX)."""
     if catalog_name not in CATALOG_CONFIG:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'Catálogo no encontrado.'}, status=404)
         messages.error(request, '❌ Catálogo no encontrado.')
         return redirect('sigve:dashboard')
     
     config = CATALOG_CONFIG[catalog_name]
     item = CatalogService.get_catalog_item(catalog_name, item_id)
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     
     if not item:
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': 'Item no encontrado.'}, status=404)
         messages.error(request, '❌ Item no encontrado.')
         return redirect('sigve:catalog_list', catalog_name=catalog_name)
     
@@ -758,13 +818,22 @@ def catalog_edit(request, catalog_name, item_id):
             success = CatalogService.update_catalog_item(catalog_name, item_id, data)
             
             if success:
-                messages.success(request, '✅ Item actualizado correctamente.')
+                message = '✅ Item actualizado correctamente.'
+                if is_ajax:
+                    return JsonResponse({'success': True, 'message': message})
+                messages.success(request, message)
                 return redirect('sigve:catalog_list', catalog_name=catalog_name)
             else:
+                if is_ajax:
+                    return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el item.']}})
                 messages.error(request, '❌ Error al actualizar el item.')
+        else:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = CatalogItemForm(initial=item)
     
+    # Fallback para renderizado no-ajax (si se mantiene catalog_form.html)
     context = {
         'page_title': f'Editar {config["singular"]}',
         'active_page': 'catalogs',
@@ -781,7 +850,7 @@ def catalog_edit(request, catalog_name, item_id):
 @require_supabase_login
 @require_role("Admin SIGVE")
 def catalog_delete(request, catalog_name, item_id):
-    """Eliminar un item de catálogo."""
+    """Eliminar un item de catálogo (ahora compatible con AJAX)."""
     if catalog_name not in CATALOG_CONFIG:
         messages.error(request, '❌ Catálogo no encontrado.')
         return redirect('sigve:dashboard')
@@ -793,6 +862,7 @@ def catalog_delete(request, catalog_name, item_id):
     else:
         messages.error(request, '❌ Error al eliminar el item (puede estar en uso).')
     
+    # El ConfirmationModal recargará la página, por lo que la redirección es correcta.
     return redirect('sigve:catalog_list', catalog_name=catalog_name)
 
 
@@ -1051,4 +1121,30 @@ def api_get_user(request, user_id):
         return JsonResponse({
             'success': False,
             'error': 'Usuario no encontrado'
+        }, status=404)
+
+
+@require_supabase_login
+@require_role("Admin SIGVE")
+def api_get_catalog_item(request, catalog_name, item_id):
+    """
+    API endpoint para obtener los datos de un item de catálogo específico.
+    """
+    if catalog_name not in CATALOG_CONFIG:
+        return JsonResponse({
+            'success': False,
+            'error': 'Catálogo no encontrado'
+        }, status=404)
+        
+    item = CatalogService.get_catalog_item(catalog_name, item_id)
+    
+    if item:
+        return JsonResponse({
+            'success': True,
+            'item': item
+        })
+    else:
+        return JsonResponse({
+            'success': False,
+            'error': 'Item no encontrado'
         }, status=404)
