@@ -275,14 +275,14 @@
         function confirmDelete() {
             if (!currentSupplierId) return;
             
-            // Ocultar el modal actual
             modalInstance.hide();
 
-            // Abrir el modal de confirmación
-            window.DeleteModal.open({
+            window.ConfirmationModal.open({
                 formAction: `/sigve/suppliers/${currentSupplierId}/delete/`,
-                itemName: document.getElementById('id_name').value,
-                warningText: 'Esta acción no se puede deshacer.'
+                warningText: `¿Estás seguro de eliminar el proveedor ${document.getElementById('id_name').value}?`,
+                title: 'Confirmar Eliminación',
+                btnClass: 'btn-danger',
+                btnText: 'Sí, Eliminar'
             });
         }
         

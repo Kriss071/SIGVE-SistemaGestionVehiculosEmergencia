@@ -7,7 +7,11 @@ logger = logging.getLogger(__name__)
 
 # Variable global para almacenar la instancia del cliente Supabase (patrón Singleton).
 # Esto evita crear una nueva conexión en cada petición.
+# Singleton para el cliente ANÓNIMO (ANON_KEY)
 _supabase: Client | None = None
+
+# Singleton para el cliente ADMIN (SERVICE_KEY)
+_supabase_admin: Client | None = None
 
 def get_supabase() -> Client:
     """
@@ -57,3 +61,25 @@ def get_supabase_with_user(token: str, refresh_token: str) -> Client:
     client.auth.set_session(token, refresh_token)
     logger.debug("👤 (get_supabase_with_user) Sesión de usuario establecida en el cliente Supabase.")
     return client
+
+def get_supabase_admin() -> Client:
+    """
+    Obtiene una instancia singleton del cliente Supabase con privilegios
+    de SERVICIO (SERVICE_ROLE_KEY).
+    
+    ¡ÚSAR CON EXTREMA PRECAUCIÓN!
+    """
+    global _supabase_admin
+    
+    if _supabase_admin is None:
+        logger.info("🔑 (get_supabase_admin) Creando nueva instancia del cliente Supabase (ADMIN)...")
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SERVICE_KEY")
+        
+        if not url or not key:
+            raise RuntimeError("No se encontraron SUPABASE_URL o SUPABASE_SERVICE_KEY en settings.")
+        
+        _supabase_admin = create_client(url, key)
+        logger.info("Cliente Admin de Supabase inicializado.")
+        
+    return _supabase_admin

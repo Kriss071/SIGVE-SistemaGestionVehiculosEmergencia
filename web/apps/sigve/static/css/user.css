@@ -1,0 +1,22 @@
+/* Estilos para campos readonly/disabled en el modal de usuario */
+#userModal .form-control[readonly],
+#userModal .form-control:read-only,
+#userModal .form-select[disabled],
+#userModal .form-check-input[disabled] {
+    background-color: #e9ecef !important;
+    opacity: 1 !important;
+    cursor: not-allowed !important;
+    color: #6c757d !important;
+}
+
+#userModal .form-control[readonly]:focus,
+#userModal .form-control:read-only:focus,
+#userModal .form-select[disabled]:focus {
+    background-color: #e9ecef !important;
+    border-color: #ced4da !important;
+    box-shadow: none !important;
+}
+
+#userModal textarea.form-control[readonly] {
+    resize: none;
+}

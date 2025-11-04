@@ -45,10 +45,12 @@
                         <td><small class="text-muted">{{ part.description|truncatewords:10|default:"—" }}</small></td>
                         <td class="text-end">
                             <button type="button" class="btn btn-sm btn-outline-danger" 
-                                    onclick="event.stopPropagation(); DeleteModal.open({
+                                    onclick="event.stopPropagation(); ConfirmationModal.open({
                                         formAction: '/sigve/spare-parts/{{ part.id }}/delete/',
-                                        itemName: '{{ part.name|escapejs }}',
-                                        warningText: '¿Estás seguro de eliminar el repuesto {{ part.name|escapejs }}?'
+                                        warningText: '¿Estás seguro de eliminar el repuesto {{ part.name|escapejs }}?',
+                                        title: 'Confirmar Eliminación',
+                                        btnClass: 'btn-danger',
+                                        btnText: 'Sí, Eliminar'
                                     })">
                                 <i class="bi bi-trash"></i> Eliminar
                             </button>
@@ -76,10 +78,10 @@
 
 <!-- Incluir el modal de repuesto y eliminar -->
 {% include 'sigve/modals/spare_part_modal.html' %}
-{% include 'sigve/modals/delete_confirmation_modal.html' %}
+{% include 'sigve/modals/confirmation_modal.html' %}
 
 <!-- Form oculto para eliminar -->
-<form id="deleteForm" method="post" style="display: none;">
+<form id="confirmationForm" method="post" style="display: none;">
     {% csrf_token %}
 </form>
 

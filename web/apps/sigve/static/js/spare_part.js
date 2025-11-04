@@ -153,7 +153,7 @@
          */
         function populateForm(sparePart) {
             document.getElementById('sparePartId').value = sparePart.id || '';
-            document.getElementById('id_sp_name').value = sparePart.name || '';
+            document.getElementById('id_name').value = sparePart.name || '';
             document.getElementById('id_sp_sku').value = sparePart.sku || '';
             document.getElementById('id_sp_brand').value = sparePart.brand || '';
             document.getElementById('id_sp_description').value = sparePart.description || '';
@@ -268,13 +268,15 @@
          */
         function confirmDelete() {
             if (!currentSparePartId) return;
-            
-            modalInstance.hide();
 
-            window.DeleteModal.open({
+            modalInstance.hide();
+            
+            window.ConfirmationModal.open({
                 formAction: `/sigve/spare-parts/${currentSparePartId}/delete/`,
-                itemName: document.getElementById('id_sp_name').value,
-                warningText: 'Esta acción no se puede deshacer y puede afectar a mantenimientos asociados.'
+                warningText: `¿Estás seguro de eliminar el repuesto ${document.getElementById('id_name').value}?`,
+                title: 'Confirmar Eliminación',
+                btnClass: 'btn-danger',
+                btnText: 'Sí, Eliminar'
             });
         }
         

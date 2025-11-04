@@ -1,6 +1,7 @@
 import logging
 from typing import Dict, List, Any, Optional
 from .base_service import SigveBaseService
+from supabase import Client
 
 logger = logging.getLogger(__name__)
 
@@ -87,26 +88,77 @@ class UserService(SigveBaseService):
     @staticmethod
     def deactivate_user(user_id: str) -> bool:
         """
-        Desactiva un usuario (is_active = false).
-        
-        Args:
-            user_id: UUID del usuario.
-            
-        Returns:
-            True si se desactivó correctamente, False en caso contrario.
+        Desactiva un usuario (soft delete) en la tabla user_profile.
         """
         client = SigveBaseService.get_client()
         
         try:
             result = client.table("user_profile") \
-                .update({"is_active": False}) \
+                .update({'is_active': False}) \
                 .eq("id", user_id) \
                 .execute()
             
-            logger.info(f"🚫 Usuario {user_id} desactivado")
-            return True
+            if result.data:
+                logger.info(f"🚫 Usuario {user_id} desactivado")
+                return True
+            logger.warning(f"⚠️ No se pudo desactivar el usuario {user_id}, no se encontró.")
+            return False
         except Exception as e:
             logger.error(f"❌ Error desactivando usuario {user_id}: {e}", exc_info=True)
+            return False
+
+    @staticmethod
+    def activate_user(user_id: str) -> bool:
+        """
+        Activa un usuario en la tabla user_profile.
+        
+        Args:
+            user_id: ID (UUID) del usuario.
+            
+        Returns:
+            True si se actualizó, False si no.
+        """
+        client = SigveBaseService.get_client()
+        
+        try:
+            result = client.table("user_profile") \
+                .update({'is_active': True}) \
+                .eq("id", user_id) \
+                .execute()
+            
+            if result.data:
+                logger.info(f"✅ Usuario {user_id} activado")
+                return True
+            logger.warning(f"⚠️ No se pudo activar el usuario {user_id}, no se encontró.")
+            return False
+        except Exception as e:
+            logger.error(f"❌ Error activando usuario {user_id}: {e}", exc_info=True)
+            return False
+
+    @staticmethod
+    def delete_user(user_id: str) -> bool:
+        """
+        Elimina permanentemente a un usuario del sistema (supabase.auth).
+        La tabla user_profile debería borrarse en cascada.
+        
+        Args:
+            user_id: ID (UUID) del usuario.
+            
+        Returns:
+            True si se eliminó, False si no.
+        """
+
+        admin_client: Client = SigveBaseService.get_admin_client()        
+
+        try:
+            # Esta es la llamada a la API de admin de Supabase
+            admin_client.auth.admin.delete_user(user_id)
+            
+            logger.info(f"🗑️ Usuario {user_id} eliminado permanentemente de auth.")
+            return True
+        except Exception as e:
+            # Captura errores, por ej. si el usuario no existe en auth
+            logger.error(f"❌ Error eliminando permanentemente al usuario {user_id}: {e}", exc_info=True)
             return False
     
     @staticmethod

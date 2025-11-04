@@ -46,6 +46,8 @@ urlpatterns = [
     path('users/', views.users_list, name='users_list'),
     path('users/<str:user_id>/edit/', views.user_edit, name='user_edit'),
     path('users/<str:user_id>/deactivate/', views.user_deactivate, name='user_deactivate'),
+    path('users/<str:user_id>/activate/', views.user_activate, name='user_activate'),
+    path('users/<str:user_id>/delete/', views.user_delete, name='user_delete'),
     
     # API Endpoints
     path('api/communes/', views.api_get_communes, name='api_get_communes'),
@@ -53,6 +55,7 @@ urlpatterns = [
     path('api/fire-stations/<int:fire_station_id>/', views.api_get_fire_station, name='api_get_fire_station'),
     path('api/spare-parts/<int:spare_part_id>/', views.api_get_spare_part, name='api_get_spare_part'),
     path('api/suppliers/<int:supplier_id>/', views.api_get_supplier, name='api_get_supplier'),
+    path('api/users/<str:user_id>/', views.api_get_user, name='api_get_user'),
 ]
 
 

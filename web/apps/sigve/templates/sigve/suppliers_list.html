@@ -47,10 +47,12 @@
                         <td>{{ supplier.email|default:"—" }}</td>
                         <td class="text-end">
                             <button type="button" class="btn btn-sm btn-outline-danger" 
-                                    onclick="event.stopPropagation(); DeleteModal.open({
+                                    onclick="event.stopPropagation(); ConfirmationModal.open({
                                         formAction: '/sigve/suppliers/{{ supplier.id }}/delete/',
-                                        itemName: '{{ supplier.name|escapejs }}',
-                                        warningText: '¿Estás seguro de eliminar el proveedor {{ supplier.name|escapejs }}?'
+                                        warningText: '¿Estás seguro de eliminar el proveedor {{ supplier.name|escapejs }}?',
+                                        title: 'Confirmar Eliminación',
+                                        btnClass: 'btn-danger',
+                                        btnText: 'Sí, Eliminar'
                                     })">
                                 <i class="bi bi-trash"></i> Eliminar
                             </button>
@@ -79,9 +81,9 @@
 
 <!-- Incluir el modal de taller y eliminar -->
 {% include 'sigve/modals/supplier_modal.html' %}
-{% include 'sigve/modals/delete_confirmation_modal.html' %}
+{% include 'sigve/modals/confirmation_modal.html' %}
 
-<form id="deleteForm" method="post" style="display: none;">
+<form id="confirmationForm" method="post" style="display: none;">
     {% csrf_token %}
 </form>
 {% endblock %}

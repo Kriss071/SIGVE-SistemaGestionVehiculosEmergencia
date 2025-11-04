@@ -1,4 +1,9 @@
 {% extends 'sigve/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/user.css' %}">
+{% endblock%}
 
 {% block content %}
 <div class="row">
@@ -10,6 +15,11 @@
 <div class="card">
     <div class="card-body">
         {% if users %}
+
+        <div class="mb-3">
+            <input type="text" id="tableSearchInput" class="form-control" placeholder="Buscar en usuarios...">
+        </div>
+
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
@@ -25,8 +35,11 @@
                 </thead>
                 <tbody>
                     {% for user in users %}
-                    <tr>
-                        <td><strong>{{ user.first_name }} {{ user.last_name }}</strong></td>
+                    <tr onclick="UserModal.open('view', '{{ user.id }}')">
+                        <td>
+                            <strong>{{ user.first_name }} {{ user.last_name }}</strong>
+                            <br><small class="text-muted">{{ user.email }}</small>
+                        </td>
                         <td>{{ user.rut|default:"—" }}</td>
                         <td>{{ user.phone|default:"—" }}</td>
                         <td>
@@ -51,15 +64,43 @@
                             {% endif %}
                         </td>
                         <td class="text-end">
-                            <a href="{% url 'sigve:user_edit' user.id %}" class="btn btn-sm btn-outline-primary">
+                            <button type_button" class="btn btn-sm btn-outline-primary" 
+                                    onclick="event.stopPropagation(); UserModal.open('edit', '{{ user.id }}')">
                                 <i class="bi bi-pencil"></i> Editar
-                            </a>
+                            </button>
                             {% if user.is_active %}
                             <button type="button" class="btn btn-sm btn-outline-warning" 
-                                    onclick="deactivateUser('{{ user.id }}')">
+                                    onclick="event.stopPropagation(); ConfirmationModal.open({
+                                        formAction: '/sigve/users/{{ user.id }}/deactivate/',
+                                        warningText: '¿Estás seguro de DESACTIVAR al usuario {{ user.first_name|escapejs }} {{ user.last_name|escapejs }}?',
+                                        btnClass: 'btn-warning',
+                                        btnText: 'Sí, Desactivar',
+                                        title: 'Confirmar Desactivación'
+                                    })">
                                 <i class="bi bi-pause-circle"></i> Desactivar
                             </button>
+                            {% else %}
+                            <button type="button" class="btn btn-sm btn-outline-success" 
+                                    onclick="event.stopPropagation(); ConfirmationModal.open({
+                                        formAction: '/sigve/users/{{ user.id }}/activate/',
+                                        warningText: '¿Estás seguro de ACTIVAR al usuario {{ user.first_name|escapejs }} {{ user.last_name|escapejs }}?',
+                                        btnClass: 'btn-success',
+                                        btnText: 'Sí, Activar',
+                                        title: 'Confirmar Activación'
+                                    })">
+                                <i class="bi bi-play-circle"></i> Activar
+                            </button>
                             {% endif %}
+                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                    onclick="event.stopPropagation(); ConfirmationModal.open({
+                                        formAction: '/sigve/users/{{ user.id }}/delete/',
+                                        warningText: '¡PELIGRO! Esta acción eliminará permanentemente al usuario {{ user.first_name|escapejs }} {{ user.last_name|escapejs }} y todos sus datos. Esta acción no se puede deshacer.',
+                                        btnClass: 'btn-danger',
+                                        btnText: 'Sí, Eliminar',
+                                        title: 'Confirmar Eliminación'
+                                    })">
+                                <i class="bi bi-trash"></i> Eliminar
+                            </button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -75,21 +116,19 @@
     </div>
 </div>
 
-<form id="deactivateForm" method="post" style="display: none;">
+<!-- Incluir el modal de taller y confirmación -->
+{% include 'sigve/modals/user_modal.html' %}
+{% include 'sigve/modals/confirmation_modal.html' %}
+
+<form id="confirmationForm" method="post" style="display: none;">
     {% csrf_token %}
 </form>
+
 {% endblock %}
 
 {% block extra_js %}
-<script>
-    function deactivateUser(userId) {
-        if (confirm('¿Estás seguro de desactivar este usuario?')) {
-            const form = document.getElementById('deactivateForm');
-            form.action = `/sigve/users/${userId}/deactivate/`;
-            form.submit();
-        }
-    }
-</script>
+<script src="{% static 'js/modal.js' %}"></script>
+<script src="{% static 'js/user.js' %}"></script>
 {% endblock %}
 
 

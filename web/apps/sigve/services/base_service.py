@@ -1,6 +1,6 @@
 import logging
 from typing import Any, Dict, List, Optional
-from accounts.client.supabase_client import get_supabase
+from accounts.client.supabase_client import get_supabase, get_supabase_admin
 from supabase import PostgrestAPIError
 
 logger = logging.getLogger(__name__)
@@ -18,6 +18,13 @@ class SigveBaseService:
     def get_client():
         """Obtiene el cliente de Supabase."""
         return get_supabase()
+
+    @staticmethod
+    def get_admin_client():
+        """
+        Obtiene el cliente Supabase con permisos de Admin (Service Key).
+        """
+        return get_supabase_admin()
     
     @staticmethod
     def _execute_query(query, method_name: str) -> List[Dict[str, Any]]:

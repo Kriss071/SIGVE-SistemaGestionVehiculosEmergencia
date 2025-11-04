@@ -805,7 +805,8 @@ def users_list(request):
     context = {
         'page_title': 'Gestión de Usuarios',
         'active_page': 'users',
-        'users': UserService.get_all_users()
+        'users': UserService.get_all_users(),
+        'roles': UserService.get_all_roles()
     }
     
     return render(request, 'sigve/users_list.html', context)
@@ -819,11 +820,15 @@ def user_edit(request, user_id):
     roles = UserService.get_all_roles()
     
     if not user:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'Usuario no encontrado.'}, status=404)
         messages.error(request, '❌ Usuario no encontrado.')
         return redirect('sigve:users_list')
     
     if request.method == 'POST':
         form = UserProfileForm(request.POST)
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
         if form.is_valid():
             data = {
                 'first_name': form.cleaned_data['first_name'],
@@ -831,16 +836,29 @@ def user_edit(request, user_id):
                 'rut': form.cleaned_data.get('rut'),
                 'phone': form.cleaned_data.get('phone'),
                 'role_id': form.cleaned_data['role_id'],
-                'is_active': form.cleaned_data.get('is_active', True)
+                # FIX: Usar el valor booleano de cleaned_data.
+                # El .get('is_active', True) anterior era un bug que
+                # impedía desactivar usuarios.
+                'is_active': form.cleaned_data['is_active']
             }
             
             success = UserService.update_user(user_id, data)
             
             if success:
-                messages.success(request, '✅ Usuario actualizado correctamente.')
+                message = '✅ Usuario actualizado correctamente.'
+                if is_ajax:
+                    return JsonResponse({'success': True, 'message': message})
+                
+                messages.success(request, message)
                 return redirect('sigve:users_list')
             else:
+                if is_ajax:
+                    return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el usuario.']}})
                 messages.error(request, '❌ Error al actualizar el usuario.')
+        else:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': form.errors})
+
     else:
         form = UserProfileForm(initial=user)
     
@@ -869,6 +887,40 @@ def user_deactivate(request, user_id):
     
     return redirect('sigve:users_list')
 
+@require_http_methods(["POST"])
+@require_supabase_login
+@require_role("Admin SIGVE")
+def user_activate(request, user_id):
+    """Activa un usuario."""
+    success = UserService.activate_user(user_id)
+    
+    if success:
+        messages.success(request, '✅ Usuario activado correctamente.')
+    else:
+        messages.error(request, '❌ Error al activar el usuario.')
+    
+    return redirect('sigve:users_list')
+    
+
+@require_http_methods(["POST"])
+@require_supabase_login
+@require_role("Admin SIGVE")
+def user_delete(request, user_id):
+    """Elimina permanentemente un usuario."""
+    
+    # Evitar que el admin se elimine a sí mismo
+    if request.session.get('sb_user_id') == user_id:
+        messages.error(request, '❌ No puedes eliminar tu propia cuenta.')
+        return redirect('sigve:users_list')
+        
+    success = UserService.delete_user(user_id)
+    
+    if success:
+        messages.success(request, '🗑️ Usuario eliminado permanentemente.')
+    else:
+        messages.error(request, '❌ Error al eliminar el usuario (puede que ya no exista).')
+    
+    return redirect('sigve:users_list')
 
 # ===== API ENDPOINTS =====
 
@@ -979,4 +1031,24 @@ def api_get_supplier(request, supplier_id):
         return JsonResponse({
             'success': False,
             'error': 'Proveedor no encontrado'
+        }, status=404)
+
+
+@require_supabase_login
+@require_role("Admin SIGVE")
+def api_get_user(request, user_id):
+    """
+    API endpoint para obtener los datos de un usuario específico.
+    """
+    user = UserService.get_user(user_id)
+    
+    if user:
+        return JsonResponse({
+            'success': True,
+            'user': user
+        })
+    else:
+        return JsonResponse({
+            'success': False,
+            'error': 'Usuario no encontrado'
         }, status=404)

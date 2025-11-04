@@ -1,28 +1,27 @@
 /**
- * SIGVE - Lógica de Cuarteles (Fire Stations)
+ * SIGVE - Lógica de Users (Usuarios)
  *
- * Incluye el controlador del modal de Cuartel y la inicialización
- * de la búsqueda en la lista de cuarteles.
+ * Incluye el controlador del modal de Usuario.
  */
 
 (function() {
     'use strict';
 
     /**
-     * Sistema de gestión del modal de cuartel
-     * Maneja tres modos: crear, ver, editar
+     * Sistema de gestión del modal de usuario
+     * Maneja dos modos: ver, editar
      */
-    window.FireStationModal = (function() {
+    window.UserModal = (function() {
         // Referencias a elementos del DOM
-        const modal = document.getElementById('fireStationModal');
-        const form = document.getElementById('fireStationForm');
-        const loading = document.getElementById('fireStationModalLoading');
-        const footer = document.getElementById('fireStationModalFooter');
-        const titleSpan = document.getElementById('fireStationModalTitle');
+        const modal = document.getElementById('userModal');
+        const form = document.getElementById('userForm');
+        const loading = document.getElementById('userModalLoading');
+        const footer = document.getElementById('userModalFooter');
+        const titleSpan = document.getElementById('userModalTitle');
         
         // Estado actual
-        let currentMode = 'create'; // 'create', 'view', 'edit'
-        let currentFireStationId = null;
+        let currentMode = 'view'; // 'view', 'edit'
+        let currentUserId = null;
         let modalInstance = null;
         
         /**
@@ -42,49 +41,31 @@
         
         /**
          * Abre el modal en el modo especificado
-         * @param {string} mode - 'create', 'view', 'edit'
-         * @param {number} stationId - ID del cuartel (para view/edit)
+         * @param {string} mode - 'view', 'edit'
+         * @param {string} userId - ID del usuario (UUID)
          * @param {string} source - 'dashboard' o 'list'
          */
-        function open(mode = 'create', stationId = null, source = 'list') {
+        function open(mode = 'view', userId = null, source = 'list') {
+            if (!userId) return;
+
             currentMode = mode;
-            currentFireStationId = stationId;
+            currentUserId = userId;
             
-            const sourceInput = document.getElementById('fireStationSource');
+            const sourceInput = document.getElementById('userSource');
             if (sourceInput) {
                 sourceInput.value = source;
             }
             
-            if (mode === 'create') {
-                setupCreateMode();
-            } else if (mode === 'view' || mode === 'edit') {
-                showLoading();
-                modalInstance.show();
-                loadFireStationData(stationId, mode);
-            }
-        }
-        
-        /**
-         * Configura el modal para crear un cuartel
-         */
-        function setupCreateMode() {
-            titleSpan.textContent = 'Crear Cuartel';
-            form.action = '/sigve/fire-stations/create/'; // Ajusta esta URL a tu URL de Django
-            form.reset();
-            document.getElementById('fireStationId').value = '';
-            setFieldsEnabled(true);
-            renderButtons('create');
-            hideLoading();
-            showForm();
+            showLoading();
             modalInstance.show();
+            loadUserData(userId, mode);
         }
         
         /**
-         * Carga los datos del cuartel
+         * Carga los datos del usuario
          */
-        function loadFireStationData(stationId, mode) {
-            // Asumimos una API endpoint; ajusta si es necesario
-            fetch(`/sigve/api/fire-stations/${stationId}/`) 
+        function loadUserData(userId, mode) {
+            fetch(`/sigve/api/users/${userId}/`)
                 .then(response => {
                     if (!response.ok) {
                          throw new Error(`HTTP error! status: ${response.status}`);
@@ -93,7 +74,7 @@
                 })
                 .then(data => {
                     if (data.success) {
-                        populateForm(data.fire_station); // Asumiendo que la API devuelve {success: true, station: {...}}
+                        populateForm(data.user);
                         hideLoading();
                         showForm();
                         
@@ -103,31 +84,31 @@
                             setupEditMode();
                         }
                     } else {
-                        throw new Error(data.error || 'Error al cargar el cuartel');
+                        throw new Error(data.error || 'Error al cargar el usuario');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    window.SIGVE.showNotification('Error al cargar los datos del cuartel', 'error');
+                    window.SIGVE.showNotification('Error al cargar los datos del usuario', 'error');
                     modalInstance.hide();
                 });
         }
         
         /**
-         * Configura el modal para ver un cuartel (solo lectura)
+         * Configura el modal para ver un usuario (solo lectura)
          */
         function setupViewMode() {
-            titleSpan.textContent = 'Ver Cuartel';
+            titleSpan.textContent = 'Ver Usuario';
             renderButtons('view');
             setTimeout(() => setFieldsEnabled(false), 0);
         }
         
         /**
-         * Configura el modal para editar un cuartel
+         * Configura el modal para editar un usuario
          */
         function setupEditMode() {
-            titleSpan.textContent = 'Editar Cuartel';
-            form.action = `/sigve/fire-stations/${currentFireStationId}/edit/`; // Ajusta esta URL
+            titleSpan.textContent = 'Editar Usuario';
+            form.action = `/sigve/users/${currentUserId}/edit/`;
             renderButtons('edit');
             setTimeout(() => setFieldsEnabled(true), 0);
         }
@@ -150,19 +131,20 @@
         }
         
         /**
-         * Llena el formulario con los datos del cuartel
-         * (IDs corregidos para coincidir con el HTML)
+         * Llena el formulario con los datos del usuario
          */
-        function populateForm(station) {
-            document.getElementById('fireStationId').value = station.id || '';
-            document.getElementById('id_name').value = station.name || '';
-            document.getElementById('id_address').value = station.address || '';
-            document.getElementById('id_commune').value = station.commune_id || '';
+        function populateForm(user) {
+            document.getElementById('userId').value = user.id || '';
+            document.getElementById('id_first_name').value = user.first_name || '';
+            document.getElementById('id_last_name').value = user.last_name || '';
+            document.getElementById('id_rut').value = user.rut || '';
+            document.getElementById('id_phone').value = user.phone || '';
+            document.getElementById('id_role_id').value = user.role_id || '';
+            document.getElementById('id_is_active').checked = user.is_active;
         }
         
         /**
          * Habilita o deshabilita los campos del formulario
-         * (Corregido para incluir 'select')
          */
         function setFieldsEnabled(enabled) {
             const fields = form.querySelectorAll('input, textarea, select');
@@ -172,10 +154,11 @@
                         field.removeAttribute('readonly');
                         field.removeAttribute('disabled');
                     } else {
-                        field.setAttribute('readonly', 'readonly');
-                        // 'disabled' es mejor para 'select' en modo readonly
-                        if (field.tagName === 'SELECT') {
+                        // Los <select> y <input type="checkbox"> usan 'disabled'
+                        if (field.tagName.toLowerCase() === 'select' || field.type === 'checkbox') {
                             field.setAttribute('disabled', 'disabled');
+                        } else {
+                            field.setAttribute('readonly', 'readonly');
                         }
                     }
                 }
@@ -187,32 +170,39 @@
          */
         function renderButtons(mode) {
             footer.innerHTML = '';
+            const userIsActive = document.getElementById('id_is_active').checked;
             
             if (mode === 'view') {
+                let activateDeactivateBtn = '';
+                
+                if (userIsActive) {
+                    activateDeactivateBtn = `
+                    <button type="button" class="btn btn-warning" onclick="UserModal.confirmDeactivate()">
+                        <i class="bi bi-pause-circle"></i> Desactivar
+                    </button>`;
+                } else {
+                    activateDeactivateBtn = `
+                    <button type="button" class="btn btn-success" onclick="UserModal.confirmActivate()">
+                        <i class="bi bi-play-circle"></i> Activar
+                    </button>`;
+                }
+
                 footer.innerHTML = `
-                    <button type="button" class="btn btn-outline-danger" onclick="FireStationModal.confirmDelete()">
+                    <button type="button" class="btn btn-danger" onclick="UserModal.confirmDelete()">
                         <i class="bi bi-trash"></i> Eliminar
                     </button>
-                    <button type="button" class="btn btn-danger" onclick="FireStationModal.switchToEditMode()">
+                    ${activateDeactivateBtn}
+                    <button type="button" class="btn btn-primary ms-auto" onclick="UserModal.switchToEditMode()">
                         <i class="bi bi-pencil"></i> Editar
                     </button>
                 `;
             } else if (mode === 'edit') {
                 footer.innerHTML = `
-                    <button type="button" class="btn btn-secondary" onclick="FireStationModal.cancelEdit()">
-                        <i class="bi bi-x-lg"></i> Cancelar
-                    </button>
-                    <button type="submit" class="btn btn-success" id="fireStationSubmitBtn">
-                        <i class="bi bi-check-lg"></i> Guardar Cambios
-                    </button>
-                `;
-            } else if (mode === 'create') {
-                footer.innerHTML = `
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-lg"></i> Cancelar
                     </button>
-                    <button type="submit" class="btn btn-danger" id="fireStationSubmitBtn">
-                        <i class="bi bi-check-lg"></i> Guardar Cuartel
+                    <button type="submit" class="btn btn-success" id="userSubmitBtn">
+                        <i class="bi bi-check-lg"></i> Guardar Cambios
                     </button>
                 `;
             }
@@ -224,11 +214,12 @@
         function handleSubmit(e) {
             e.preventDefault();
                 
-            const submitBtn = document.getElementById('fireStationSubmitBtn');
+            const submitBtn = document.getElementById('userSubmitBtn');
             if (!submitBtn) return;
             
             window.SIGVE.showButtonLoading(submitBtn);
                 
+            // Enviar formulario
             const formData = new FormData(form);
                 
             fetch(form.action, {
@@ -248,7 +239,7 @@
             .then(data => {
                 if (data) {
                     if (data.success) {
-                        window.SIGVE.showNotification(data.message || 'Cuartel guardado correctamente', 'success');
+                        window.SIGVE.showNotification(data.message || 'Usuario actualizado', 'success');
                         modalInstance.hide();
                         setTimeout(() => window.location.reload(), 1500);
                     } else if (data.errors) {
@@ -260,59 +251,90 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                window.SIGVE.showNotification('Error al guardar el cuartel', 'error');
+                window.SIGVE.showNotification('Error al guardar el usuario', 'error');
                 window.SIGVE.hideButtonLoading(submitBtn);
             });
         }
         
         /**
-         * Confirma la eliminación del cuartel (usando DeleteModal)
+         * Confirma la desactivación del usuario
          */
-        function confirmDelete() {
-            if (!currentFireStationId) return;
-
+        function confirmDeactivate() {
+            if (!currentUserId) return;
             modalInstance.hide();
-            
+            const userName = document.getElementById('id_first_name').value + ' ' + document.getElementById('id_last_name').value;
+
+            // --- Llama al nuevo modal ---
             window.ConfirmationModal.open({
-                formAction: `/sigve/fire-stations/${currentFireStationId}/delete/`,
-                warningText: `¿Estás seguro de eliminar el cuartel ${document.getElementById('id_name').value}?`,
-                title: 'Confirmar Eliminación',
+                formAction: `/sigve/users/${currentUserId}/deactivate/`,
+                warningText: `¿Estás seguro de DESACTIVAR al usuario ${userName}?`,
+                btnClass: 'btn-warning',
+                btnText: 'Sí, Desactivar',
+                title: 'Confirmar Desactivación'
+            });
+        }
+
+        function confirmActivate() {
+            if (!currentUserId) return;
+            modalInstance.hide();
+            const userName = document.getElementById('id_first_name').value + ' ' + document.getElementById('id_last_name').value;
+
+            // --- Llama al nuevo modal ---
+            window.ConfirmationModal.open({
+                formAction: `/sigve/users/${currentUserId}/activate/`,
+                warningText: `¿Estás seguro de ACTIVAR al usuario ${userName}?`,
+                btnClass: 'btn-success',
+                btnText: 'Sí, Activar',
+                title: 'Confirmar Activación'
+            });
+        }
+
+        /**Confirma la eliminación PERMANENTE del usuario */
+        function confirmDelete() {
+            if (!currentUserId) return;
+            modalInstance.hide();
+            const userName = document.getElementById('id_first_name').value + ' ' + document.getElementById('id_last_name').value;
+
+            // --- Llama al nuevo modal ---
+            window.ConfirmationModal.open({
+                formAction: `/sigve/users/${currentUserId}/delete/`,
+                warningText: `¡PELIGRO! ¿Estás seguro de ELIMINAR PERMANENTEMENTE a ${userName}? Esta acción no se puede deshacer.`,
                 btnClass: 'btn-danger',
-                btnText: 'Sí, Eliminar'
+                btnText: 'Sí, Eliminar',
+                title: 'Confirmar Eliminación'
             });
         }
         
-        /**
-         * Funciones de utilidad para mostrar/ocultar carga
-         */
+        /** Muestra el spinner de carga */
         function showLoading() {
             loading.style.display = 'block';
             form.style.display = 'none';
         }
         
+        /** Oculta el spinner y muestra el formulario */
         function hideLoading() {
             loading.style.display = 'none';
         }
         
+        /** Muestra el formulario */
         function showForm() {
             form.style.display = 'block';
         }
         
-        /**
-         * Resetea el modal a su estado inicial
-         */
+        /** Resetea el modal a su estado inicial */
         function resetModal() {
-            currentMode = 'create';
-            currentFireStationId = null;
+            currentMode = 'view';
+            currentUserId = null;
             form.reset();
             form.classList.remove('was-validated');
+            document.getElementById('id_is_active').checked = false; // Reset checkbox
             setFieldsEnabled(true);
             footer.innerHTML = '';
             hideLoading();
             showForm();
         }
         
-        // Inicializar
+        // Inicializar cuando el DOM esté listo
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', init);
         } else {
@@ -324,18 +346,19 @@
             open,
             switchToEditMode,
             cancelEdit,
+            confirmDeactivate,
+            confirmActivate,
             confirmDelete
         };
     })();
 
-
     /**
-     * Inicialización de la página de lista de Cuarteles
+     * Inicialización de la página de lista de Usuarios
      */
     document.addEventListener('DOMContentLoaded', function() {
         // Conectar la búsqueda de la tabla
         if (window.SIGVE && window.SIGVE.setupTableSearch) {
-            window.SIGVE.setupTableSearch('tableSearchInput', 'fireStationsTable');
+            window.SIGVE.setupTableSearch('tableSearchInput', 'usersTable');
         }
     });
 

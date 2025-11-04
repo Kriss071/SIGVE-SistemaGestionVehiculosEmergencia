@@ -13,17 +13,18 @@
      * Este objeto maneja la apertura del modal de confirmación
      * y la asignación de la URL de acción al formulario de eliminación.
      */
-    window.DeleteModal = (function() {
+    window.ConfirmationModal = (function() {
         let modalInstance;
-        let deleteForm;
+        let confirmationForm;
         let confirmBtn;
         let modalEl;
+        let modalHeader, modalTitle, modalWarningText, titleIcon;
 
         /**
-         * Inicializa el controlador del modal de eliminación.
+         * Inicializa el controlador del modal.
          */
         function init() {
-            modalEl = document.getElementById('deleteConfirmationModal');
+            modalEl = document.getElementById('confirmationModal');
             if (!modalEl) {
                 // No hay modal de eliminación en esta página
                 return;
@@ -31,53 +32,69 @@
 
             modalInstance = new bootstrap.Modal(modalEl);
             
-            // Busca el formulario de eliminación genérico presente en la página
-            deleteForm = document.getElementById('deleteForm'); 
-            confirmBtn = document.getElementById('confirmDeleteBtn');
+            // Busca el formulario genérico presente en la página
+            confirmationForm = document.getElementById('confirmationForm'); 
+            confirmBtn = document.getElementById('confirmationModalConfirmBtn');
 
-            if (!deleteForm) {
-                console.error('Error: No se encontró el <form id="deleteForm"> en la página.');
+            // Elementos de UI dinámicos
+            modalHeader = document.getElementById('confirmationModalHeader');
+            modalTitle = document.getElementById('confirmationModalTitle');
+            modalWarningText = document.getElementById('confirmationModalWarningText');
+
+            if (modalHeader) {
+                titleIcon = modalHeader.querySelector('h5 i');
             }
-            if (!confirmBtn) {
-                console.error('Error: No se encontró el <button id="confirmDeleteBtn"> en el modal.');
+
+            if (!confirmationForm) console.error('Error: No se encontró el <form id="confirmationForm"> en la página.');
+            if (!confirmBtn) console.error('Error: No se encontró el <button id="confirmationModalConfirmBtn">');
+            if (!modalTitle) console.error('Error: No se encontró el <span id="confirmationModalTitle">');
+            if (!modalWarningText) console.error('Error: No se encontró el <p id="confirmationModalWarningText">');
+            
+            if (confirmBtn) {
+                // Clonamos el botón para eliminar listeners antiguos y asignamos el nuevo
+                const newConfirmBtn = confirmBtn.cloneNode(true);
+                confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+                confirmBtn = newConfirmBtn;
+                confirmBtn.addEventListener('click', handleSubmit);
             }
         }
 
         /**
-         * Abre el modal de confirmación.
-         * @param {object} options - Opciones de configuración.
+         * Abre el modal de confirmación con opciones dinámicas.
+         * @param {object} options - Opciones para el modal.
          * @param {string} options.formAction - La URL a la que el formulario debe enviar.
-         * @param {string} [options.itemName] - Nombre del ítem a eliminar (opcional).
-         * @param {string} [options.warningText] - Texto de advertencia personalizado (opcional).
+         * @param {string} options.warningText - El mensaje de advertencia.
+         * @param {string} [options.title] - (Opcional) El título del modal.
+         * @param {string} [options.btnClass] - (Opcional) Clase del botón (ej. 'btn-warning').
+         * @param {string} [options.btnText] - (Opcional) Texto del botón (ej. 'Sí, Desactivar').
          */
         function open(options) {
-            if (!modalInstance || !deleteForm || !confirmBtn || !options.formAction) {
-                console.error('DeleteModal no está inicializado o falta la URL de acción (formAction).');
+            if (!modalInstance || !confirmationForm || !confirmBtn) {
+                console.error('ConfirmationModal no está inicializado.');
+                return;
+            }
+            if (!options || !options.formAction) {
+                console.error('ConfirmationModal: Falta el parámetro formAction.');
                 return;
             }
 
-            // 1. Configurar el contenido del modal
-            const itemNameEl = document.getElementById('deleteModalItemName');
-            const warningEl = document.getElementById('deleteModalWarning');
+            // 1. Definir valores por defecto
+            const title = options.title || 'Confirmar Acción';
+            const btnClass = options.btnClass || 'btn-danger';
+            const btnText = options.btnText || 'Confirmar';
+            const icon = (btnClass === 'btn-danger') ? 'bi-trash' : (btnClass === 'btn-warning' ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill');
+            const bgClass = (btnClass === 'btn-danger') ? 'bg-danger' : (btnClass === 'btn-warning' ? 'bg-warning' : 'bg-success') ;
+            // 2. Actualizar la UI del modal
+            if (modalHeader) modalHeader.className = `modal-header text-white ${bgClass}`;
+            if (modalTitle) modalTitle.textContent = title;
+            if (titleIcon) titleIcon.className = `bi ${icon} me-2`;
+            if (modalWarningText) modalWarningText.textContent = options.warningText || '¿Estás seguro?';
             
-            if (itemNameEl) {
-                itemNameEl.textContent = options.itemName || 'Este ítem';
-                itemNameEl.style.display = options.itemName ? 'block' : 'none';
-            }
-            if (warningEl) {
-                warningEl.textContent = options.warningText || 'Esta acción no se puede deshacer.';
-            }
+            confirmBtn.className = `btn ${btnClass}`;
+            confirmBtn.innerHTML = `<i class="bi bi-check-lg"></i> ${btnText}`;
 
-            // 2. Asignar la acción al formulario
-            deleteForm.action = options.formAction;
-            
-            // 3. Limpiar y re-asignar el evento click para evitar duplicados
-            // Clonamos el botón para eliminar listeners antiguos
-            const newConfirmBtn = confirmBtn.cloneNode(true);
-            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-            confirmBtn = newConfirmBtn;
-            
-            confirmBtn.addEventListener('click', handleSubmit);
+            // 3. Asignar la acción al formulario
+            confirmationForm.action = options.formAction;
 
             // 4. Mostrar el modal
             modalInstance.show();
@@ -92,11 +109,11 @@
                 window.SIGVE.showButtonLoading(confirmBtn);
             } else {
                 confirmBtn.disabled = true;
-                confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Eliminando...';
+                confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando...';
             }
             
             // Enviar el formulario
-            deleteForm.submit();
+            confirmationForm.submit();
         }
 
         // Inicializar al cargar el DOM

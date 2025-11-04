@@ -280,14 +280,15 @@
         function confirmDelete() {
             if (!currentWorkshopId) return;
             
-            // Ocultar el modal actual
             modalInstance.hide();
 
-            // Abrir el modal de confirmación
-            window.DeleteModal.open({
+            // Abrir el modal de confirmación genérico
+            window.ConfirmationModal.open({
                 formAction: `/sigve/workshops/${currentWorkshopId}/delete/`,
-                itemName: document.getElementById('id_name').value, // Tomar el nombre del formulario
-                warningText: 'Esta acción no se puede deshacer y puede afectar a empleados asociados.'
+                warningText: `¿Estás seguro de eliminar el taller ${document.getElementById('id_name').value}?`,
+                title: 'Confirmar Eliminación',
+                btnClass: 'btn-danger',
+                btnText: 'Sí, Eliminar'
             });
         }
         
