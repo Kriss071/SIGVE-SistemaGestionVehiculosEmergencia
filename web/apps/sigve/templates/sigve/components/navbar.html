@@ -1,4 +1,21 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm 
+            {% if request.resolver_match.url_name == 'dashboard' %}
+                bg-dark
+            {% elif request.resolver_match.url_name == 'requests_center' %}
+                bg-warning
+            {% elif request.resolver_match.url_name == 'workshops_list' %}
+                bg-primary
+            {% elif request.resolver_match.url_name == 'fire_stations_list' %}
+                bg-danger
+            {% elif request.resolver_match.url_name == 'spare_parts_list' %}
+                bg-success
+            {% elif request.resolver_match.url_name == 'suppliers_list' %}
+                bg-info
+            {% elif request.resolver_match.url_name == 'users_list' %}
+                bg-dark
+            {% else %}
+                bg-primary
+            {% endif %}">
     <div class="container-fluid">
         <a class="navbar-brand" href="{% url 'sigve:dashboard' %}">
             <i class="bi bi-fire"></i> SIGVE Admin
