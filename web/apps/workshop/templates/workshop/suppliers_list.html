@@ -1,0 +1,178 @@
+{% extends 'workshop/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-truck"></i> Proveedores</h1>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSupplierModal">
+                <i class="bi bi-plus-circle"></i> Nuevo Proveedor Local
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if suppliers %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>RUT</th>
+                        <th>Teléfono</th>
+                        <th>Email</th>
+                        <th>Tipo</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for supplier in suppliers %}
+                    <tr>
+                        <td><strong>{{ supplier.name }}</strong></td>
+                        <td>{{ supplier.rut|default:"—" }}</td>
+                        <td>{{ supplier.phone|default:"—" }}</td>
+                        <td>{{ supplier.email|default:"—" }}</td>
+                        <td>
+                            {% if supplier.is_global %}
+                                <span class="badge bg-info">Global</span>
+                            {% else %}
+                                <span class="badge bg-success">Local</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if not supplier.is_global %}
+                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                    onclick="openEditModal({{ supplier.id }}, '{{ supplier.name|escapejs }}', '{{ supplier.rut|default:''|escapejs }}', '{{ supplier.address|default:''|escapejs }}', '{{ supplier.phone|default:''|escapejs }}', '{{ supplier.email|default:''|escapejs }}')">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <form method="post" action="{% url 'workshop:supplier_delete' supplier.id %}" 
+                                  style="display:inline;" 
+                                  onsubmit="return confirm('¿Eliminar proveedor?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% else %}
+                                <span class="text-muted">Solo lectura</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-truck display-1 text-muted"></i>
+            <p class="text-muted mt-3">No hay proveedores registrados</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal: Agregar Proveedor -->
+<div class="modal fade" id="addSupplierModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nuevo Proveedor Local</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'workshop:supplier_create' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">RUT</label>
+                        <input type="text" name="rut" class="form-control" placeholder="12345678-9">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Dirección</label>
+                        <input type="text" name="address" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Teléfono</label>
+                        <input type="text" name="phone" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Crear Proveedor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Editar Proveedor -->
+<div class="modal fade" id="editSupplierModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Proveedor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editSupplierForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" name="name" id="editName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">RUT</label>
+                        <input type="text" name="rut" id="editRut" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Dirección</label>
+                        <input type="text" name="address" id="editAddress" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Teléfono</label>
+                        <input type="text" name="phone" id="editPhone" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" id="editEmail" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openEditModal(id, name, rut, address, phone, email) {
+    const modal = new bootstrap.Modal(document.getElementById('editSupplierModal'));
+    const form = document.getElementById('editSupplierForm');
+    form.action = `/workshop/suppliers/${id}/update/`;
+    document.getElementById('editName').value = name;
+    document.getElementById('editRut').value = rut;
+    document.getElementById('editAddress').value = address;
+    document.getElementById('editPhone').value = phone;
+    document.getElementById('editEmail').value = email;
+    modal.show();
+}
+</script>
+{% endblock %}
+
+
+

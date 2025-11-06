@@ -1,0 +1,194 @@
+{% extends 'workshop/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-box-seam"></i> Inventario del Taller</h1>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addInventoryModal">
+                <i class="bi bi-plus-circle"></i> Agregar Repuesto
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de Inventario -->
+<div class="card">
+    <div class="card-body">
+        {% if inventory %}
+        <div class="mb-3">
+            <input type="text" id="inventorySearch" class="form-control" placeholder="Buscar repuesto...">
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover" id="inventoryTable">
+                <thead>
+                    <tr>
+                        <th>SKU SIGVE</th>
+                        <th>Nombre</th>
+                        <th>Marca</th>
+                        <th>Stock</th>
+                        <th>Costo Unitario</th>
+                        <th>Proveedor</th>
+                        <th>Ubicación</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in inventory %}
+                    <tr class="{% if item.quantity < 5 %}table-warning{% endif %}">
+                        <td><code>{{ item.spare_part.sku }}</code></td>
+                        <td><strong>{{ item.spare_part.name }}</strong></td>
+                        <td>{{ item.spare_part.brand|default:"—" }}</td>
+                        <td>
+                            <span class="badge {% if item.quantity < 5 %}bg-danger{% elif item.quantity < 10 %}bg-warning{% else %}bg-success{% endif %}">
+                                {{ item.quantity }} unidades
+                            </span>
+                        </td>
+                        <td>${{ item.current_cost|floatformat:0 }}</td>
+                        <td>{{ item.supplier.name|default:"—" }}</td>
+                        <td>{{ item.location|default:"—" }}</td>
+                        <td class="text-end">
+                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                    onclick="openUpdateModal({{ item.id }}, {{ item.quantity }}, {{ item.current_cost }})">
+                                <i class="bi bi-pencil"></i> Editar
+                            </button>
+                            <form method="post" action="{% url 'workshop:inventory_delete' item.id %}" 
+                                  style="display:inline;" 
+                                  onsubmit="return confirm('¿Eliminar este repuesto del inventario?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <p class="text-muted mt-3">No hay repuestos en el inventario</p>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addInventoryModal">
+                <i class="bi bi-plus-circle"></i> Agregar Primer Repuesto
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal: Agregar Repuesto -->
+<div class="modal fade" id="addInventoryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Agregar Repuesto al Inventario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'workshop:inventory_add' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label">Repuesto del Catálogo Maestro</label>
+                            <select name="spare_part_id" class="form-select" required>
+                                <option value="">Selecciona un repuesto</option>
+                                {% for part in spare_parts %}
+                                <option value="{{ part.id }}">{{ part.sku }} - {{ part.name }} ({{ part.brand|default:"Sin marca" }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Cantidad</label>
+                            <input type="number" name="quantity" class="form-control" min="1" value="1" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Costo de Compra (CLP)</label>
+                            <input type="number" name="current_cost" class="form-control" min="0" step="0.01" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Proveedor</label>
+                            <select name="supplier_id" class="form-select">
+                                <option value="">Sin proveedor</option>
+                                {% for supplier in suppliers %}
+                                <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Ubicación en Bodega</label>
+                            <input type="text" name="location" class="form-control" placeholder="Ej: Estante A-3">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">SKU Interno (opcional)</label>
+                            <input type="text" name="workshop_sku" class="form-control" placeholder="Código interno">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agregar al Inventario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Actualizar Inventario -->
+<div class="modal fade" id="updateInventoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Actualizar Stock/Costo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="updateInventoryForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Cantidad</label>
+                        <input type="number" name="quantity" id="updateQuantity" class="form-control" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Costo Unitario (CLP)</label>
+                        <input type="number" name="current_cost" id="updateCost" class="form-control" min="0" step="0.01" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Actualizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openUpdateModal(itemId, quantity, cost) {
+    const modal = new bootstrap.Modal(document.getElementById('updateInventoryModal'));
+    const form = document.getElementById('updateInventoryForm');
+    form.action = `/workshop/inventory/${itemId}/update/`;
+    document.getElementById('updateQuantity').value = quantity;
+    document.getElementById('updateCost').value = cost;
+    modal.show();
+}
+
+// Búsqueda en la tabla
+document.getElementById('inventorySearch')?.addEventListener('keyup', function() {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#inventoryTable tbody tr');
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}
+
+
+

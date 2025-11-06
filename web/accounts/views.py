@@ -22,15 +22,15 @@ def get_redirect_url_by_role(role: str) -> str:
     """
     # Mapeo de roles a URLs de redirección
     role_redirects = {
-        'Super Admin': 'sigve:dashboard',  # Super Admin va al panel SIGVE por defecto
-        'Admin SIGVE': 'sigve:dashboard',  # Admin SIGVE va a su panel
-        'Admin Taller': 'vehicle_list',
-        # 'Mecánico': 'workshop:maintenance',
+        'Super Admin': 'sigve:dashboard',
+        'Admin SIGVE': 'sigve:dashboard',
+        'Admin Taller': 'workshop:dashboard',
+        'Mecánico': 'workshop:dashboard',
         # 'Jefe Cuartel': 'fire_station:dashboard',
     }
     
     # Obtener la URL de redirección según el rol, o usar 'vehicle_list' por defecto
-    redirect_url = role_redirects.get(role, 'vehicle_list')
+    redirect_url = role_redirects.get(role, 'unauthorized')
     logger.info(f"🔀 Rol '{role}' será redirigido a '{redirect_url}'")
     
     return redirect_url 

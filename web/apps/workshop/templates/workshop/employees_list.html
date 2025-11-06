@@ -1,0 +1,147 @@
+{% extends 'workshop/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4"><i class="bi bi-people"></i> Empleados del Taller</h1>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if employees %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>RUT</th>
+                        <th>Rol</th>
+                        <th>Teléfono</th>
+                        <th>Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for employee in employees %}
+                    <tr>
+                        <td><strong>{{ employee.first_name }} {{ employee.last_name }}</strong></td>
+                        <td>{{ employee.rut|default:"—" }}</td>
+                        <td><span class="badge bg-primary">{{ employee.role.name }}</span></td>
+                        <td>{{ employee.phone|default:"—" }}</td>
+                        <td>
+                            {% if employee.is_active %}
+                                <span class="badge bg-success">Activo</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                    onclick="openEditModal('{{ employee.id }}', '{{ employee.first_name|escapejs }}', '{{ employee.last_name|escapejs }}', '{{ employee.rut|default:''|escapejs }}', '{{ employee.phone|default:''|escapejs }}', {{ employee.role.id }}, {{ employee.is_active|lower }})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            {% if employee.is_active %}
+                            <form method="post" action="{% url 'workshop:employee_deactivate' employee.id %}" 
+                                  style="display:inline;" 
+                                  onsubmit="return confirm('¿Desactivar empleado?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-warning">
+                                    <i class="bi bi-pause-circle"></i>
+                                </button>
+                            </form>
+                            {% else %}
+                            <form method="post" action="{% url 'workshop:employee_activate' employee.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-play-circle"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-people display-1 text-muted"></i>
+            <p class="text-muted mt-3">No hay empleados registrados</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal: Editar Empleado -->
+<div class="modal fade" id="editEmployeeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Empleado</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editEmployeeForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" name="first_name" id="editFirstName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Apellido</label>
+                        <input type="text" name="last_name" id="editLastName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">RUT</label>
+                        <input type="text" name="rut" id="editRut" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Teléfono</label>
+                        <input type="text" name="phone" id="editPhone" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rol</label>
+                        <select name="role_id" id="editRole" class="form-select" required>
+                            {% for role in roles %}
+                            <option value="{{ role.id }}">{{ role.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" name="is_active" id="editIsActive" class="form-check-input">
+                        <label class="form-check-label" for="editIsActive">Activo</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openEditModal(id, firstName, lastName, rut, phone, roleId, isActive) {
+    const modal = new bootstrap.Modal(document.getElementById('editEmployeeModal'));
+    const form = document.getElementById('editEmployeeForm');
+    form.action = `/workshop/employees/${id}/update/`;
+    document.getElementById('editFirstName').value = firstName;
+    document.getElementById('editLastName').value = lastName;
+    document.getElementById('editRut').value = rut;
+    document.getElementById('editPhone').value = phone;
+    document.getElementById('editRole').value = roleId;
+    document.getElementById('editIsActive').checked = isActive;
+    modal.show();
+}
+</script>
+{% endblock %}
+
+
+
+

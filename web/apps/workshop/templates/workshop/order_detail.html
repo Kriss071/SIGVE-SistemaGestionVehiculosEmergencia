@@ -1,0 +1,273 @@
+{% extends 'workshop/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1><i class="bi bi-file-earmark-text"></i> Orden de Mantención #{{ order.id }}</h1>
+            <a href="{% url 'workshop:orders_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Información del Vehículo y Orden -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-truck"></i> Información del Vehículo</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <th>Patente:</th>
+                        <td><span class="badge bg-dark fs-6">{{ order.vehicle.license_plate }}</span></td>
+                    </tr>
+                    <tr>
+                        <th>Marca/Modelo:</th>
+                        <td>{{ order.vehicle.brand }} {{ order.vehicle.model }}</td>
+                    </tr>
+                    <tr>
+                        <th>Año:</th>
+                        <td>{{ order.vehicle.year }}</td>
+                    </tr>
+                    <tr>
+                        <th>Cuartel:</th>
+                        <td>{{ order.vehicle.fire_station.name|default:"N/A" }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-clipboard-data"></i> Información de la Orden</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'workshop:order_update' order.id %}">
+                    {% csrf_token %}
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <th>Estado:</th>
+                            <td>
+                                <select name="order_status_id" class="form-select form-select-sm">
+                                    {% for status in order_statuses %}
+                                    <option value="{{ status.id }}" {% if status.id == order.order_status_id %}selected{% endif %}>
+                                        {{ status.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Tipo:</th>
+                            <td><span class="badge bg-info">{{ order.maintenance_type.name|default:"N/A" }}</span></td>
+                        </tr>
+                        <tr>
+                            <th>Mecánico:</th>
+                            <td>
+                                <select name="assigned_mechanic_id" class="form-select form-select-sm">
+                                    <option value="">Sin asignar</option>
+                                    {% for mechanic in mechanics %}
+                                    <option value="{{ mechanic.id }}" {% if mechanic.id == order.assigned_mechanic_id %}selected{% endif %}>
+                                        {{ mechanic.first_name }} {{ mechanic.last_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Fecha Ingreso:</th>
+                            <td>{{ order.entry_date }}</td>
+                        </tr>
+                        <tr>
+                            <th>Kilometraje:</th>
+                            <td>{{ order.mileage }} km</td>
+                        </tr>
+                    </table>
+                    <button type="submit" class="btn btn-sm btn-success w-100 mt-2">
+                        <i class="bi bi-save"></i> Guardar Cambios
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Observaciones -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-chat-left-text"></i> Observaciones Generales</h5>
+    </div>
+    <div class="card-body">
+        <p class="mb-0">{{ order.observations|default:"Sin observaciones" }}</p>
+    </div>
+</div>
+
+<!-- Tareas Realizadas -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-list-check"></i> Tareas Realizadas</h5>
+        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+            <i class="bi bi-plus-circle"></i> Agregar Tarea
+        </button>
+    </div>
+    <div class="card-body">
+        {% if tasks %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Tipo de Tarea</th>
+                        <th>Descripción</th>
+                        <th>Costo Mano de Obra</th>
+                        <th>Repuestos Usados</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in tasks %}
+                    <tr>
+                        <td><strong>{{ task.task_type.name }}</strong></td>
+                        <td>{{ task.description|default:"—" }}</td>
+                        <td>${{ task.cost|floatformat:0 }}</td>
+                        <td>
+                            {% if task.parts %}
+                                <ul class="list-unstyled mb-0">
+                                    {% for part in task.parts %}
+                                    <li>
+                                        <small>
+                                            {{ part.workshop_inventory.spare_part.name }} 
+                                            ({{ part.quantity_used }} unid.)
+                                            - ${{ part.cost_per_unit|floatformat:0 }}
+                                            <form method="post" action="{% url 'workshop:part_remove_from_task' order.id part.id %}" 
+                                                  style="display:inline;" 
+                                                  onsubmit="return confirm('¿Eliminar repuesto? Se devolverá al inventario.')">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-link btn-sm text-danger p-0">
+                                                    <i class="bi bi-x-circle"></i>
+                                                </button>
+                                            </form>
+                                        </small>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <span class="text-muted">Sin repuestos</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <form method="post" action="{% url 'workshop:task_delete' order.id task.id %}" 
+                                  style="display:inline;" 
+                                  onsubmit="return confirm('¿Eliminar esta tarea?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="bi bi-list-task display-4 text-muted"></i>
+            <p class="text-muted mt-2">No hay tareas registradas</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Agregar Repuesto a Tarea -->
+{% if tasks %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-box-seam"></i> Agregar Repuesto a Tarea</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" action="{% url 'workshop:part_add_to_task' order.id %}" class="row g-3">
+            {% csrf_token %}
+            <div class="col-md-4">
+                <label class="form-label">Tarea</label>
+                <select name="maintenance_task_id" class="form-select" required>
+                    <option value="">Selecciona una tarea</option>
+                    {% for task in tasks %}
+                    <option value="{{ task.id }}">{{ task.task_type.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Repuesto del Inventario</label>
+                <select name="workshop_inventory_id" class="form-select" required>
+                    <option value="">Selecciona un repuesto</option>
+                    {% for item in inventory %}
+                    <option value="{{ item.id }}">
+                        {{ item.spare_part.name }} (Stock: {{ item.quantity }}) - ${{ item.current_cost|floatformat:0 }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Cantidad</label>
+                <input type="number" name="quantity_used" class="form-control" min="1" value="1" required>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-success w-100">
+                    <i class="bi bi-plus"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal: Agregar Tarea -->
+<div class="modal fade" id="addTaskModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Agregar Nueva Tarea</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'workshop:task_create' order.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tipo de Tarea</label>
+                        <select name="task_type_id" class="form-select" required>
+                            <option value="">Selecciona un tipo</option>
+                            {% for task_type in task_types %}
+                            <option value="{{ task_type.id }}">{{ task_type.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción (opcional)</label>
+                        <textarea name="description" class="form-control" rows="3" 
+                                  placeholder="Detalle adicional de la tarea..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Costo de Mano de Obra (CLP)</label>
+                        <input type="number" name="cost" class="form-control" min="0" step="0.01" value="0">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agregar Tarea</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+
+

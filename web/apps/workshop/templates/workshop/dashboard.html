@@ -1,0 +1,224 @@
+{% extends 'workshop/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/workshop.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4"><i class="bi bi-speedometer2"></i> Dashboard del Taller - {{ workshop_name }}</h1>
+    </div>
+</div>
+
+<!-- Estadísticas Clave -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">En Taller</h6>
+                        <h2 class="card-title mb-0">{{ ordenes_en_taller }}</h2>
+                    </div>
+                    <i class="bi bi-wrench display-4 opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-top border-white border-opacity-25">
+                <a href="{% url 'workshop:orders_list' %}?status=en_taller" class="text-white text-decoration-none small">
+                    Ver todas <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-warning h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Pendientes</h6>
+                        <h2 class="card-title mb-0">{{ ordenes_pendientes }}</h2>
+                    </div>
+                    <i class="bi bi-clock display-4 opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-top border-white border-opacity-25">
+                <a href="{% url 'workshop:orders_list' %}?status=pendiente" class="text-white text-decoration-none small">
+                    Ver todas <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-danger h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Esperando Repuestos</h6>
+                        <h2 class="card-title mb-0">{{ ordenes_espera_repuesto }}</h2>
+                    </div>
+                    <i class="bi bi-pause-circle display-4 opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-top border-white border-opacity-25">
+                <span class="text-white small">Órdenes en pausa</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-success h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Total Órdenes</h6>
+                        <h2 class="card-title mb-0">{{ total_ordenes }}</h2>
+                    </div>
+                    <i class="bi bi-clipboard-check display-4 opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-top border-white border-opacity-25">
+                <a href="{% url 'workshop:orders_list' %}" class="text-white text-decoration-none small">
+                    Ver todas <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Segunda Fila: Acciones Rápidas y Repuestos -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0"><i class="bi bi-lightning"></i> Acciones Rápidas</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-3">
+                    <a href="{% url 'workshop:order_create' %}" class="btn btn-primary btn-lg d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-plus-circle"></i> Nueva Orden de Mantención</span>
+                    </a>
+                    <a href="{% url 'workshop:inventory_list' %}" class="btn btn-outline-success d-flex align-items-center">
+                        <i class="bi bi-box-seam me-2"></i> Gestionar Inventario
+                    </a>
+                    <a href="{% url 'workshop:suppliers_list' %}" class="btn btn-outline-info d-flex align-items-center">
+                        <i class="bi bi-truck me-2"></i> Ver Proveedores
+                    </a>
+                    {% if request.user_role == 'Admin Taller' or request.user_role == 'Super Admin' %}
+                    <a href="{% url 'workshop:employees_list' %}" class="btn btn-outline-warning d-flex align-items-center">
+                        <i class="bi bi-people me-2"></i> Gestionar Empleados
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0"><i class="bi bi-exclamation-triangle"></i> Alertas de Inventario</h5>
+            </div>
+            <div class="card-body">
+                {% if repuestos_bajo_stock > 0 %}
+                <div class="alert alert-warning mb-0">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>{{ repuestos_bajo_stock }}</strong> repuesto{{ repuestos_bajo_stock|pluralize:"s" }} con stock bajo (menos de 5 unidades).
+                    <br>
+                    <a href="{% url 'workshop:inventory_list' %}" class="alert-link">Ver inventario</a>
+                </div>
+                {% else %}
+                <div class="alert alert-success mb-0">
+                    <i class="bi bi-check-circle-fill"></i>
+                    Todo el inventario tiene stock adecuado.
+                </div>
+                {% endif %}
+                
+                <div class="mt-3">
+                    <h6 class="text-muted">Estado General del Taller:</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-check text-success"></i> Sistema operativo</li>
+                        <li><i class="bi bi-check text-success"></i> {{ ordenes_en_taller }} órden{{ ordenes_en_taller|pluralize:"es" }} en proceso</li>
+                        {% if ordenes_espera_repuesto > 0 %}
+                        <li><i class="bi bi-exclamation-circle text-warning"></i> {{ ordenes_espera_repuesto }} órden{{ ordenes_espera_repuesto|pluralize:"es" }} esperando repuestos</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Vehículos en Taller -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0"><i class="bi bi-truck"></i> Vehículos Actualmente en Taller</h5>
+            </div>
+            <div class="card-body">
+                {% if active_orders %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Orden #</th>
+                                <th>Patente</th>
+                                <th>Vehículo</th>
+                                <th>Tipo de Mantención</th>
+                                <th>Fecha Ingreso</th>
+                                <th>Kilometraje</th>
+                                <th class="text-end">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in active_orders %}
+                            <tr>
+                                <td><strong>#{{ order.id }}</strong></td>
+                                <td>
+                                    <span class="badge bg-dark">{{ order.vehicle.license_plate }}</span>
+                                </td>
+                                <td>
+                                    {{ order.vehicle.brand }} {{ order.vehicle.model }}
+                                    <small class="text-muted">({{ order.vehicle.year }})</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ order.maintenance_type.name|default:"N/A" }}</span>
+                                </td>
+                                <td>{{ order.entry_date }}</td>
+                                <td>{{ order.mileage|default:"—" }} km</td>
+                                <td class="text-end">
+                                    <a href="{% url 'workshop:order_detail' order.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i> Ver Ficha
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <p class="text-muted mt-3">No hay vehículos actualmente en el taller</p>
+                    <a href="{% url 'workshop:order_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Crear Nueva Orden
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/workshop_dashboard.js' %}"></script>
+{% endblock %}
+
+
+

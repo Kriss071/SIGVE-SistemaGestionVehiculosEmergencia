@@ -45,10 +45,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'accounts',
-    'vehicles',
-    'maintenance',
+    # 'vehicles',
+    # 'maintenance',
     'backoffice',
-    'apps.sigve'
+    'apps.sigve',
+    'apps.workshop'
 ]
 
 MIDDLEWARE = [
@@ -210,6 +211,11 @@ LOGGING = {
             'propagate': False,
         },
         'backoffice': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'apps.workshop': {
             'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': False,

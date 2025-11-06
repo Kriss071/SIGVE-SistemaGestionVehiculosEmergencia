@@ -1,0 +1,77 @@
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm sticky-top
+            {% if request.resolver_match.url_name == 'dashboard' %}
+                bg-dark
+            {% elif request.resolver_match.url_name == 'orders_list' or request.resolver_match.url_name == 'order_detail' %}
+                bg-primary
+            {% elif request.resolver_match.url_name == 'inventory_list' %}
+                bg-success
+            {% elif request.resolver_match.url_name == 'suppliers_list' %}
+                bg-info
+            {% elif request.resolver_match.url_name == 'employees_list' %}
+                bg-warning
+            {% else %}
+                bg-primary
+            {% endif %}">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{% url 'workshop:dashboard' %}">
+            <i class="bi bi-tools"></i> Taller - Panel de Gestión
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            
+            <!-- Menú Principal -->
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
+                       href="{% url 'workshop:dashboard' %}">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'orders' in request.resolver_match.url_name %}active{% endif %}" 
+                       href="{% url 'workshop:orders_list' %}">
+                        <i class="bi bi-clipboard-check"></i> Órdenes de Mantención
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'inventory_list' %}active{% endif %}" 
+                       href="{% url 'workshop:inventory_list' %}">
+                        <i class="bi bi-box-seam"></i> Inventario
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'suppliers_list' %}active{% endif %}" 
+                       href="{% url 'workshop:suppliers_list' %}">
+                        <i class="bi bi-truck"></i> Proveedores
+                    </a>
+                </li>
+                
+                {% if request.user_role == 'Admin Taller' or request.user_role == 'Super Admin' %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'employees_list' %}active{% endif %}" 
+                       href="{% url 'workshop:employees_list' %}">
+                        <i class="bi bi-people"></i> Empleados
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+            
+            <!-- Menú de Usuario (lado derecho) -->
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle"></i> {{ request.user_role|default:"Usuario" }}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+
+
