@@ -86,6 +86,7 @@ Table fuel_type {
   Note: 'Tipos de combustible (ej: Diésel, Gasolina 95)'
   id integer                      [primary key]
   name varchar                    [not null, unique]
+  description varchar             
 
   created_at timestamp            [not null]
   updated_at timestamp 
@@ -95,6 +96,7 @@ Table transmission_type {
   Note: 'Tipos de transmisión (ej: Manual, Automática)'
   id integer                      [primary key]
   name varchar                    [not null, unique]
+  description varchar  
 
   created_at timestamp            [not null]
   updated_at timestamp
@@ -161,6 +163,22 @@ Table task_type {
   updated_at timestamp
 }
 
+Table maintenance_order_status{
+  Note: 'Almacena los distintos estados posibles de una orden de mantención dentro del sistema SIGVE.'
+  id integer                     [primary key]
+  name varchar                   [not null, unique]
+  description text               
+  created_at timestamp            [not null]
+}
+
+Table maintenance_type{
+  Note: 'Define los tipos de mantención que pueden aplicarse a los vehículos dentro del sistema SIGVE.'
+  id integer                     [primary key]
+  name varchar                   [not null, unique]
+  description text               
+  created_at timestamp            [not null]
+}
+
 Table maintenance_order {
   Note: 'Representa una orden de trabajo (visita) de un vehículo a un taller'
   id integer                      [primary key]
@@ -168,6 +186,8 @@ Table maintenance_order {
   assigned_mechanic_id uuid       [ref: > user_profile.id, note: 'Mecánico asignado a la orden']  
   workshop_id integer             [ref: > workshop.id, not null]
   vehicle_id integer              [ref: > vehicle.id, not null]
+  order_status_id integer         [ref: > maintenance_order_status.id, not null]
+  maintenance_type_id integer     [ref: > maintenance_type.id, not null]
 
   entry_date date                 [not null, note: 'Fecha de ingreso al taller']
   exit_date date                  [note: 'Fecha de salida (nulo si sigue en taller)']
@@ -277,8 +297,8 @@ Table request_type {
 
 Table data_request{
   id integer                      [primary key]
-  requesting_user_id uuid         
-  request_type_id integer         [not null]
+  requesting_user_id uuid         [not null, ref: > user_profile.id]
+  request_type_id integer         [not null, ref: > request_type.id]
   requested_data jsonb            [not null]
   status varchar                  [not null]
   admin_notes text
