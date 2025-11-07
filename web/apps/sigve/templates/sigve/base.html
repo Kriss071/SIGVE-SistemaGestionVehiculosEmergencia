@@ -20,7 +20,7 @@
 
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
     <!-- Navegación -->
     {% include 'sigve/components/navbar.html' %}
 
@@ -34,12 +34,12 @@
     {% endif %}
 
     <!-- Contenido Principal -->
-    <div class="container-fluid py-4">
+    <div class="container-fluid py-4 d-flex flex-column">
         {% block content %}{% endblock %}
     </div>
 
     <!-- Footer -->
-    {% include 'sigve/components/footer.html' %}
+    {% include 'footer.html' %}
     
     <!-- Sistema de Notificaciones Toasts -->
     {% include 'sigve/components/toast_container.html' %}
