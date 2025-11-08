@@ -1,0 +1,133 @@
+<div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="orderModalLabel">
+                    <i class="bi bi-plus-circle"></i> Nueva Orden de Mantención
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            
+            <div class="modal-body">
+                
+                <div id="orderModalLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Cargando configuración del formulario...</p>
+                </div>
+
+                <div id="orderModalContent" style="display: none;">
+
+                    <div id="step1SearchVehicle">
+                        <h4 class="mb-3">Paso 1: Selecciona un Vehículo</h4>
+                        <div class="mb-3">
+                            <label for="vehicleSearchInput" class="form-label">Buscar por patente</label>
+                            <input type="text" class="form-control form-control-lg" id="vehicleSearchInput" placeholder="Comienza a escribir la patente (Ej: AB12)..." autocomplete="off">
+                        </div>
+                        
+                        <div id="vehicleSearchResultsContainer" style="display: none;">
+                            <p class="text-muted"><small>Resultados de la búsqueda:</small></p>
+                            <ul class="list-group" id="vehicleSearchResults">
+                                </ul>
+                        </div>
+                        
+                        <div class="text-center py-3" id="vehicleSearchNotFound" style="display: none;">
+                            <p class="text-danger"><i class="bi bi-exclamation-triangle"></i> No se encontraron vehículos.</p>
+                            <button type="button" class="btn btn-warning" id="showCreateVehicleBtn">
+                                <i class="bi bi-plus-circle"></i> Registrar este vehículo
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="step2CreateOrder" style="display: none;">
+                        <h4 class="mb-3">Paso 2: Datos de la Orden</h4>
+                        <p>Creando orden para el vehículo: <strong id="selectedVehiclePlate" class="badge bg-dark"></strong></p>
+                        
+                        <form id="createOrderForm">
+                            {% csrf_token %}
+                            <input type="hidden" name="vehicle_id" id="orderVehicleId">
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Tipo Mantención <span class="text-danger">*</span></label>
+                                    <select name="maintenance_type_id" id="selectMaintenanceType" class="form-select" required>
+                                        </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Kilometraje <span class="text-danger">*</span></label>
+                                    <input type="number" name="mileage" class="form-control" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Fecha Ingreso <span class="text-danger">*</span></label>
+                                    <input type="date" name="entry_date" class="form-control" id="orderEntryDate" required>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Mecánico Asignado</label>
+                                    <select name="assigned_mechanic_id" id="selectMechanic" class="form-select">
+                                        </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Estado Inicial <span class="text-danger">*</span></label>
+                                    <select name="order_status_id" id="selectStatus" class="form-select" required>
+                                        </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Observaciones (Falla reportada)</label>
+                                <textarea name="observations" class="form-control" rows="3"></textarea>
+                            </div>
+
+                        </form>
+                    </div>
+
+                    <div id="step3CreateVehicle" style="display: none;">
+                        <h4 class="mb-3 text-warning"><i class="bi bi-exclamation-circle"></i> Paso 2: Registrar Nuevo Vehículo</h4>
+                        <p>La patente <strong id="newVehiclePlate" class="badge bg-warning text-dark"></strong> no fue encontrada. Completa los datos para registrarla.</p>
+                        
+                        <form id="createVehicleForm">
+                            {% csrf_token %}
+                            <input type="hidden" name="license_plate" id="newVehicleLicensePlateInput">
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Marca <span class="text-danger">*</span></label>
+                                    <input type="text" name="brand" class="form-control" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Modelo <span class="text-danger">*</span></label>
+                                    <input type="text" name="model" class="form-control" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Año <span class="text-danger">*</span></label>
+                                    <input type="number" name="year" class="form-control" required>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Tipo Vehículo <span class="text-danger">*</span></label>
+                                    <select name="vehicle_type_id" id="selectVehicleType" class="form-select" required>
+                                        </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Cuartel <span class="text-danger">*</span></label>
+                                    <select name="fire_station_id" id="selectFireStation" class="form-select" required>
+                                        </select>
+                                </div>
+                            </div>
+
+                            </form>
+                    </div>
+                
+                </div> </div>
+            
+            <div class="modal-footer" id="orderModalFooter">
+                </div>
+        </div>
+    </div>
+</div>
