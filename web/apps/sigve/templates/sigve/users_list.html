@@ -32,6 +32,7 @@
                 <thead>
                     <tr>
                         <th>Nombre</th>
+                        <th>Correo</th>
                         <th>RUT</th>
                         <th>Teléfono</th>
                         <th>Rol</th>
@@ -45,8 +46,8 @@
                     <tr onclick="UserModal.open('view', '{{ user.id }}')">
                         <td>
                             <strong>{{ user.first_name }} {{ user.last_name }}</strong>
-                            <br><small class="text-muted">{{ user.email }}</small>
                         </td>
+                        <td>{{ user.email|default:"—" }}</td>
                         <td>{{ user.rut|default:"—" }}</td>
                         <td>{{ user.phone|default:"—" }}</td>
                         <td>

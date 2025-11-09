@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Iterable
 from .base_service import SigveBaseService
 from supabase import Client
 
@@ -27,7 +27,8 @@ class UserService(SigveBaseService):
             """) \
             .order("first_name")
         
-        return SigveBaseService._execute_query(query, "get_all_users")
+        users = SigveBaseService._execute_query(query, "get_all_users")
+        return UserService._attach_auth_user_data(users)
     
     @staticmethod
     def get_user(user_id: str) -> Optional[Dict[str, Any]]:
@@ -54,7 +55,11 @@ class UserService(SigveBaseService):
                 .maybe_single() \
                 .execute()
             
-            return result.data
+            user = result.data
+            if user:
+                enriched = UserService._attach_auth_user_data([user])
+                return enriched[0] if enriched else user
+            return user
         except Exception as e:
             logger.error(f"❌ Error obteniendo usuario {user_id}: {e}", exc_info=True)
             return None
@@ -265,5 +270,61 @@ class UserService(SigveBaseService):
 
         logger.info(f"✅ Usuario creado correctamente con ID {user_id}")
         return {"success": True, "user_id": user_id, "error": None}
+
+    @staticmethod
+    def _attach_auth_user_data(users: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Adjunta la información proveniente de auth.users (como el email)
+        a los registros de user_profile.
+        """
+        if not users:
+            return []
+
+        ids = [user.get("id") for user in users if user.get("id")]
+        auth_users = UserService._get_auth_users_by_ids(ids)
+
+        for user in users:
+            user_id = user.get("id")
+            auth_data = auth_users.get(user_id, {})
+            if auth_data:
+                user["email"] = auth_data.get("email")
+                user.setdefault("auth_user", auth_data)
+        return users
+
+    @staticmethod
+    def _get_auth_users_by_ids(user_ids: Iterable[str]) -> Dict[str, Dict[str, Any]]:
+        """
+        Obtiene los usuarios desde auth.users dada una lista de IDs.
+        """
+        unique_ids = list({uid for uid in user_ids if uid})
+        if not unique_ids:
+            return {}
+
+        admin_client: Client = SigveBaseService.get_admin_client()
+        auth_users: Dict[str, Dict[str, Any]] = {}
+
+        for user_id in unique_ids:
+            try:
+                response = admin_client.auth.admin.get_user_by_id(user_id)
+                auth_user = getattr(response, "user", None)
+                if not auth_user:
+                    continue
+
+                email = getattr(auth_user, "email", None)
+                if email is None and isinstance(auth_user, dict):
+                    email = auth_user.get("email")
+
+                phone = getattr(auth_user, "phone", None)
+                if phone is None and isinstance(auth_user, dict):
+                    phone = auth_user.get("phone")
+
+                auth_users[user_id] = {
+                    "email": email,
+                    "phone": phone
+                }
+            except Exception as e:
+                logger.warning(f"⚠️ No se pudo obtener auth.users para {user_id}: {e}")
+
+        return auth_users
 
 
