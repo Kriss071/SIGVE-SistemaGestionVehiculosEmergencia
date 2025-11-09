@@ -4,7 +4,7 @@ from datetime import datetime
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_GET, require_POST
 
 from .decorators import require_workshop_user, require_admin_taller
 from .services.dashboard_service import DashboardService
@@ -54,6 +54,116 @@ def dashboard(request):
 
 
 # ===== GESTIÓN DE ÓRDENES DE MANTENCIÓN =====
+
+@require_workshop_user
+@require_GET
+def order_create_context_api(request):
+    """Devuelve datos de contexto para inicializar el modal de órdenes."""
+    workshop_id = request.workshop_id
+    
+    maintenance_types = VehicleService.get_maintenance_types()
+    order_statuses = VehicleService.get_order_statuses()
+    fire_stations = VehicleService.get_all_fire_stations()
+    vehicle_catalog_data = VehicleService.get_catalog_data()
+    
+    mechanics = EmployeeService.get_mechanics(workshop_id)
+    mechanics_with_full_name = [
+        {
+            **mechanic,
+            'full_name': f"{mechanic.get('first_name', '')} {mechanic.get('last_name', '')}".strip()
+        }
+        for mechanic in mechanics
+    ]
+    
+    data = {
+        'success': True,
+        'maintenance_types': maintenance_types,
+        'order_statuses': order_statuses,
+        'mechanics': mechanics_with_full_name,
+        'vehicle_catalog_data': vehicle_catalog_data,
+        'fire_stations': fire_stations
+    }
+    
+    return JsonResponse(data)
+
+
+@require_workshop_user
+@require_GET
+def vehicle_search_api(request):
+    """Busca vehículos por patente para el modal de órdenes."""
+    query = request.GET.get('q', '').strip()
+    vehicles = VehicleService.search_vehicles(query)
+    
+    return JsonResponse({
+        'success': True,
+        'vehicles': vehicles
+    })
+
+
+@require_workshop_user
+@require_POST
+def vehicle_create_api(request):
+    """Crea un nuevo vehículo desde el modal de órdenes."""
+    form = VehicleCreateForm(request.POST)
+    
+    if not form.is_valid():
+        return JsonResponse({
+            'success': False,
+            'errors': form.errors
+        }, status=400)
+    
+    vehicle_data = form.cleaned_data
+    vehicle = VehicleService.create_vehicle(vehicle_data)
+    
+    if not vehicle:
+        return JsonResponse({
+            'success': False,
+            'error': 'No se pudo crear el vehículo. Inténtalo nuevamente.'
+        }, status=500)
+    
+    return JsonResponse({
+        'success': True,
+        'vehicle': vehicle
+    })
+
+
+@require_workshop_user
+@require_POST
+def order_create_api(request):
+    """Crea una nueva orden de mantención desde el modal."""
+    workshop_id = request.workshop_id
+    form = MaintenanceOrderForm(request.POST)
+    
+    if not form.is_valid():
+        return JsonResponse({
+            'success': False,
+            'errors': form.errors
+        }, status=400)
+    
+    cleaned = form.cleaned_data
+    order_data = {
+        'vehicle_id': cleaned['vehicle_id'],
+        'mileage': cleaned['mileage'],
+        'maintenance_type_id': cleaned['maintenance_type_id'],
+        'order_status_id': cleaned['order_status_id'],
+        'assigned_mechanic_id': cleaned.get('assigned_mechanic_id') or None,
+        'entry_date': cleaned['entry_date'].isoformat(),
+        'observations': cleaned.get('observations', '')
+    }
+    
+    order = OrderService.create_order(workshop_id, order_data)
+    
+    if not order:
+        return JsonResponse({
+            'success': False,
+            'error': 'No se pudo crear la orden de mantención. Inténtalo nuevamente.'
+        }, status=500)
+    
+    return JsonResponse({
+        'success': True,
+        'order': order
+    })
+
 
 @require_workshop_user
 def orders_list(request):

@@ -44,6 +44,43 @@ class VehicleService(WorkshopBaseService):
         return WorkshopBaseService._execute_single(query, "search_vehicle")
     
     @staticmethod
+    def search_vehicles(query: str, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Busca vehículos por coincidencia parcial de patente.
+        
+        Args:
+            query: Texto a buscar dentro de la patente.
+            limit: Máximo de resultados.
+            
+        Returns:
+            Lista de vehículos que coinciden con la búsqueda.
+        """
+        if not query:
+            return []
+        
+        client = WorkshopBaseService.get_client()
+        query = query.upper()
+        
+        try:
+            result = client.table("vehicle") \
+                .select("""
+                    id,
+                    license_plate,
+                    brand,
+                    model,
+                    year
+                """) \
+                .ilike("license_plate", f"%{query}%") \
+                .order("license_plate") \
+                .limit(limit) \
+                .execute()
+            
+            return result.data or []
+        except Exception as e:
+            logger.error(f"❌ Error buscando vehículos por patente: {e}", exc_info=True)
+            return []
+    
+    @staticmethod
     def create_vehicle(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
         Crea un nuevo vehículo en el sistema.

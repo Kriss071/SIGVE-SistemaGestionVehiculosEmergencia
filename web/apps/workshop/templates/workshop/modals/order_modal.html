@@ -1,11 +1,11 @@
 <div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header bg-dark text-white">
                 <h5 class="modal-title" id="orderModalLabel">
                     <i class="bi bi-plus-circle"></i> Nueva Orden de Mantención
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             
             <div class="modal-body">
@@ -44,7 +44,7 @@
                         <h4 class="mb-3">Paso 2: Datos de la Orden</h4>
                         <p>Creando orden para el vehículo: <strong id="selectedVehiclePlate" class="badge bg-dark"></strong></p>
                         
-                        <form id="createOrderForm">
+                        <form id="createOrderForm" class="needs-validation" novalidate>
                             {% csrf_token %}
                             <input type="hidden" name="vehicle_id" id="orderVehicleId">
                             
@@ -89,7 +89,7 @@
                         <h4 class="mb-3 text-warning"><i class="bi bi-exclamation-circle"></i> Paso 2: Registrar Nuevo Vehículo</h4>
                         <p>La patente <strong id="newVehiclePlate" class="badge bg-warning text-dark"></strong> no fue encontrada. Completa los datos para registrarla.</p>
                         
-                        <form id="createVehicleForm">
+                        <form id="createVehicleForm" class="needs-validation" novalidate>
                             {% csrf_token %}
                             <input type="hidden" name="license_plate" id="newVehicleLicensePlateInput">
                             

@@ -7,6 +7,12 @@ urlpatterns = [
     # Dashboard
     path('', views.dashboard, name='dashboard'),
     
+    # API para creación rápida de órdenes
+    path('api/order/context/', views.order_create_context_api, name='order_create_context_api'),
+    path('api/vehicles/search/', views.vehicle_search_api, name='vehicle_search_api'),
+    path('api/vehicle/create/', views.vehicle_create_api, name='vehicle_create_api'),
+    path('api/order/create/', views.order_create_api, name='order_create_api'),
+    
     # Gestión de Órdenes de Mantención
     path('orders/', views.orders_list, name='orders_list'),
     path('orders/create/', views.order_create, name='order_create'),

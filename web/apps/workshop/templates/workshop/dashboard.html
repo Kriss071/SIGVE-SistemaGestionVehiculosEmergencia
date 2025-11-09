@@ -98,9 +98,10 @@
             </div>
             <div class="card-body">
                 <div class="d-grid gap-3">
-                    <a href="{% url 'workshop:order_create' %}" class="btn btn-primary btn-lg d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-primary btn-lg d-flex justify-content-between align-items-center"
+                            onclick="OrderModal.open()">
                         <span><i class="bi bi-plus-circle"></i> Nueva Orden de Mantención</span>
-                    </a>
+                    </button>
                     <a href="{% url 'workshop:inventory_list' %}" class="btn btn-outline-success d-flex align-items-center">
                         <i class="bi bi-box-seam me-2"></i> Gestionar Inventario
                     </a>
@@ -204,9 +205,9 @@
                 <div class="text-center py-5">
                     <i class="bi bi-inbox display-1 text-muted"></i>
                     <p class="text-muted mt-3">No hay vehículos actualmente en el taller</p>
-                    <a href="{% url 'workshop:order_create' %}" class="btn btn-primary">
+                    <button type="button" class="btn btn-primary" onclick="OrderModal.open()">
                         <i class="bi bi-plus-circle"></i> Crear Nueva Orden
-                    </a>
+                    </button>
                 </div>
                 {% endif %}
             </div>
@@ -214,9 +215,14 @@
     </div>
 </div>
 
+<!-- Modal Crear Orden -->
+{% include 'workshop/modals/order_modal.html' %}
+
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/sigve.js' %}"></script>
+<script src="{% static 'js/order.js' %}"></script>
 <script src="{% static 'js/workshop_dashboard.js' %}"></script>
 {% endblock %}
 

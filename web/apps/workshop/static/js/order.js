@@ -288,6 +288,7 @@
         async function handleSubmitVehicle(e) {
             const submitBtn = e.target;
             if (!vehicleForm.checkValidity()) {
+                vehicleForm.classList.add('was-validated');
                 SIGVE.showNotification('Por favor completa los campos obligatorios del vehículo.', 'warning');
                 return;
             }
@@ -323,6 +324,7 @@
         async function handleSubmitOrder(e) {
             const submitBtn = e.target;
             if (!orderForm.checkValidity()) {
+                orderForm.classList.add('was-validated');
                 SIGVE.showNotification('Por favor completa los campos obligatorios de la orden.', 'warning');
                 return;
             }
@@ -369,6 +371,8 @@
             // Limpiar formularios y estados
             orderForm.reset();
             vehicleForm.reset();
+            orderForm.classList.remove('was-validated');
+            vehicleForm.classList.remove('was-validated');
             searchInput.value = '';
             searchResultsList.innerHTML = '';
             searchResultsContainer.style.display = 'none';
