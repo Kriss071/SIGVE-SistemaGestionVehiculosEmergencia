@@ -1046,6 +1046,8 @@ def user_edit(request, user_id):
     """Editar un usuario."""
     user = UserService.get_user(user_id)
     roles = UserService.get_all_roles()
+    workshops = WorkshopService.get_all_workshops()
+    fire_stations = FireStationService.get_all_fire_stations()
     
     if not user:
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -1053,24 +1055,37 @@ def user_edit(request, user_id):
         messages.error(request, '❌ Usuario no encontrado.')
         return redirect('sigve:users_list')
     
+    role_choices = [(str(role['id']), role['name']) for role in roles]
+    workshop_choices = [('', 'Sin asignar a taller')] + [(str(ws['id']), ws['name']) for ws in workshops]
+    fire_station_choices = [('', 'Sin asignar a cuartel')] + [(str(fs['id']), fs['name']) for fs in fire_stations]
+    
     if request.method == 'POST':
-        form = UserProfileForm(request.POST)
+        form = UserProfileForm(
+            request.POST,
+            role_choices=role_choices,
+            workshop_choices=workshop_choices,
+            fire_station_choices=fire_station_choices
+        )
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
         if form.is_valid():
-            data = {
-                'first_name': form.cleaned_data['first_name'],
-                'last_name': form.cleaned_data['last_name'],
-                'rut': form.cleaned_data.get('rut'),
-                'phone': form.cleaned_data.get('phone'),
-                'role_id': form.cleaned_data['role_id'],
-                # FIX: Usar el valor booleano de cleaned_data.
-                # El .get('is_active', True) anterior era un bug que
-                # impedía desactivar usuarios.
-                'is_active': form.cleaned_data['is_active']
+            cleaned_data = form.cleaned_data
+            profile_data = {
+                'first_name': cleaned_data['first_name'],
+                'last_name': cleaned_data['last_name'],
+                'rut': cleaned_data.get('rut'),
+                'phone': cleaned_data.get('phone'),
+                'role_id': cleaned_data['role_id'],
+                'is_active': cleaned_data['is_active'],
+                'workshop_id': cleaned_data.get('workshop_id'),
+                'fire_station_id': cleaned_data.get('fire_station_id')
             }
-            
-            success = UserService.update_user(user_id, data)
+
+            success = UserService.update_user(
+                user_id,
+                profile_data,
+                email=cleaned_data['email']
+            )
             
             if success:
                 message = '✅ Usuario actualizado correctamente.'
@@ -1095,18 +1110,35 @@ def user_edit(request, user_id):
                 return response
 
     else:
-        form = UserProfileForm(initial=user)
+        initial_data = {
+            'email': user.get('email'),
+            'first_name': user.get('first_name'),
+            'last_name': user.get('last_name'),
+            'rut': user.get('rut'),
+            'phone': user.get('phone'),
+            'role_id': user.get('role_id'),
+            'is_active': user.get('is_active'),
+            'workshop_id': user.get('workshop_id'),
+            'fire_station_id': user.get('fire_station_id')
+        }
+        form = UserProfileForm(
+            initial=initial_data,
+            role_choices=role_choices,
+            workshop_choices=workshop_choices,
+            fire_station_choices=fire_station_choices
+        )
     
     context = {
         'page_title': 'Editar Usuario',
         'active_page': 'users',
         'form': form,
         'user': user,
-        'roles': roles
+        'roles': roles,
+        'workshops': workshops,
+        'fire_stations': fire_stations
     }
     
     return render(request, 'sigve/user_form.html', context)
-
 
 @require_http_methods(["POST"])
 @require_supabase_login

@@ -24,6 +24,17 @@
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
+                            <label for="id_email" class="form-label">Correo electrónico <span class="text-danger">*</span></label>
+                            <input type="email" 
+                                   class="form-control" 
+                                   name="email" 
+                                   id="id_email" 
+                                   required>
+                            <div class="invalid-feedback">
+                                Por favor, ingresa un correo válido.
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
                             <label for="id_first_name" class="form-label">Nombre <span class="text-danger">*</span></label>
                             <input type="text" 
                                    class="form-control" 
@@ -34,7 +45,7 @@
                                 Por favor, ingresa un nombre.
                             </div>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-3 mb-3">
                             <label for="id_last_name" class="form-label">Apellido <span class="text-danger">*</span></label>
                             <input type="text" 
                                    class="form-control" 
@@ -48,7 +59,7 @@
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label for="id_rut" class="form-label">RUT</label>
                             <input type="text" 
                                    class="form-control" 
@@ -56,7 +67,7 @@
                                    id="id_rut" 
                                    placeholder="Ej: 12345678-9">
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label for="id_phone" class="form-label">Teléfono</label>
                             <input type="text" 
                                    class="form-control" 
@@ -64,18 +75,38 @@
                                    id="id_phone" 
                                    placeholder="Ej: +56912345678">
                         </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="id_role_id" class="form-label">Rol <span class="text-danger">*</span></label>
+                            <select name="role_id" id="id_role_id" class="form-select" required>
+                                <option value="">Seleccionar rol...</option>
+                                {% for role in roles %}
+                                <option value="{{ role.id }}">{{ role.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">
+                                Por favor, selecciona un rol.
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label for="id_role_id" class="form-label">Rol <span class="text-danger">*</span></label>
-                        <select name="role_id" id="id_role_id" class="form-select" required>
-                            <option value="">Seleccionar rol...</option>
-                            {% for role in roles %}
-                            <option value="{{ role.id }}">{{ role.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <div class="invalid-feedback">
-                            Por favor, selecciona un rol.
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_workshop_id" class="form-label">Taller asociado</label>
+                            <select name="workshop_id" id="id_workshop_id" class="form-select">
+                                <option value="">Sin asignar a taller</option>
+                                {% for workshop in workshops %}
+                                <option value="{{ workshop.id }}">{{ workshop.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="id_fire_station_id" class="form-label">Cuartel asociado</label>
+                            <select name="fire_station_id" id="id_fire_station_id" class="form-select">
+                                <option value="">Sin asignar a cuartel</option>
+                                {% for fire_station in fire_stations %}
+                                <option value="{{ fire_station.id }}">{{ fire_station.name }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
                     </div>
 
@@ -85,7 +116,11 @@
                     </div>
 
                     <div class="alert alert-primary alert-permanent border-0" role="alert">
-                        <small><i class="bi bi-info-circle me-1"></i>Los campos marcados con <span class="text-danger">*</span> son obligatorios</small>
+                        <small>
+                            <i class="bi bi-info-circle me-1"></i>
+                            Los campos marcados con <span class="text-danger">*</span> son obligatorios. 
+                            Si asignas un taller, el cuartel quedará deshabilitado automáticamente y viceversa.
+                        </small>
                     </div>
                 </div>
                 <div class="modal-footer" id="userModalFooter">

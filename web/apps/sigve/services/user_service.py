@@ -65,22 +65,33 @@ class UserService(SigveBaseService):
             return None
     
     @staticmethod
-    def update_user(user_id: str, data: Dict[str, Any]) -> bool:
+    def update_user(user_id: str, profile_data: Dict[str, Any], *, email: Optional[str] = None) -> bool:
         """
         Actualiza un usuario existente.
         
         Args:
             user_id: UUID del usuario.
-            data: Datos a actualizar.
+            profile_data: Datos a actualizar en user_profile.
+            email: Nuevo correo electrónico (se actualiza en auth.users).
             
         Returns:
             True si se actualizó correctamente, False en caso contrario.
         """
         client = SigveBaseService.get_client()
-        
+        admin_client: Optional[Client] = None
+
+        if email is not None:
+            try:
+                admin_client = SigveBaseService.get_admin_client()
+                admin_client.auth.admin.update_user_by_id(user_id, {"email": email})
+                logger.info(f"📧 Email actualizado para usuario {user_id}")
+            except Exception as auth_error:
+                logger.error(f"❌ Error actualizando email del usuario {user_id}: {auth_error}", exc_info=True)
+                return False
+
         try:
             result = client.table("user_profile") \
-                .update(data) \
+                .update(profile_data) \
                 .eq("id", user_id) \
                 .execute()
             

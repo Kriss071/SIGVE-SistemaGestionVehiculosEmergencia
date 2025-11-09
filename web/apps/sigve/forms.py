@@ -117,6 +117,10 @@ class CatalogItemForm(forms.Form):
 
 class UserProfileForm(forms.Form):
     """Formulario para editar perfil de usuario."""
+    email = forms.EmailField(
+        label="Correo electrónico",
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'usuario@ejemplo.cl'})
+    )
     first_name = forms.CharField(
         max_length=255,
         label="Nombre",
@@ -137,10 +141,26 @@ class UserProfileForm(forms.Form):
         max_length=20,
         label="Teléfono",
         required=False,
-        widget=forms.TextInput(attrs={'class': 'form-control'})
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+56912345678'})
     )
-    role_id = forms.IntegerField(
+    role_id = forms.TypedChoiceField(
         label="Rol",
+        coerce=int,
+        empty_value=None,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    workshop_id = forms.TypedChoiceField(
+        label="Taller",
+        required=False,
+        coerce=int,
+        empty_value=None,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    fire_station_id = forms.TypedChoiceField(
+        label="Cuartel",
+        required=False,
+        coerce=int,
+        empty_value=None,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     is_active = forms.BooleanField(
@@ -148,6 +168,33 @@ class UserProfileForm(forms.Form):
         required=False,
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
+
+    def __init__(
+        self,
+        *args,
+        role_choices=None,
+        workshop_choices=None,
+        fire_station_choices=None,
+        **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+        self.fields['role_id'].choices = role_choices or []
+        self.fields['workshop_id'].choices = workshop_choices or []
+        self.fields['fire_station_id'].choices = fire_station_choices or []
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        workshop_id = cleaned_data.get('workshop_id')
+        fire_station_id = cleaned_data.get('fire_station_id')
+
+        if workshop_id and fire_station_id:
+            self.add_error(
+                'fire_station_id',
+                'Un usuario no puede estar asociado a un taller y un cuartel simultáneamente.'
+            )
+
+        return cleaned_data
 
 
 class UserCreateForm(forms.Form):

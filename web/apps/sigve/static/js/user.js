@@ -8,6 +8,79 @@
     'use strict';
 
     /**
+     * Crea un controlador para bloquear los select de taller y cuartel
+     * de forma mutuamente excluyente.
+     */
+    function createMutualSelectController(workshopSelect, fireStationSelect) {
+        if (!workshopSelect || !fireStationSelect) {
+            return {
+                refresh: () => {},
+                reset: () => {}
+            };
+        }
+
+        const updateState = (clearOnChange = false) => {
+            const workshopLocked = workshopSelect.dataset.modalDisabled === 'true';
+            const fireLocked = fireStationSelect.dataset.modalDisabled === 'true';
+
+            if (!workshopLocked) {
+                workshopSelect.removeAttribute('disabled');
+            }
+            if (!fireLocked) {
+                fireStationSelect.removeAttribute('disabled');
+            }
+
+            if (workshopSelect.value) {
+                if (clearOnChange && !fireLocked) {
+                    fireStationSelect.value = '';
+                }
+                if (!fireLocked) {
+                    fireStationSelect.dataset.mutualDisabled = 'true';
+                    fireStationSelect.setAttribute('disabled', 'disabled');
+                }
+            } else if (!fireLocked) {
+                delete fireStationSelect.dataset.mutualDisabled;
+                fireStationSelect.removeAttribute('disabled');
+            }
+
+            if (fireStationSelect.value) {
+                if (clearOnChange && !workshopLocked) {
+                    workshopSelect.value = '';
+                }
+                if (!workshopLocked) {
+                    workshopSelect.dataset.mutualDisabled = 'true';
+                    workshopSelect.setAttribute('disabled', 'disabled');
+                }
+            } else if (!workshopLocked) {
+                delete workshopSelect.dataset.mutualDisabled;
+                workshopSelect.removeAttribute('disabled');
+            }
+        };
+
+        const onWorkshopChange = () => updateState(true);
+        const onFireStationChange = () => updateState(true);
+
+        workshopSelect.addEventListener('change', onWorkshopChange);
+        fireStationSelect.addEventListener('change', onFireStationChange);
+
+        return {
+            refresh: () => updateState(false),
+            reset: () => {
+                if (workshopSelect.dataset.modalDisabled !== 'true') {
+                    workshopSelect.value = '';
+                    delete workshopSelect.dataset.mutualDisabled;
+                    workshopSelect.removeAttribute('disabled');
+                }
+                if (fireStationSelect.dataset.modalDisabled !== 'true') {
+                    fireStationSelect.value = '';
+                    delete fireStationSelect.dataset.mutualDisabled;
+                    fireStationSelect.removeAttribute('disabled');
+                }
+            }
+        };
+    }
+
+    /**
      * Modal para la creación de usuarios.
      */
     window.UserCreateModal = (function() {
@@ -16,6 +89,7 @@
         const loading = document.getElementById('userCreateModalLoading');
         const submitBtn = document.getElementById('userCreateSubmitBtn');
         let modalInstance = null;
+        let mutualController = null;
 
         function init() {
             if (!modal || !form) {
@@ -25,6 +99,11 @@
             modalInstance = new bootstrap.Modal(modal);
             modal.addEventListener('hidden.bs.modal', resetModal);
             form.addEventListener('submit', handleSubmit);
+
+            mutualController = createMutualSelectController(
+                document.getElementById('id_create_workshop_id'),
+                document.getElementById('id_create_fire_station_id')
+            );
         }
 
         function open(source = 'list') {
@@ -38,6 +117,7 @@
 
             hideLoading();
             form.style.display = 'block';
+            mutualController?.refresh();
             modalInstance.show();
         }
 
@@ -129,6 +209,8 @@
             if (activeCheckbox) {
                 activeCheckbox.checked = true;
             }
+            mutualController?.reset();
+            mutualController?.refresh();
             window.SIGVE?.hideButtonLoading(submitBtn);
         }
 
@@ -154,11 +236,14 @@
         const loading = document.getElementById('userModalLoading');
         const footer = document.getElementById('userModalFooter');
         const titleSpan = document.getElementById('userModalTitle');
+        const workshopSelect = document.getElementById('id_workshop_id');
+        const fireStationSelect = document.getElementById('id_fire_station_id');
         
         // Estado actual
         let currentMode = 'view'; // 'view', 'edit'
         let currentUserId = null;
         let modalInstance = null;
+        let mutualController = null;
         
         /**
          * Inicializa el modal
@@ -173,6 +258,8 @@
             
             // Evento al enviar el formulario
             form.addEventListener('submit', handleSubmit);
+
+            mutualController = createMutualSelectController(workshopSelect, fireStationSelect);
         }
         
         /**
@@ -236,7 +323,10 @@
         function setupViewMode() {
             titleSpan.textContent = 'Ver Usuario';
             renderButtons('view');
-            setTimeout(() => setFieldsEnabled(false), 0);
+            setTimeout(() => {
+                setFieldsEnabled(false);
+                mutualController?.refresh();
+            }, 0);
         }
         
         /**
@@ -246,7 +336,10 @@
             titleSpan.textContent = 'Editar Usuario';
             form.action = `/sigve/users/${currentUserId}/edit/`;
             renderButtons('edit');
-            setTimeout(() => setFieldsEnabled(true), 0);
+            setTimeout(() => {
+                setFieldsEnabled(true);
+                mutualController?.refresh();
+            }, 0);
         }
         
         /**
@@ -271,12 +364,31 @@
          */
         function populateForm(user) {
             document.getElementById('userId').value = user.id || '';
+            document.getElementById('id_email').value = user.email || '';
             document.getElementById('id_first_name').value = user.first_name || '';
             document.getElementById('id_last_name').value = user.last_name || '';
             document.getElementById('id_rut').value = user.rut || '';
             document.getElementById('id_phone').value = user.phone || '';
-            document.getElementById('id_role_id').value = user.role_id || '';
-            document.getElementById('id_is_active').checked = user.is_active;
+
+            const roleField = document.getElementById('id_role_id');
+            if (roleField) {
+                roleField.value = user.role_id != null ? String(user.role_id) : '';
+            }
+
+            if (workshopSelect) {
+                workshopSelect.value = user.workshop_id != null ? String(user.workshop_id) : '';
+            }
+
+            if (fireStationSelect) {
+                fireStationSelect.value = user.fire_station_id != null ? String(user.fire_station_id) : '';
+            }
+
+            const isActiveCheckbox = document.getElementById('id_is_active');
+            if (isActiveCheckbox) {
+                isActiveCheckbox.checked = Boolean(user.is_active);
+            }
+
+            mutualController?.refresh();
         }
         
         /**
@@ -288,11 +400,15 @@
                 if (field.type !== 'hidden') {
                     if (enabled) {
                         field.removeAttribute('readonly');
-                        field.removeAttribute('disabled');
+                        delete field.dataset.modalDisabled;
+                        if (field.tagName.toLowerCase() === 'select' || field.type === 'checkbox') {
+                            field.removeAttribute('disabled');
+                        }
                     } else {
                         // Los <select> y <input type="checkbox"> usan 'disabled'
                         if (field.tagName.toLowerCase() === 'select' || field.type === 'checkbox') {
                             field.setAttribute('disabled', 'disabled');
+                            field.dataset.modalDisabled = 'true';
                         } else {
                             field.setAttribute('readonly', 'readonly');
                         }
@@ -464,8 +580,13 @@
             currentUserId = null;
             form.reset();
             form.classList.remove('was-validated');
-            document.getElementById('id_is_active').checked = false; // Reset checkbox
+            const isActiveCheckbox = document.getElementById('id_is_active');
+            if (isActiveCheckbox) {
+                isActiveCheckbox.checked = false;
+            }
             setFieldsEnabled(true);
+            mutualController?.reset();
+            mutualController?.refresh();
             footer.innerHTML = '';
             hideLoading();
             showForm();
