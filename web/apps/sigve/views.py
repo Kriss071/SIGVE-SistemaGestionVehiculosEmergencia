@@ -14,7 +14,7 @@ from .services.catalog_service import CatalogService
 from .services.user_service import UserService
 from .forms import (
     WorkshopForm, FireStationForm, SparePartForm, SupplierForm,
-    CatalogItemForm, UserProfileForm, RejectRequestForm
+    CatalogItemForm, UserProfileForm, RejectRequestForm, UserCreateForm
 )
 
 logger = logging.getLogger('apps.workshop')
@@ -959,10 +959,85 @@ def users_list(request):
         'page_title': 'Gestión de Usuarios',
         'active_page': 'users',
         'users': UserService.get_all_users(),
-        'roles': UserService.get_all_roles()
+        'roles': UserService.get_all_roles(),
+        'workshops': WorkshopService.get_all_workshops(),
+        'fire_stations': FireStationService.get_all_fire_stations()
     }
     
     return render(request, 'sigve/users_list.html', context)
+
+
+@require_http_methods(["POST"])
+@require_supabase_login
+@require_role("Admin SIGVE")
+def user_create(request):
+    """Crea un nuevo usuario en Supabase Auth y en user_profile."""
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    roles = UserService.get_all_roles()
+    workshops = WorkshopService.get_all_workshops()
+    fire_stations = FireStationService.get_all_fire_stations()
+
+    role_choices = [('', 'Seleccionar rol...')] + [(str(role['id']), role['name']) for role in roles]
+    workshop_choices = [('', 'Sin asignar a taller')] + [(str(ws['id']), ws['name']) for ws in workshops]
+    fire_station_choices = [('', 'Sin asignar a cuartel')] + [(str(fs['id']), fs['name']) for fs in fire_stations]
+
+    form = UserCreateForm(
+        request.POST,
+        role_choices=role_choices,
+        workshop_choices=workshop_choices,
+        fire_station_choices=fire_station_choices
+    )
+
+    if form.is_valid():
+        cleaned_data = form.cleaned_data
+        email = cleaned_data['email']
+        password = cleaned_data['password']
+
+        profile_data = {
+            'first_name': cleaned_data['first_name'],
+            'last_name': cleaned_data['last_name'],
+            'rut': cleaned_data.get('rut') or None,
+            'phone': cleaned_data.get('phone') or None,
+            'role_id': cleaned_data['role_id'],
+            'workshop_id': cleaned_data.get('workshop_id'),
+            'fire_station_id': cleaned_data.get('fire_station_id'),
+            'is_active': cleaned_data.get('is_active', False)
+        }
+
+        result = UserService.create_user(
+            email=email,
+            password=password,
+            profile_data=profile_data,
+            email_confirm=True,
+            metadata={
+                'first_name': cleaned_data['first_name'],
+                'last_name': cleaned_data['last_name'],
+            }
+        )
+
+        if result['success']:
+            messages.success(request, '✅ Usuario creado correctamente.')
+            if is_ajax:
+                return JsonResponse({'success': True, 'reload_page': True})
+            return redirect('sigve:users_list')
+
+        error_message = result.get('error') or 'Error al crear el usuario.'
+        messages.error(request, f'❌ {error_message}')
+        if is_ajax:
+            return JsonResponse({'success': False, 'errors': {'general': [error_message]}})
+        return redirect('sigve:users_list')
+
+    response = handle_form_errors(
+        request,
+        form,
+        is_ajax,
+        message='⚠️ Corrige los errores del formulario para crear el usuario.'
+    )
+    if response:
+        return response
+
+    return redirect('sigve:users_list')
 
 
 @require_supabase_login

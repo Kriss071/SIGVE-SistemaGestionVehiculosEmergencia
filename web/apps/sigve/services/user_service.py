@@ -197,4 +197,73 @@ class UserService(SigveBaseService):
             logger.error(f"❌ Error creando perfil de usuario: {e}", exc_info=True)
             return None
 
+    @staticmethod
+    def create_user(
+        *,
+        email: str,
+        password: str,
+        profile_data: Dict[str, Any],
+        email_confirm: bool = True,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Crea un usuario en auth.users y su perfil asociado en user_profile.
+
+        Args:
+            email: Correo electrónico del usuario.
+            password: Contraseña inicial.
+            profile_data: Datos para la tabla user_profile (sin el ID).
+            email_confirm: Marca si el correo queda confirmado automáticamente.
+            metadata: Metadatos adicionales para auth.users.
+
+        Returns:
+            Diccionario con claves:
+                success (bool)
+                user_id (str | None)
+                error (str | None)
+        """
+        admin_client: Client = SigveBaseService.get_admin_client()
+        metadata = metadata or {}
+
+        try:
+            response = admin_client.auth.admin.create_user({
+                "email": email,
+                "password": password,
+                "email_confirm": email_confirm,
+                "user_metadata": metadata
+            })
+
+            auth_user = getattr(response, "user", None)
+            if not auth_user:
+                logger.error("❌ (create_user) Supabase no retornó usuario en la respuesta.")
+                return {"success": False, "user_id": None, "error": "Supabase no retornó el usuario creado."}
+
+            user_id = getattr(auth_user, "id", None)
+            if not user_id:
+                logger.error("❌ (create_user) No se obtuvo el ID del usuario creado en auth.")
+                return {"success": False, "user_id": None, "error": "No se obtuvo el ID del usuario creado en auth."}
+
+        except Exception as auth_error:
+            logger.error(f"❌ Error creando usuario en auth.users: {auth_error}", exc_info=True)
+            return {"success": False, "user_id": None, "error": "Error creando el usuario en Supabase Auth."}
+
+        profile_payload = {
+            **profile_data,
+            "id": user_id
+        }
+
+        created_profile = UserService.create_user_profile(profile_payload)
+        if not created_profile:
+            logger.error("❌ (create_user) No se pudo crear el perfil, revirtiendo usuario en auth.")
+            try:
+                admin_client.auth.admin.delete_user(user_id)
+                logger.info("♻️ (create_user) Usuario en auth eliminado tras fallo en user_profile.")
+            except Exception as cleanup_error:
+                logger.error(f"⚠️ (create_user) Fallo al revertir usuario en auth: {cleanup_error}", exc_info=True)
+
+            return {"success": False, "user_id": user_id, "error": "Error creando el perfil del usuario."}
+
+        logger.info(f"✅ Usuario creado correctamente con ID {user_id}")
+        return {"success": True, "user_id": user_id, "error": None}
+
 

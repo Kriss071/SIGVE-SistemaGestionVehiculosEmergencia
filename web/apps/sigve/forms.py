@@ -150,6 +150,103 @@ class UserProfileForm(forms.Form):
     )
 
 
+class UserCreateForm(forms.Form):
+    """Formulario para crear usuarios completos (auth + perfil)."""
+    email = forms.EmailField(
+        label="Correo electrónico",
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'usuario@ejemplo.cl'})
+    )
+    password = forms.CharField(
+        label="Contraseña",
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+    password_confirm = forms.CharField(
+        label="Confirmar contraseña",
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+    first_name = forms.CharField(
+        max_length=255,
+        label="Nombre",
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    last_name = forms.CharField(
+        max_length=255,
+        label="Apellido",
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    rut = forms.CharField(
+        max_length=20,
+        label="RUT",
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '12345678-9'})
+    )
+    phone = forms.CharField(
+        max_length=20,
+        label="Teléfono",
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+56912345678'})
+    )
+    role_id = forms.TypedChoiceField(
+        label="Rol",
+        coerce=int,
+        empty_value=None,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    workshop_id = forms.TypedChoiceField(
+        label="Taller",
+        required=False,
+        coerce=int,
+        empty_value=None,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    fire_station_id = forms.TypedChoiceField(
+        label="Cuartel",
+        required=False,
+        coerce=int,
+        empty_value=None,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    is_active = forms.BooleanField(
+        label="Activo",
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+
+    def __init__(
+        self,
+        *args,
+        role_choices=None,
+        workshop_choices=None,
+        fire_station_choices=None,
+        **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+        self.fields['role_id'].choices = role_choices or []
+        self.fields['workshop_id'].choices = workshop_choices or []
+        self.fields['fire_station_id'].choices = fire_station_choices or []
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        password = cleaned_data.get('password')
+        password_confirm = cleaned_data.get('password_confirm')
+
+        if password and password_confirm and password != password_confirm:
+            self.add_error('password_confirm', 'Las contraseñas no coinciden.')
+
+        workshop_id = cleaned_data.get('workshop_id')
+        fire_station_id = cleaned_data.get('fire_station_id')
+
+        if workshop_id and fire_station_id:
+            self.add_error(
+                'fire_station_id',
+                'Un usuario no puede estar asociado a un taller y un cuartel simultáneamente.'
+            )
+
+        return cleaned_data
+
+
 class RejectRequestForm(forms.Form):
     """Formulario para rechazar una solicitud."""
     admin_notes = forms.CharField(

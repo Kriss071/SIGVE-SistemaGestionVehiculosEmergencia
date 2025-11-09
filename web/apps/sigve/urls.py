@@ -44,6 +44,7 @@ urlpatterns = [
     
     # Gestión de Usuarios
     path('users/', views.users_list, name='users_list'),
+    path('users/create/', views.user_create, name='user_create'),
     path('users/<str:user_id>/edit/', views.user_edit, name='user_edit'),
     path('users/<str:user_id>/deactivate/', views.user_deactivate, name='user_deactivate'),
     path('users/<str:user_id>/activate/', views.user_activate, name='user_activate'),

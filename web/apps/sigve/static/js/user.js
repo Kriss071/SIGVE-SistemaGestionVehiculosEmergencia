@@ -8,6 +8,142 @@
     'use strict';
 
     /**
+     * Modal para la creación de usuarios.
+     */
+    window.UserCreateModal = (function() {
+        const modal = document.getElementById('userCreateModal');
+        const form = document.getElementById('userCreateForm');
+        const loading = document.getElementById('userCreateModalLoading');
+        const submitBtn = document.getElementById('userCreateSubmitBtn');
+        let modalInstance = null;
+
+        function init() {
+            if (!modal || !form) {
+                return;
+            }
+
+            modalInstance = new bootstrap.Modal(modal);
+            modal.addEventListener('hidden.bs.modal', resetModal);
+            form.addEventListener('submit', handleSubmit);
+        }
+
+        function open(source = 'list') {
+            if (!modalInstance) {
+                return;
+            }
+            const sourceInput = document.getElementById('userCreateSource');
+            if (sourceInput) {
+                sourceInput.value = source;
+            }
+
+            hideLoading();
+            form.style.display = 'block';
+            modalInstance.show();
+        }
+
+        function handleSubmit(event) {
+            event.preventDefault();
+            if (!submitBtn) {
+                return;
+            }
+
+            const passwordField = document.getElementById('id_create_password');
+            const confirmField = document.getElementById('id_create_password_confirm');
+
+            if (passwordField && confirmField && passwordField.value !== confirmField.value) {
+                window.SIGVE?.showNotification('Las contraseñas no coinciden.', 'warning');
+                confirmField.focus();
+                return;
+            }
+
+            window.SIGVE?.showButtonLoading(submitBtn);
+            showLoading();
+
+            const formData = new FormData(form);
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                    return null;
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data) {
+                    return;
+                }
+
+                if (data.success) {
+                    window.SIGVE?.hideButtonLoading(submitBtn);
+                    modalInstance.hide();
+                    setTimeout(() => window.location.reload(), 150);
+                } else if (data.errors) {
+                    const firstError = Object.values(data.errors)[0][0];
+                    window.SIGVE?.showNotification(firstError, 'error');
+                    window.SIGVE?.hideButtonLoading(submitBtn);
+                    hideLoading();
+                } else {
+                    window.SIGVE?.showNotification('Error desconocido al crear el usuario.', 'error');
+                    window.SIGVE?.hideButtonLoading(submitBtn);
+                    hideLoading();
+                }
+            })
+            .catch(error => {
+                console.error('Error creando usuario:', error);
+                window.SIGVE?.showNotification('Error al crear el usuario.', 'error');
+                window.SIGVE?.hideButtonLoading(submitBtn);
+                hideLoading();
+            });
+        }
+
+        function showLoading() {
+            if (loading) {
+                loading.style.display = 'block';
+            }
+            if (form) {
+                form.style.display = 'none';
+            }
+        }
+
+        function hideLoading() {
+            if (loading) {
+                loading.style.display = 'none';
+            }
+        }
+
+        function resetModal() {
+            form?.reset();
+            form?.classList.remove('was-validated');
+            hideLoading();
+            if (form) {
+                form.style.display = 'block';
+            }
+            const activeCheckbox = document.getElementById('id_create_is_active');
+            if (activeCheckbox) {
+                activeCheckbox.checked = true;
+            }
+            window.SIGVE?.hideButtonLoading(submitBtn);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+
+        return {
+            open
+        };
+    })();
+
+    /**
      * Sistema de gestión del modal de usuario
      * Maneja dos modos: ver, editar
      */
