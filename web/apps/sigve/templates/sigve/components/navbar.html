@@ -30,13 +30,13 @@
                 <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
                        href="{% url 'sigve:dashboard' %}">
-                        <i class="bi bi-speedometer2"></i> Dashboard
+                        <i class="bi bi-{% if request.resolver_match.url_name == 'dashboard' %}speedometer{% else %}speedometer2{% endif %}"></i> Dashboard
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.url_name == 'requests_center' %}active{% endif %}" 
                        href="{% url 'sigve:requests_center' %}">
-                        <i class="bi bi-inbox"></i> Solicitudes
+                        <i class="bi bi-{% if request.resolver_match.url_name == 'requests_center' %}inbox-fill{% else %}inbox{% endif %}"></i> Solicitudes
                     </a>
                 </li>
                 
@@ -45,7 +45,7 @@
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name in client_pages %}active{% endif %}" 
                        href="#" id="clientsDropdown" role="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-building"></i> Clientes
+                        <i class="bi bi-{% if request.resolver_match.url_name in client_pages %}building-fill{% else %}building{% endif %}"></i> Clientes
                     </a>
                     <ul class="dropdown-menu">
                         <li>
@@ -69,13 +69,13 @@
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name in catalog_pages %}active{% endif %}" 
                        href="#" id="catalogsDropdown" role="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-box-seam"></i> Catálogos
+                        <i class="bi bi-{% if request.resolver_match.url_name in catalog_pages %}box-seam-fill{% else %}box-seam{% endif %}"></i> Catálogos
                     </a>
                     <ul class="dropdown-menu">
                         <li>
                             <a class="dropdown-item {% if request.resolver_match.url_name == 'spare_parts_list' %}active{% endif %}" 
                                href="{% url 'sigve:spare_parts_list' %}">
-                               <i class="bi bi-gear"></i> Repuestos
+                               <i class="bi bi-{% if request.resolver_match.url_name == 'spare_parts_list' %}gear-fill{% else %}gear{% endif %}"></i> Repuestos
                             </a>
                         </li>
                         <li>
@@ -114,7 +114,7 @@
                 <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.url_name == 'users_list' %}active{% endif %}" 
                        href="{% url 'sigve:users_list' %}">
-                        <i class="bi bi-people"></i> Usuarios
+                        <i class="bi bi-{% if request.resolver_match.url_name == 'users_list' %}people-fill{% else %}people{% endif %}"></i> Usuarios
                     </a>
                 </li>
             </ul>
