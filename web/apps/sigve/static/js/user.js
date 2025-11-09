@@ -239,9 +239,10 @@
             .then(data => {
                 if (data) {
                     if (data.success) {
-                        window.SIGVE.showNotification(data.message || 'Usuario actualizado', 'success');
+                        window.SIGVE.hideButtonLoading(submitBtn);
                         modalInstance.hide();
-                        setTimeout(() => window.location.reload(), 1500);
+                        setTimeout(() => window.location.reload(), 150);
+                        return;
                     } else if (data.errors) {
                         const firstError = Object.values(data.errors)[0][0];
                         window.SIGVE.showNotification(firstError, 'error');

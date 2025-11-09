@@ -21,13 +21,7 @@
             </header>
             
             <!-- Mensajes de error/éxito -->
-            {% if messages %}
-                {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">
-                    {{ message }}
-                </div>
-                {% endfor %}
-            {% endif %}
+            {% include 'components/messages.html' with container_id='login-messages' auto_dismiss=4000 show_close_button=False %}
             
             <section>
                 <form method="post" novalidate>
@@ -52,6 +46,7 @@
             </section>
         </article>
     </main>
+<script src="{% static 'js/messages.js' %}"></script>
 </body>
 
 </html>

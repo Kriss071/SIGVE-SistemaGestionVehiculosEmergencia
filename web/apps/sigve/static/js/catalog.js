@@ -266,13 +266,12 @@
             .then(data => {
                 if (data) {
                     if (data.success) {
-                        window.SIGVE.showNotification(data.message || 'Item guardado correctamente', 'success');
+                        window.SIGVE.hideButtonLoading(submitBtn);
                         modalInstance.hide();
-                        
-                        // Recargar la página para actualizar la lista
                         setTimeout(() => {
                             window.location.reload();
-                        }, 1000); // Un poco más rápido que 1.5s
+                        }, 150);
+                        return;
                     } else if (data.errors) {
                         const firstError = Object.values(data.errors)[0][0];
                         window.SIGVE.showNotification(firstError, 'error');

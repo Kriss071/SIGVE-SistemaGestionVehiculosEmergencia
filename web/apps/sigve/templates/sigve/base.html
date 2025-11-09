@@ -24,15 +24,7 @@
     <!-- Navegación -->
     {% include 'sigve/components/navbar.html' %}
 
-    <!-- Mensajes de Django -->
-    {% if messages %}
-    <div class="d-none">
-        {% for message in messages %}
-        <div class="django-message" data-type="{{ message.tags }}">{{ message }}</div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
+    {% include 'components/messages.html' with container_id='sigve-messages' auto_dismiss=5000 show_close_button=True %}
     <!-- Contenido Principal -->
     <div class="container-fluid py-4 d-flex flex-column">
         {% block content %}{% endblock %}
@@ -41,11 +33,9 @@
     <!-- Footer -->
     {% include 'footer.html' %}
     
-    <!-- Sistema de Notificaciones Toasts -->
-    {% include 'sigve/components/toast_container.html' %}
-
     <!-- Bootstrap 5 JS Bundle -->
     <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'js/messages.js' %}"></script>
     
     <!-- Custom JS -->
     <script src="{% static 'js/sigve.js' %}"></script>

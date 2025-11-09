@@ -249,14 +249,13 @@
             .then(data => {
                 if (data) {
                     if (data.success) {
-                        // Éxito sin redirección (dashboard)
-                        window.SIGVE.showNotification(data.message || 'Taller guardado correctamente', 'success');
+                        window.SIGVE.hideButtonLoading(submitBtn);
                         modalInstance.hide();
                         
-                        // Recargar la página para actualizar
                         setTimeout(() => {
                             window.location.reload();
-                        }, 1500);
+                        }, 150);
+                        return;
                     } else if (data.errors) {
                         // Errores de validación
                         // Mostramos el primer error

@@ -10,3 +10,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Confirmación de eliminación genérica
+function confirmDelete(message = '¿Estás seguro de eliminar este elemento?') {
+    return confirm(message);
+}
+
+
+
+

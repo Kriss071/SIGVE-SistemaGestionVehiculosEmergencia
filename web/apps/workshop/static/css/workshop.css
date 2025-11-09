@@ -37,11 +37,6 @@ body {
     color: #0d6efd;
 }
 
-/* Toasts */
-.toast-container {
-    z-index: 1050;
-}
-
 /* Utilidades */
 .text-uppercase {
     text-transform: uppercase !important;

@@ -246,14 +246,12 @@
             .then(data => {
                 if (data) {
                     if (data.success) {
-                        // Éxito
-                        window.SIGVE.showNotification(data.message || 'Proveedor guardado correctamente', 'success');
+                        window.SIGVE.hideButtonLoading(submitBtn);
                         modalInstance.hide();
-                        
-                        // Recargar la página para actualizar la lista
                         setTimeout(() => {
                             window.location.reload();
-                        }, 1500);
+                        }, 150);
+                        return;
                     } else if (data.errors) {
                         // Errores de validación
                         const firstError = Object.values(data.errors)[0][0];

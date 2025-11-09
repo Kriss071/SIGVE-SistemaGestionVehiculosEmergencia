@@ -45,9 +45,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'accounts',
-    # 'vehicles',
-    # 'maintenance',
-    'backoffice',
     'apps.sigve',
     'apps.workshop'
 ]
@@ -173,6 +170,7 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             # Usar el formato detallado
             'formatter': 'verbose', 
+            'level': 'DEBUG'
         },
     },
 

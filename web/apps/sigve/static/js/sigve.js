@@ -74,35 +74,6 @@ function hideButtonLoading(button) {
 }
 
 /**
- * Muestra un mensaje de notificación tipo toast
- * @param {string} message - El mensaje a mostrar
- * @param {string} type - Tipo de mensaje (success, error, warning, info)
- */
-function showNotification(message, type = 'info') {
-    const alertClass = {
-        'success': 'alert-success',
-        'error': 'alert-danger',
-        'warning': 'alert-warning',
-        'info': 'alert-info'
-    };
-    
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert ${alertClass[type]} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
-    alertDiv.style.zIndex = '9999';
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(alertDiv);
-    
-    setTimeout(() => {
-        const bsAlert = new bootstrap.Alert(alertDiv);
-        bsAlert.close();
-    }, 5000);
-}
-
-/**
  * Formatea un número como moneda chilena
  * @param {number} amount - El monto a formatear
  * @returns {string} - El monto formateado
@@ -211,16 +182,15 @@ function setupTableSearch(inputId, tableId) {
 }
 
 // ===== Exportar Utilidades =====
-window.SIGVE = {
+window.SIGVE = Object.assign(window.SIGVE || {}, {
     showButtonLoading,
     hideButtonLoading,
-    showNotification,
     formatCurrency,
     formatDate,
     formatDateTime,
     validateRUT,
     formatRUT,
     setupTableSearch
-};
+});
 
 

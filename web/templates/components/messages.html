@@ -1,0 +1,35 @@
+{% comment %}
+    Componente reutilizable para mostrar mensajes de Django.
+    Parámetros opcionales:
+    - container_class: clases extra para el contenedor (default: 'container mt-3')
+    - container_id: id del contenedor (default: 'django-messages-container')
+    - auto_dismiss: milisegundos antes de auto cerrar (default: 5000, 0 desactiva)
+    - show_close_button: mostrar botón de cerrar (default: True)
+{% endcomment %}
+{% if messages %}
+    {% with container_class=container_class|default:'position-fixed top-0 end-0 mt-4 p-3' %}
+    {% with container_id=container_id|default:'django-messages-container' %}
+    {% with auto_dismiss=auto_dismiss|default:5000 %}
+    {% with show_close_button=show_close_button|default_if_none:True %}
+<div id="{{ container_id }}" class="{{ container_class }} django-messages-container" data-auto-dismiss="{{ auto_dismiss }}">
+    {% for message in messages %}
+        {% with level=message.level_tag %}
+        <div class="alert {% if level == 'error' %}alert-danger{% elif level == 'warning' %}alert-warning{% elif level == 'success' %}alert-success{% elif level == 'info' %}alert-info{% else %}alert-secondary{% endif %} alert-dismissible fade show {% if message.extra_tags %}{{ message.extra_tags }}{% endif %}" role="alert">
+            <div class="d-flex align-items-start gap-2">
+                <div class="flex-grow-1">
+                    {{ message }}
+                </div>
+                {% if show_close_button %}
+                    <button type="button" class="btn-close flex-shrink-0" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                {% endif %}
+            </div>
+        </div>
+        {% endwith %}
+    {% endfor %}
+</div>
+    {% endwith %}
+    {% endwith %}
+    {% endwith %}
+    {% endwith %}
+{% endif %}
+

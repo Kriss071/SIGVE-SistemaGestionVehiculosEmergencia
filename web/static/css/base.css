@@ -170,6 +170,21 @@ body {
     border-left: 4px solid;
 }
 
+.django-messages-container {
+    z-index: 9999;
+    width: min(90vw, 380px);
+    pointer-events: none;
+}
+
+.django-messages-container .alert {
+    pointer-events: auto;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+}
+
+.django-messages-container .alert + .alert {
+    margin-top: 0.75rem;
+}
+
 .alert-success {
     border-left-color: var(--sigve-success);
 }
@@ -316,22 +331,6 @@ footer {
     width: 1rem;
     height: 1rem;
     border-width: 0.2em;
-}
-
-/* === Toasts === */
-.toast-container {
-    z-index: 9999;
-}
-
-.toast {
-    min-width: 300px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, .15);
-    border-radius: 0.5rem;
-}
-
-.toast-body {
-    font-size: 0.875rem;
-    font-weight: 500;
 }
 
 /* === Alertas Permanentes === */

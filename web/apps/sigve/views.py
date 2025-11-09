@@ -17,7 +17,17 @@ from .forms import (
     CatalogItemForm, UserProfileForm, RejectRequestForm
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('apps.workshop')
+
+
+def handle_form_errors(request, form, is_ajax, *, message='⚠️ Corrige los errores del formulario.'):
+    """
+    Maneja los errores de formularios de manera consistente para peticiones normales y AJAX.
+    """
+    if is_ajax:
+        return JsonResponse({'success': False, 'errors': form.errors})
+    messages.error(request, message)
+    return None
 
 
 # ===== DASHBOARD =====
@@ -122,12 +132,19 @@ def workshops_list(request):
 @require_role("Admin SIGVE")
 def workshop_create(request):
     """Crear un nuevo taller."""
+    logger.info("📥 Ingreso a la vista workshop_create - método: %s", request.method)
+
     if request.method == 'POST':
         form = WorkshopForm(request.POST)
-        source = request.POST.get('source', 'list')  # 'dashboard' o 'list'
+        source = request.POST.get('source', 'list')
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         
+        logger.debug("Datos POST recibidos: %s", request.POST)
+        logger.debug("Origen (source): %s | Es AJAX: %s", source, is_ajax)
+
         if form.is_valid():
+            logger.info("✅ Formulario válido, preparando datos para creación de taller.")
+            
             data = {
                 'name': form.cleaned_data['name'],
                 'address': form.cleaned_data.get('address'),
@@ -135,29 +152,42 @@ def workshop_create(request):
                 'email': form.cleaned_data.get('email')
             }
             
+            logger.debug("Datos limpios del formulario: %s", data)
+
             workshop = WorkshopService.create_workshop(data)
-            
+            logger.info("Resultado de WorkshopService.create_workshop: %s", workshop)
+
             if workshop:
-                # Si viene del dashboard y es AJAX, devolver JSON (sin redirección)
-                if source == 'dashboard' and is_ajax:
+                message = f'✅ Taller "{data["name"]}" creado correctamente.'
+                if is_ajax:
+                    logger.debug("Petición AJAX — devolviendo JsonResponse de éxito.")
+                    messages.success(request, message)
                     return JsonResponse({
-                        'success': True, 
-                        'message': f'✅ Taller "{data["name"]}" creado correctamente.'
+                        'success': True,
+                        'reload_page': True
                     })
                 
-                # Si viene de la lista o no es AJAX, redirigir normalmente
-                messages.success(request, f'✅ Taller "{data["name"]}" creado correctamente.')
+                logger.info("Petición normal — redirigiendo a lista de talleres.")
+                messages.success(request, message)
                 return redirect('sigve:workshops_list')
             else:
+                logger.error("❌ Error al crear taller en WorkshopService.")
                 # Error al crear
                 if is_ajax:
                     return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el taller.']}})
                 messages.error(request, '❌ Error al crear el taller.')
         else:
-            # Errores de validación
-            if is_ajax:
-                return JsonResponse({'success': False, 'errors': form.errors})
+            logger.warning("⚠️ Formulario inválido: %s", form.errors)
+            response = handle_form_errors(
+                request,
+                form,
+                is_ajax,
+                message='⚠️ Corrige los errores del formulario para crear el taller.'
+            )
+            if response:
+                return response
     else:
+        logger.info("📝 Petición GET — mostrando formulario vacío.")
         form = WorkshopForm()
     
     context = {
@@ -165,7 +195,8 @@ def workshop_create(request):
         'active_page': 'workshops',
         'form': form
     }
-    
+
+    logger.debug("Renderizando plantilla 'sigve/workshop_form.html' con contexto: %s", context.keys())
     return render(request, 'sigve/workshop_form.html', context)
 
 
@@ -198,10 +229,11 @@ def workshop_edit(request, workshop_id):
             
             if success:
                 # Si viene del dashboard y es AJAX, devolver JSON (sin redirección)
-                if source == 'dashboard' and is_ajax:
+                if is_ajax:
+                    messages.success(request, '✅ Taller actualizado correctamente.')
                     return JsonResponse({
                         'success': True,
-                        'message': '✅ Taller actualizado correctamente.'
+                        'reload_page': True
                     })
                 
                 # Si viene de la lista o no es AJAX, redirigir normalmente
@@ -213,9 +245,14 @@ def workshop_edit(request, workshop_id):
                     return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el taller.']}})
                 messages.error(request, '❌ Error al actualizar el taller.')
         else:
-            # Errores de validación
-            if is_ajax:
-                return JsonResponse({'success': False, 'errors': form.errors})
+            response = handle_form_errors(
+                request,
+                form,
+                is_ajax,
+                message='⚠️ Corrige los errores del formulario para actualizar el taller.'
+            )
+            if response:
+                return response
     else:
         form = WorkshopForm(initial=workshop)
     
@@ -281,21 +318,29 @@ def fire_station_create(request):
             fire_station = FireStationService.create_fire_station(data)
             
             if fire_station:
-                if source == 'dashboard' and is_ajax:
+                message = f'✅ Cuartel "{data["name"]}" creado correctamente.'
+                if is_ajax:
+                    messages.success(request, message)
                     return JsonResponse({
                         'success': True,
-                        'message': f'✅ Cuartel "{data["name"]}" creado correctamente.'
+                        'reload_page': True
                     })
                 
-                messages.success(request, f'✅ Cuartel "{data["name"]}" creado correctamente.')
+                messages.success(request, message)
                 return redirect('sigve:fire_stations_list')
             else:
                 if is_ajax:
                     return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el cuartel.']}})
                 messages.error(request, '❌ Error al crear el cuartel.')
         else:
-            if is_ajax:
-                return JsonResponse({'success': False, 'errors': form.errors})
+            response = handle_form_errors(
+                request,
+                form,
+                is_ajax,
+                message='⚠️ Corrige los errores del formulario para crear el cuartel.'
+            )
+            if response:
+                return response
     else:
         form = FireStationForm()
     
@@ -337,10 +382,11 @@ def fire_station_edit(request, fire_station_id):
             success = FireStationService.update_fire_station(fire_station_id, data)
             
             if success:
-                if source == 'dashboard' and is_ajax:
+                if is_ajax:
+                    messages.success(request, '✅ Cuartel actualizado correctamente.')
                     return JsonResponse({
                         'success': True,
-                        'message': '✅ Cuartel actualizado correctamente.'
+                        'reload_page': True
                     })
                 
                 messages.success(request, '✅ Cuartel actualizado correctamente.')
@@ -350,8 +396,14 @@ def fire_station_edit(request, fire_station_id):
                     return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el cuartel.']}})
                 messages.error(request, '❌ Error al actualizar el cuartel.')
         else:
-            if is_ajax:
-                return JsonResponse({'success': False, 'errors': form.errors})
+            response = handle_form_errors(
+                request,
+                form,
+                is_ajax,
+                message='⚠️ Corrige los errores del formulario para actualizar el cuartel.'
+            )
+            if response:
+                return response
     else:
         form = FireStationForm(initial=fire_station)
     
@@ -417,27 +469,29 @@ def spare_part_create(request):
             spare_part = CatalogService.create_spare_part(data)
             
             if spare_part:
-                if source == 'dashboard' and is_ajax:
-                    return JsonResponse({
-                        'success': True,
-                        'message': f'✅ Repuesto "{data["name"]}" creado correctamente.'
-                    })
-                
+                message = f'✅ Repuesto "{data["name"]}" creado correctamente.'
                 if is_ajax:
+                    messages.success(request, message)
                     return JsonResponse({
                         'success': True,
-                        'message': f'✅ Repuesto "{data["name"]}" creado correctamente.'
+                        'reload_page': True
                     })
                 
-                messages.success(request, f'✅ Repuesto "{data["name"]}" creado correctamente.')
+                messages.success(request, message)
                 return redirect('sigve:spare_parts_list')
             else:
                 if is_ajax:
                     return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el repuesto.']}})
                 messages.error(request, '❌ Error al crear el repuesto.')
         else:
-            if is_ajax:
-                return JsonResponse({'success': False, 'errors': form.errors})
+            response = handle_form_errors(
+                request,
+                form,
+                is_ajax,
+                message='⚠️ Corrige los errores del formulario para crear el repuesto.'
+            )
+            if response:
+                return response
     else:
         form = SparePartForm()
     
@@ -478,16 +532,11 @@ def spare_part_edit(request, spare_part_id):
             success = CatalogService.update_spare_part(spare_part_id, data)
             
             if success:
-                if source == 'dashboard' and is_ajax:
-                    return JsonResponse({
-                        'success': True,
-                        'message': '✅ Repuesto actualizado correctamente.'
-                    })
-                
                 if is_ajax:
+                    messages.success(request, '✅ Repuesto actualizado correctamente.')
                     return JsonResponse({
                         'success': True,
-                        'message': '✅ Repuesto actualizado correctamente.'
+                        'reload_page': True
                     })
                 
                 messages.success(request, '✅ Repuesto actualizado correctamente.')
@@ -497,8 +546,14 @@ def spare_part_edit(request, spare_part_id):
                     return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el repuesto.']}})
                 messages.error(request, '❌ Error al actualizar el repuesto.')
         else:
-            if is_ajax:
-                return JsonResponse({'success': False, 'errors': form.errors})
+            response = handle_form_errors(
+                request,
+                form,
+                is_ajax,
+                message='⚠️ Corrige los errores del formulario para actualizar el repuesto.'
+            )
+            if response:
+                return response
     else:
         form = SparePartForm(initial=spare_part)
     
@@ -565,7 +620,8 @@ def supplier_create(request):
             if supplier:
                 message = f'✅ Proveedor "{data["name"]}" creado correctamente.'
                 if is_ajax:
-                    return JsonResponse({'success': True, 'message': message})
+                    messages.success(request, message)
+                    return JsonResponse({'success': True, 'reload_page': True})
                 
                 messages.success(request, message)
                 return redirect('sigve:suppliers_list')
@@ -574,8 +630,14 @@ def supplier_create(request):
                     return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el proveedor.']}})
                 messages.error(request, '❌ Error al crear el proveedor.')
         else:
-            if is_ajax:
-                return JsonResponse({'success': False, 'errors': form.errors})
+            response = handle_form_errors(
+                request,
+                form,
+                is_ajax,
+                message='⚠️ Corrige los errores del formulario para crear el proveedor.'
+            )
+            if response:
+                return response
     else:
         form = SupplierForm()
     
@@ -619,7 +681,8 @@ def supplier_edit(request, supplier_id):
             if success:
                 message = '✅ Proveedor actualizado correctamente.'
                 if is_ajax:
-                    return JsonResponse({'success': True, 'message': message})
+                    messages.success(request, message)
+                    return JsonResponse({'success': True, 'reload_page': True})
                 
                 messages.success(request, message)
                 return redirect('sigve:suppliers_list')
@@ -628,8 +691,14 @@ def supplier_edit(request, supplier_id):
                     return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el proveedor.']}})
                 messages.error(request, '❌ Error al actualizar el proveedor.')
         else:
-            if is_ajax:
-                return JsonResponse({'success': False, 'errors': form.errors})
+            response = handle_form_errors(
+                request,
+                form,
+                is_ajax,
+                message='⚠️ Corrige los errores del formulario para actualizar el proveedor.'
+            )
+            if response:
+                return response
     else:
         form = SupplierForm(initial=supplier)
     
@@ -762,7 +831,8 @@ def catalog_create(request, catalog_name):
             if item:
                 message = f'✅ {config["singular"]} creado correctamente.'
                 if is_ajax:
-                    return JsonResponse({'success': True, 'message': message})
+                    messages.success(request, message)
+                    return JsonResponse({'success': True, 'reload_page': True})
                 messages.success(request, message)
                 return redirect('sigve:catalog_list', catalog_name=catalog_name)
             else:
@@ -770,8 +840,14 @@ def catalog_create(request, catalog_name):
                     return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el item.']}})
                 messages.error(request, '❌ Error al crear el item.')
         else:
-            if is_ajax:
-                return JsonResponse({'success': False, 'errors': form.errors})
+            response = handle_form_errors(
+                request,
+                form,
+                is_ajax,
+                message=f'⚠️ Corrige los errores del formulario para crear {config["singular"]}.'
+            )
+            if response:
+                return response
     else:
         form = CatalogItemForm()
     
@@ -820,7 +896,8 @@ def catalog_edit(request, catalog_name, item_id):
             if success:
                 message = '✅ Item actualizado correctamente.'
                 if is_ajax:
-                    return JsonResponse({'success': True, 'message': message})
+                    messages.success(request, message)
+                    return JsonResponse({'success': True, 'reload_page': True})
                 messages.success(request, message)
                 return redirect('sigve:catalog_list', catalog_name=catalog_name)
             else:
@@ -828,8 +905,14 @@ def catalog_edit(request, catalog_name, item_id):
                     return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el item.']}})
                 messages.error(request, '❌ Error al actualizar el item.')
         else:
-            if is_ajax:
-                return JsonResponse({'success': False, 'errors': form.errors})
+            response = handle_form_errors(
+                request,
+                form,
+                is_ajax,
+                message=f'⚠️ Corrige los errores del formulario para actualizar {config["singular"]}.'
+            )
+            if response:
+                return response
     else:
         form = CatalogItemForm(initial=item)
     
@@ -917,7 +1000,8 @@ def user_edit(request, user_id):
             if success:
                 message = '✅ Usuario actualizado correctamente.'
                 if is_ajax:
-                    return JsonResponse({'success': True, 'message': message})
+                    messages.success(request, message)
+                    return JsonResponse({'success': True, 'reload_page': True})
                 
                 messages.success(request, message)
                 return redirect('sigve:users_list')
@@ -926,8 +1010,14 @@ def user_edit(request, user_id):
                     return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el usuario.']}})
                 messages.error(request, '❌ Error al actualizar el usuario.')
         else:
-            if is_ajax:
-                return JsonResponse({'success': False, 'errors': form.errors})
+            response = handle_form_errors(
+                request,
+                form,
+                is_ajax,
+                message='⚠️ Corrige los errores del formulario para actualizar el usuario.'
+            )
+            if response:
+                return response
 
     else:
         form = UserProfileForm(initial=user)
