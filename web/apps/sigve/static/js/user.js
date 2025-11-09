@@ -7,6 +7,11 @@
 (function() {
     'use strict';
 
+    const ROLE_ADMIN_SIGVE = 'Admin SIGVE';
+    const ROLE_ADMIN_TALLER = 'Admin Taller';
+    const ROLE_MECANICO = 'Mecánico';
+    const ROLE_JEFE_CUARTEL = 'Jefe Cuartel';
+
     /**
      * Crea un controlador para bloquear los select de taller y cuartel
      * de forma mutuamente excluyente.
@@ -15,215 +20,67 @@
         if (!workshopSelect || !fireStationSelect) {
             return {
                 refresh: () => {},
-                reset: () => {}
+                reset: () => {},
+                lockBoth: () => {},
+                lockWorkshop: () => {},
+                lockFireStation: () => {},
+                unlockAll: () => {}
             };
         }
 
-        const updateState = (clearOnChange = false) => {
-            const workshopLocked = workshopSelect.dataset.modalDisabled === 'true';
-            const fireLocked = fireStationSelect.dataset.modalDisabled === 'true';
+        let forcedLocks = { workshop: false, fireStation: false };
 
-            if (!workshopLocked) {
-                workshopSelect.removeAttribute('disabled');
-            }
-            if (!fireLocked) {
-                fireStationSelect.removeAttribute('disabled');
-            }
+        const applyLocks = () => {
+            const workshopModeLocked = workshopSelect.dataset.modeDisabled === 'true';
+            const fireModeLocked = fireStationSelect.dataset.modeDisabled === 'true';
 
-            if (workshopSelect.value) {
-                if (clearOnChange && !fireLocked) {
-                    fireStationSelect.value = '';
-                }
-                if (!fireLocked) {
-                    fireStationSelect.dataset.mutualDisabled = 'true';
-                    fireStationSelect.setAttribute('disabled', 'disabled');
-                }
-            } else if (!fireLocked) {
-                delete fireStationSelect.dataset.mutualDisabled;
-                fireStationSelect.removeAttribute('disabled');
-            }
-
-            if (fireStationSelect.value) {
-                if (clearOnChange && !workshopLocked) {
-                    workshopSelect.value = '';
-                }
-                if (!workshopLocked) {
-                    workshopSelect.dataset.mutualDisabled = 'true';
-                    workshopSelect.setAttribute('disabled', 'disabled');
-                }
-            } else if (!workshopLocked) {
-                delete workshopSelect.dataset.mutualDisabled;
-                workshopSelect.removeAttribute('disabled');
-            }
-        };
-
-        const onWorkshopChange = () => updateState(true);
-        const onFireStationChange = () => updateState(true);
-
-        workshopSelect.addEventListener('change', onWorkshopChange);
-        fireStationSelect.addEventListener('change', onFireStationChange);
-
-        return {
-            refresh: () => updateState(false),
-            reset: () => {
-                if (workshopSelect.dataset.modalDisabled !== 'true') {
-                    workshopSelect.value = '';
-                    delete workshopSelect.dataset.mutualDisabled;
+            if (forcedLocks.workshop) {
+                workshopSelect.value = '';
+                workshopSelect.dataset.roleLocked = 'true';
+                workshopSelect.setAttribute('disabled', 'disabled');
+            } else {
+                delete workshopSelect.dataset.roleLocked;
+                if (!workshopModeLocked) {
                     workshopSelect.removeAttribute('disabled');
                 }
-                if (fireStationSelect.dataset.modalDisabled !== 'true') {
-                    fireStationSelect.value = '';
-                    delete fireStationSelect.dataset.mutualDisabled;
+            }
+
+            if (forcedLocks.fireStation) {
+                fireStationSelect.value = '';
+                fireStationSelect.dataset.roleLocked = 'true';
+                fireStationSelect.setAttribute('disabled', 'disabled');
+            } else {
+                delete fireStationSelect.dataset.roleLocked;
+                if (!fireModeLocked) {
                     fireStationSelect.removeAttribute('disabled');
                 }
             }
         };
-    }
-
-    /**
-     * Modal para la creación de usuarios.
-     */
-    window.UserCreateModal = (function() {
-        const modal = document.getElementById('userCreateModal');
-        const form = document.getElementById('userCreateForm');
-        const loading = document.getElementById('userCreateModalLoading');
-        const submitBtn = document.getElementById('userCreateSubmitBtn');
-        let modalInstance = null;
-        let mutualController = null;
-
-        function init() {
-            if (!modal || !form) {
-                return;
-            }
-
-            modalInstance = new bootstrap.Modal(modal);
-            modal.addEventListener('hidden.bs.modal', resetModal);
-            form.addEventListener('submit', handleSubmit);
-
-            mutualController = createMutualSelectController(
-                document.getElementById('id_create_workshop_id'),
-                document.getElementById('id_create_fire_station_id')
-            );
-        }
-
-        function open(source = 'list') {
-            if (!modalInstance) {
-                return;
-            }
-            const sourceInput = document.getElementById('userCreateSource');
-            if (sourceInput) {
-                sourceInput.value = source;
-            }
-
-            hideLoading();
-            form.style.display = 'block';
-            mutualController?.refresh();
-            modalInstance.show();
-        }
-
-        function handleSubmit(event) {
-            event.preventDefault();
-            if (!submitBtn) {
-                return;
-            }
-
-            const passwordField = document.getElementById('id_create_password');
-            const confirmField = document.getElementById('id_create_password_confirm');
-
-            if (passwordField && confirmField && passwordField.value !== confirmField.value) {
-                window.SIGVE?.showNotification('Las contraseñas no coinciden.', 'warning');
-                confirmField.focus();
-                return;
-            }
-
-            window.SIGVE?.showButtonLoading(submitBtn);
-            showLoading();
-
-            const formData = new FormData(form);
-
-            fetch(form.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => {
-                if (response.redirected) {
-                    window.location.href = response.url;
-                    return null;
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (!data) {
-                    return;
-                }
-
-                if (data.success) {
-                    window.SIGVE?.hideButtonLoading(submitBtn);
-                    modalInstance.hide();
-                    setTimeout(() => window.location.reload(), 150);
-                } else if (data.errors) {
-                    const firstError = Object.values(data.errors)[0][0];
-                    window.SIGVE?.showNotification(firstError, 'error');
-                    window.SIGVE?.hideButtonLoading(submitBtn);
-                    hideLoading();
-                } else {
-                    window.SIGVE?.showNotification('Error desconocido al crear el usuario.', 'error');
-                    window.SIGVE?.hideButtonLoading(submitBtn);
-                    hideLoading();
-                }
-            })
-            .catch(error => {
-                console.error('Error creando usuario:', error);
-                window.SIGVE?.showNotification('Error al crear el usuario.', 'error');
-                window.SIGVE?.hideButtonLoading(submitBtn);
-                hideLoading();
-            });
-        }
-
-        function showLoading() {
-            if (loading) {
-                loading.style.display = 'block';
-            }
-            if (form) {
-                form.style.display = 'none';
-            }
-        }
-
-        function hideLoading() {
-            if (loading) {
-                loading.style.display = 'none';
-            }
-        }
-
-        function resetModal() {
-            form?.reset();
-            form?.classList.remove('was-validated');
-            hideLoading();
-            if (form) {
-                form.style.display = 'block';
-            }
-            const activeCheckbox = document.getElementById('id_create_is_active');
-            if (activeCheckbox) {
-                activeCheckbox.checked = true;
-            }
-            mutualController?.reset();
-            mutualController?.refresh();
-            window.SIGVE?.hideButtonLoading(submitBtn);
-        }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', init);
-        } else {
-            init();
-        }
 
         return {
-            open
+            refresh: () => applyLocks(),
+            reset: () => {
+                forcedLocks = { workshop: false, fireStation: false };
+                applyLocks();
+            },
+            lockBoth: () => {
+                forcedLocks = { workshop: true, fireStation: true };
+                applyLocks();
+            },
+            lockWorkshop: () => {
+                forcedLocks = { workshop: true, fireStation: false };
+                applyLocks();
+            },
+            lockFireStation: () => {
+                forcedLocks = { workshop: false, fireStation: true };
+                applyLocks();
+            },
+            unlockAll: () => {
+                forcedLocks = { workshop: false, fireStation: false };
+                applyLocks();
+            }
         };
-    })();
+    }
 
     /**
      * Sistema de gestión del modal de usuario
@@ -238,6 +95,10 @@
         const titleSpan = document.getElementById('userModalTitle');
         const workshopSelect = document.getElementById('id_workshop_id');
         const fireStationSelect = document.getElementById('id_fire_station_id');
+        const roleSelect = document.getElementById('id_role_id');
+        const passwordRow = document.getElementById('userPasswordRow');
+        const passwordInput = document.getElementById('id_password');
+        const passwordConfirmInput = document.getElementById('id_password_confirm');
         
         // Estado actual
         let currentMode = 'view'; // 'view', 'edit'
@@ -260,6 +121,7 @@
             form.addEventListener('submit', handleSubmit);
 
             mutualController = createMutualSelectController(workshopSelect, fireStationSelect);
+            roleSelect?.addEventListener('change', handleRoleChange);
         }
         
         /**
@@ -269,19 +131,30 @@
          * @param {string} source - 'dashboard' o 'list'
          */
         function open(mode = 'view', userId = null, source = 'list') {
-            if (!userId) return;
-
             currentMode = mode;
-            currentUserId = userId;
             
             const sourceInput = document.getElementById('userSource');
             if (sourceInput) {
                 sourceInput.value = source;
             }
+
+            if (mode === 'create') {
+                currentUserId = null;
+                setupCreateMode();
+                hideLoading();
+                showForm();
+                modalInstance.show();
+                return;
+            }
+
+            if (!userId) return;
+
+            currentUserId = userId;
             
             showLoading();
             modalInstance.show();
             loadUserData(userId, mode);
+            handleRoleChange();
         }
         
         /**
@@ -317,12 +190,44 @@
                 });
         }
         
+        function setupCreateMode() {
+            form.reset();
+            form.classList.remove('was-validated');
+            document.getElementById('userId').value = '';
+
+            form.action = `/sigve/users/create/`;
+            titleSpan.textContent = 'Crear Usuario';
+            renderButtons('create');
+
+            setFieldsEnabled(true);
+            setPasswordFieldsVisible(true);
+
+            const isActiveCheckbox = document.getElementById('id_is_active');
+            if (isActiveCheckbox) {
+                isActiveCheckbox.checked = true;
+            }
+
+            if (roleSelect) {
+                roleSelect.value = '';
+            }
+            if (workshopSelect) {
+                workshopSelect.value = '';
+            }
+            if (fireStationSelect) {
+                fireStationSelect.value = '';
+            }
+
+            mutualController?.reset();
+            handleRoleChange();
+        }
+
         /**
          * Configura el modal para ver un usuario (solo lectura)
          */
         function setupViewMode() {
             titleSpan.textContent = 'Ver Usuario';
             renderButtons('view');
+            setPasswordFieldsVisible(false);
             setTimeout(() => {
                 setFieldsEnabled(false);
                 mutualController?.refresh();
@@ -336,6 +241,7 @@
             titleSpan.textContent = 'Editar Usuario';
             form.action = `/sigve/users/${currentUserId}/edit/`;
             renderButtons('edit');
+            setPasswordFieldsVisible(false);
             setTimeout(() => {
                 setFieldsEnabled(true);
                 mutualController?.refresh();
@@ -369,6 +275,9 @@
             document.getElementById('id_last_name').value = user.last_name || '';
             document.getElementById('id_rut').value = user.rut || '';
             document.getElementById('id_phone').value = user.phone || '';
+            setPasswordFieldsVisible(false);
+            if (passwordInput) passwordInput.value = '';
+            if (passwordConfirmInput) passwordConfirmInput.value = '';
 
             const roleField = document.getElementById('id_role_id');
             if (roleField) {
@@ -389,6 +298,7 @@
             }
 
             mutualController?.refresh();
+            handleRoleChange();
         }
         
         /**
@@ -400,15 +310,19 @@
                 if (field.type !== 'hidden') {
                     if (enabled) {
                         field.removeAttribute('readonly');
-                        delete field.dataset.modalDisabled;
+                        delete field.dataset.modeDisabled;
                         if (field.tagName.toLowerCase() === 'select' || field.type === 'checkbox') {
-                            field.removeAttribute('disabled');
+                            if (field.dataset.roleLocked === 'true') {
+                                field.setAttribute('disabled', 'disabled');
+                            } else {
+                                field.removeAttribute('disabled');
+                            }
                         }
                     } else {
                         // Los <select> y <input type="checkbox"> usan 'disabled'
                         if (field.tagName.toLowerCase() === 'select' || field.type === 'checkbox') {
                             field.setAttribute('disabled', 'disabled');
-                            field.dataset.modalDisabled = 'true';
+                            field.dataset.modeDisabled = 'true';
                         } else {
                             field.setAttribute('readonly', 'readonly');
                         }
@@ -457,6 +371,15 @@
                         <i class="bi bi-check-lg"></i> Guardar Cambios
                     </button>
                 `;
+            } else if (mode === 'create') {
+                footer.innerHTML = `
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="userSubmitBtn">
+                        <i class="bi bi-check-lg"></i> Crear Usuario
+                    </button>
+                `;
             }
         }
         
@@ -468,6 +391,15 @@
                 
             const submitBtn = document.getElementById('userSubmitBtn');
             if (!submitBtn) return;
+
+            if (currentMode === 'create' && passwordInput && passwordConfirmInput) {
+                if (passwordInput.value !== passwordConfirmInput.value) {
+                    window.SIGVE.showNotification('Las contraseñas no coinciden.', 'warning');
+                    passwordConfirmInput.focus();
+                    window.SIGVE.hideButtonLoading(submitBtn);
+                    return;
+                }
+            }
             
             window.SIGVE.showButtonLoading(submitBtn);
                 
@@ -587,9 +519,53 @@
             setFieldsEnabled(true);
             mutualController?.reset();
             mutualController?.refresh();
+            handleRoleChange();
+            setPasswordFieldsVisible(false);
             footer.innerHTML = '';
             hideLoading();
             showForm();
+        }
+
+        function handleRoleChange() {
+            if (!roleSelect) return;
+            const selectedOption = roleSelect.selectedOptions[0];
+            const roleName = selectedOption?.dataset.roleName || selectedOption?.textContent?.trim();
+
+            if (roleName === ROLE_ADMIN_SIGVE) {
+                mutualController?.lockBoth();
+            } else if (roleName === ROLE_ADMIN_TALLER || roleName === ROLE_MECANICO) {
+                mutualController?.lockFireStation();
+            } else if (roleName === ROLE_JEFE_CUARTEL) {
+                mutualController?.lockWorkshop();
+            } else {
+                mutualController?.unlockAll();
+            }
+        }
+
+        function setPasswordFieldsVisible(visible) {
+            if (!passwordRow) return;
+
+            if (visible) {
+                passwordRow.classList.remove('d-none');
+                if (passwordInput) {
+                    passwordInput.required = true;
+                    passwordInput.value = '';
+                }
+                if (passwordConfirmInput) {
+                    passwordConfirmInput.required = true;
+                    passwordConfirmInput.value = '';
+                }
+            } else {
+                passwordRow.classList.add('d-none');
+                if (passwordInput) {
+                    passwordInput.required = false;
+                    passwordInput.value = '';
+                }
+                if (passwordConfirmInput) {
+                    passwordConfirmInput.required = false;
+                    passwordConfirmInput.value = '';
+                }
+            }
         }
         
         // Inicializar cuando el DOM esté listo

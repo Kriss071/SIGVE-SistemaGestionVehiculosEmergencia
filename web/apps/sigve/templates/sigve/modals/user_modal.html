@@ -57,7 +57,32 @@
                             </div>
                         </div>
                     </div>
-                    
+
+                    <div class="row d-none" id="userPasswordRow">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_password" class="form-label">Contraseña <span class="text-danger">*</span></label>
+                            <input type="password"
+                                   class="form-control"
+                                   name="password"
+                                   id="id_password"
+                                   minlength="8">
+                            <div class="invalid-feedback">
+                                La contraseña debe tener al menos 8 caracteres.
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="id_password_confirm" class="form-label">Confirmar contraseña <span class="text-danger">*</span></label>
+                            <input type="password"
+                                   class="form-control"
+                                   name="password_confirm"
+                                   id="id_password_confirm"
+                                   minlength="8">
+                            <div class="invalid-feedback">
+                                Debes confirmar la contraseña.
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label for="id_rut" class="form-label">RUT</label>
@@ -80,7 +105,7 @@
                             <select name="role_id" id="id_role_id" class="form-select" required>
                                 <option value="">Seleccionar rol...</option>
                                 {% for role in roles %}
-                                <option value="{{ role.id }}">{{ role.name }}</option>
+                                <option value="{{ role.id }}" data-role-name="{{ role.name }}">{{ role.name }}</option>
                                 {% endfor %}
                             </select>
                             <div class="invalid-feedback">
@@ -119,7 +144,7 @@
                         <small>
                             <i class="bi bi-info-circle me-1"></i>
                             Los campos marcados con <span class="text-danger">*</span> son obligatorios. 
-                            Si asignas un taller, el cuartel quedará deshabilitado automáticamente y viceversa.
+                            Según el rol seleccionado, se bloquearán automáticamente los campos de taller o cuartel.
                         </small>
                     </div>
                 </div>
