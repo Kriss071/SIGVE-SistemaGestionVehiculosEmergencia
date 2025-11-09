@@ -68,7 +68,8 @@ class VehicleService(WorkshopBaseService):
                     license_plate,
                     brand,
                     model,
-                    year
+                    year,
+                    vehicle_status:vehicle_status_id(id, name)
                 """) \
                 .ilike("license_plate", f"%{query}%") \
                 .order("license_plate") \

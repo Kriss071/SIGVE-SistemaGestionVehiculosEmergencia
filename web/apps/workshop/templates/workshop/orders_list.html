@@ -65,7 +65,8 @@
                         <th>Patente</th>
                         <th>Vehículo</th>
                         <th>Cuartel</th>
-                        <th>Estado</th>
+                        <th>Estado Orden</th>
+                        <th>Estado Vehículo</th>
                         <th>Tipo</th>
                         <th>Fecha Ingreso</th>
                         <th>Mecánico</th>
@@ -87,6 +88,17 @@
                                 {% else %}bg-secondary{% endif %}">
                                 {{ order.order_status.name|default:"N/A" }}
                             </span>
+                        </td>
+                        <td>
+                            {% with vehicle_status=order.vehicle.vehicle_status.name %}
+                            <span class="badge 
+                                {% if vehicle_status == 'Disponible' %}bg-success
+                                {% elif vehicle_status == 'En Taller' %}bg-primary
+                                {% elif vehicle_status == 'Fuera de Servicio' %}bg-danger
+                                {% else %}bg-secondary{% endif %}">
+                                {{ vehicle_status|default:"N/A" }}
+                            </span>
+                            {% endwith %}
                         </td>
                         <td>{{ order.maintenance_type.name|default:"N/A" }}</td>
                         <td>{{ order.entry_date }}</td>

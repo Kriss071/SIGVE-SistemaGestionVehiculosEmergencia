@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Set
 from datetime import datetime
 from .base_service import WorkshopBaseService
 
@@ -37,7 +37,8 @@ class OrderService(WorkshopBaseService):
                     brand,
                     model,
                     year,
-                    fire_station:fire_station_id(id, name)
+                    fire_station:fire_station_id(id, name),
+                    vehicle_status:vehicle_status_id(id, name)
                 ),
                 order_status:order_status_id(id, name),
                 maintenance_type:maintenance_type_id(id, name),
@@ -91,7 +92,7 @@ class OrderService(WorkshopBaseService):
         query = client.table("maintenance_order") \
             .select("""
                 *,
-                vehicle:vehicle_id(*),
+                vehicle:vehicle_id(*, vehicle_status:vehicle_status_id(id, name)),
                 order_status:order_status_id(*),
                 maintenance_type:maintenance_type_id(*),
                 assigned_mechanic:assigned_mechanic_id(id, first_name, last_name, rut)
@@ -115,6 +116,11 @@ class OrderService(WorkshopBaseService):
         """
         client = WorkshopBaseService.get_client()
         
+        # Verificar si el vehículo ya tiene una orden activa
+        if OrderService.has_active_order(data['vehicle_id']):
+            logger.warning(f"⚠️ Vehículo {data['vehicle_id']} ya posee una orden activa. No se creará una nueva.")
+            return None
+        
         # Preparar datos de la orden
         order_data = {
             'workshop_id': workshop_id,
@@ -137,6 +143,63 @@ class OrderService(WorkshopBaseService):
         except Exception as e:
             logger.error(f"❌ Error creando orden de mantención: {e}", exc_info=True)
             return None
+    
+    @staticmethod
+    def get_active_orders_for_vehicles(vehicle_ids: List[int]) -> Dict[int, Dict[str, Any]]:
+        """
+        Retorna un mapa vehicle_id -> orden activa (si existe) para los vehículos proporcionados.
+        Una orden se considera activa si su estado no es Cancelado/Terminado/Completado/Finalizado
+        y si la fecha de salida aún es nula.
+        """
+        if not vehicle_ids:
+            return {}
+        
+        client = WorkshopBaseService.get_client()
+        
+        try:
+            query = client.table("maintenance_order") \
+                .select("""
+                    id,
+                    vehicle_id,
+                    exit_date,
+                    created_at,
+                    order_status:order_status_id(name)
+                """) \
+                .in_("vehicle_id", vehicle_ids) \
+                .order("created_at", desc=True)
+            
+            orders = WorkshopBaseService._execute_query(query, "get_active_orders_for_vehicles")
+            active_map: Dict[int, Dict[str, Any]] = {}
+            inactive_keywords: Set[str] = {'cancel', 'termin', 'final', 'complet'}
+            
+            for order in orders:
+                vehicle_id = order.get('vehicle_id')
+                if vehicle_id in active_map:
+                    continue
+                
+                status_name = (order.get('order_status') or {}).get('name', '') or ''
+                status_lower = status_name.lower()
+                has_inactive_keyword = any(keyword in status_lower for keyword in inactive_keywords)
+                exit_date = order.get('exit_date')
+                
+                if exit_date is None and not has_inactive_keyword:
+                    active_map[vehicle_id] = {
+                        'order_id': order.get('id'),
+                        'status_name': status_name
+                    }
+            
+            return active_map
+        except Exception as e:
+            logger.error(f"❌ Error obteniendo órdenes activas para vehículos: {e}", exc_info=True)
+            return {}
+    
+    @staticmethod
+    def has_active_order(vehicle_id: int) -> bool:
+        """
+        Indica si el vehículo tiene alguna orden activa.
+        """
+        active_map = OrderService.get_active_orders_for_vehicles([vehicle_id])
+        return vehicle_id in active_map
     
     @staticmethod
     def update_order(order_id: int, workshop_id: int, data: Dict[str, Any]) -> bool:

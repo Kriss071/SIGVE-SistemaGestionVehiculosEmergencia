@@ -183,14 +183,25 @@
                 const li = document.createElement('li');
                 li.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
                 li.style.cursor = 'pointer';
+                
+                const statusName = v.vehicle_status_name || (v.vehicle_status && v.vehicle_status.name) || 'N/A';
+                const statusBadgeClass = getVehicleStatusBadgeClass(statusName);
+                const activeBadge = v.has_active_order ? `<span class="badge bg-danger ms-2">Orden activa</span>` : '';
+                
+                if (v.has_active_order) {
+                    li.classList.add('list-group-item-warning');
+                }
+                
                 li.innerHTML = `
                     <div>
                         <strong class="badge bg-dark">${v.license_plate}</strong>
                         <span class="ms-2">${v.brand} ${v.model} (${v.year})</span>
+                        <span class="ms-2 badge ${statusBadgeClass}">${statusName}</span>
+                        ${activeBadge}
                     </div>
                     <i class="bi bi-chevron-right"></i>
                 `;
-                li.onclick = () => selectVehicle(v);
+                li.onclick = () => handleVehicleSelection(v);
                 searchResultsList.appendChild(li);
             });
             searchResultsContainer.style.display = 'block';
@@ -200,6 +211,15 @@
         /**
          * Acción al seleccionar un vehículo de la lista
          */
+        function handleVehicleSelection(vehicle) {
+            if (vehicle.has_active_order) {
+                const statusLabel = vehicle.active_order_status || 'activa';
+                SIGVE.showNotification(`El vehículo ${vehicle.license_plate} ya tiene una orden ${statusLabel.toLowerCase()}.`, 'warning');
+                return;
+            }
+            selectVehicle(vehicle);
+        }
+        
         function selectVehicle(vehicle) {
             selectedVehicle = vehicle;
             selectedVehiclePlate.textContent = vehicle.license_plate;
@@ -308,7 +328,9 @@
                     SIGVE.showNotification('Vehículo registrado. Ahora crea la orden.', 'success');
                     selectVehicle(data.vehicle); // ¡Pasa al siguiente paso!
                 } else {
-                    const error = data.errors ? Object.values(data.errors)[0][0] : 'Error desconocido';
+                    const error = data.errors
+                        ? Object.values(data.errors)[0][0]
+                        : (data.error || 'Error desconocido');
                     SIGVE.showNotification(error, 'error');
                 }
             } catch (error) {
@@ -350,7 +372,9 @@
                     }
                     window.location.href = `/taller/orders/${data.order.id}/`;
                 } else {
-                    const error = data.errors ? Object.values(data.errors)[0][0] : 'Error desconocido';
+                    const error = data.errors
+                        ? Object.values(data.errors)[0][0]
+                        : (data.error || 'Error desconocido');
                     SIGVE.showNotification(error, 'error');
                 }
             } catch (error) {
@@ -399,3 +423,13 @@
     })(); // Fin OrderModal
 
 })();
+
+function getVehicleStatusBadgeClass(statusName) {
+    if (!statusName) return 'bg-secondary';
+    const normalized = statusName.toLowerCase();
+    if (normalized.includes('disponible')) return 'bg-success';
+    if (normalized.includes('taller') || normalized.includes('mantenimiento')) return 'bg-primary';
+    if (normalized.includes('fuera') || normalized.includes('servicio') || normalized.includes('baja')) return 'bg-danger';
+    if (normalized.includes('pendiente')) return 'bg-warning text-dark';
+    return 'bg-secondary';
+}

@@ -93,6 +93,19 @@ def vehicle_search_api(request):
     """Busca vehículos por patente para el modal de órdenes."""
     query = request.GET.get('q', '').strip()
     vehicles = VehicleService.search_vehicles(query)
+    vehicle_ids = [vehicle.get('id') for vehicle in vehicles]
+    active_orders_map = OrderService.get_active_orders_for_vehicles(vehicle_ids)
+    
+    for vehicle in vehicles:
+        status = (vehicle.get('vehicle_status') or {}).get('name')
+        vehicle['vehicle_status_name'] = status
+        vehicle_id = vehicle.get('id')
+        if vehicle_id in active_orders_map:
+            vehicle['has_active_order'] = True
+            vehicle['active_order_status'] = active_orders_map[vehicle_id].get('status_name')
+        else:
+            vehicle['has_active_order'] = False
+            vehicle['active_order_status'] = None
     
     return JsonResponse({
         'success': True,
@@ -121,6 +134,18 @@ def vehicle_create_api(request):
             'error': 'No se pudo crear el vehículo. Inténtalo nuevamente.'
         }, status=500)
     
+    # Obtener datos completos del vehículo recién creado (incluye estado)
+    vehicle_full = VehicleService.search_vehicle(vehicle.get('license_plate'))
+    if vehicle_full:
+        vehicle_full['vehicle_status_name'] = (vehicle_full.get('vehicle_status') or {}).get('name')
+        vehicle_full['has_active_order'] = False
+        vehicle_full['active_order_status'] = None
+        vehicle = vehicle_full
+    else:
+        vehicle['vehicle_status_name'] = None
+        vehicle['has_active_order'] = False
+        vehicle['active_order_status'] = None
+    
     return JsonResponse({
         'success': True,
         'vehicle': vehicle
@@ -141,6 +166,13 @@ def order_create_api(request):
         }, status=400)
     
     cleaned = form.cleaned_data
+    
+    if OrderService.has_active_order(cleaned['vehicle_id']):
+        return JsonResponse({
+            'success': False,
+            'error': 'El vehículo seleccionado ya cuenta con una orden activa en el taller.'
+        }, status=400)
+    
     order_data = {
         'vehicle_id': cleaned['vehicle_id'],
         'mileage': cleaned['mileage'],
@@ -156,7 +188,7 @@ def order_create_api(request):
     if not order:
         return JsonResponse({
             'success': False,
-            'error': 'No se pudo crear la orden de mantención. Inténtalo nuevamente.'
+                'error': 'No se pudo crear la orden de mantención. Inténtalo nuevamente.'
         }, status=500)
     
     return JsonResponse({
@@ -276,6 +308,10 @@ def order_create(request):
                     'entry_date': form.cleaned_data.get('entry_date', datetime.now().date()).isoformat(),
                     'observations': form.cleaned_data.get('observations', '')
                 }
+                
+                if OrderService.has_active_order(order_data['vehicle_id']):
+                    messages.error(request, '❌ El vehículo seleccionado ya cuenta con una orden activa en el taller.')
+                    return redirect('workshop:order_create')
                 
                 order = OrderService.create_order(workshop_id, order_data)
                 

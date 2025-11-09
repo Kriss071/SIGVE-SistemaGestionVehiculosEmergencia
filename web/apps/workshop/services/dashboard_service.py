@@ -125,7 +125,8 @@ class DashboardService(WorkshopBaseService):
                         license_plate,
                         brand,
                         model,
-                        year
+                        year,
+                        vehicle_status:vehicle_status_id(id, name)
                     ),
                     maintenance_type:maintenance_type_id(name)
                 """) \
