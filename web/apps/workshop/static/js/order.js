@@ -29,7 +29,7 @@
     // Elementos del DOM
     let modalEl, modalInstance, loadingEl, contentEl, footerEl;
     let step1, step2, step3;
-    let searchInput, searchResultsContainer, searchResultsList, searchNotFound;
+    let searchInput, searchResultsContainer, searchResultsList, searchNotFound, searchLoader;
     let orderForm, vehicleForm;
     let selectedVehiclePlate, newVehiclePlate, orderVehicleId, newVehicleLicensePlateInput;
 
@@ -65,6 +65,7 @@
             searchResultsContainer = document.getElementById('vehicleSearchResultsContainer');
             searchResultsList = document.getElementById('vehicleSearchResults');
             searchNotFound = document.getElementById('vehicleSearchNotFound');
+            searchLoader = document.getElementById('vehicleSearchLoader');
             document.getElementById('showCreateVehicleBtn').addEventListener('click', () => showStep('create_vehicle'));
 
             // Formularios
@@ -143,10 +144,44 @@
          * Maneja el tipeo en el input de búsqueda (con debounce)
          */
         function handleSearchInput() {
+            const query = searchInput.value.trim().toUpperCase();
+            
+            // Ocultar resultados anteriores si el campo está vacío
+            if (query.length < 1) {
+                clearTimeout(searchTimer);
+                hideSearchLoader();
+                searchResultsContainer.style.display = 'none';
+                searchNotFound.style.display = 'none';
+                return;
+            }
+            
+            // Ocultar resultados anteriores mientras se espera el debounce
+            searchResultsContainer.style.display = 'none';
+            searchNotFound.style.display = 'none';
+            
             clearTimeout(searchTimer);
             searchTimer = setTimeout(() => {
-                performSearch(searchInput.value.trim().toUpperCase());
+                // Mostrar loader solo después del debounce, justo antes de buscar
+                performSearch(query);
             }, 300); // 300ms debounce
+        }
+        
+        /**
+         * Muestra el loader de búsqueda
+         */
+        function showSearchLoader() {
+            if (searchLoader) {
+                searchLoader.style.display = 'block';
+            }
+        }
+        
+        /**
+         * Oculta el loader de búsqueda
+         */
+        function hideSearchLoader() {
+            if (searchLoader) {
+                searchLoader.style.display = 'none';
+            }
         }
 
         /**
@@ -154,14 +189,23 @@
          */
         async function performSearch(query) {
             if (query.length < 1) {
+                hideSearchLoader();
                 searchResultsContainer.style.display = 'none';
                 searchNotFound.style.display = 'none';
                 return;
             }
 
+            // Mostrar loader y ocultar resultados/not found
+            showSearchLoader();
+            searchResultsContainer.style.display = 'none';
+            searchNotFound.style.display = 'none';
+
             try {
                 const response = await fetch(`${SEARCH_URL}?q=${encodeURIComponent(query)}`);
                 const data = await response.json();
+
+                // Ocultar loader después de recibir la respuesta
+                hideSearchLoader();
 
                 if (data.success && data.vehicles.length > 0) {
                     renderResults(data.vehicles);
@@ -170,8 +214,24 @@
                     searchNotFound.style.display = 'block';
                 }
             } catch (error) {
+                hideSearchLoader();
                 SIGVE.showNotification('Error al buscar vehículo', 'error');
+                searchResultsContainer.style.display = 'none';
+                searchNotFound.style.display = 'none';
             }
+        }
+
+        /**
+         * Obtiene la clase CSS para el badge de estado del vehículo
+         */
+        function getVehicleStatusBadgeClass(statusName) {
+            if (!statusName) return 'bg-secondary';
+            const normalized = statusName.toLowerCase();
+            if (normalized.includes('disponible')) return 'bg-success';
+            if (normalized.includes('taller') || normalized.includes('mantenimiento')) return 'bg-primary';
+            if (normalized.includes('fuera') || normalized.includes('servicio') || normalized.includes('baja')) return 'bg-danger';
+            if (normalized.includes('pendiente')) return 'bg-warning text-dark';
+            return 'bg-secondary';
         }
 
         /**
@@ -401,6 +461,7 @@
             searchResultsList.innerHTML = '';
             searchResultsContainer.style.display = 'none';
             searchNotFound.style.display = 'none';
+            hideSearchLoader();
             
             // Mostrar estado de carga para la próxima vez
             contentEl.style.display = 'none';
@@ -423,13 +484,3 @@
     })(); // Fin OrderModal
 
 })();
-
-function getVehicleStatusBadgeClass(statusName) {
-    if (!statusName) return 'bg-secondary';
-    const normalized = statusName.toLowerCase();
-    if (normalized.includes('disponible')) return 'bg-success';
-    if (normalized.includes('taller') || normalized.includes('mantenimiento')) return 'bg-primary';
-    if (normalized.includes('fuera') || normalized.includes('servicio') || normalized.includes('baja')) return 'bg-danger';
-    if (normalized.includes('pendiente')) return 'bg-warning text-dark';
-    return 'bg-secondary';
-}

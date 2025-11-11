@@ -26,6 +26,14 @@
                             <input type="text" class="form-control form-control-lg" id="vehicleSearchInput" placeholder="Comienza a escribir la patente (Ej: AB12)..." autocomplete="off">
                         </div>
                         
+                        <!-- Loader de búsqueda -->
+                        <div id="vehicleSearchLoader" class="text-center py-4" style="display: none;">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Buscando...</span>
+                            </div>
+                            <p class="mt-2 text-muted mb-0">Buscando vehículos...</p>
+                        </div>
+                        
                         <div id="vehicleSearchResultsContainer" style="display: none;">
                             <p class="text-muted"><small>Resultados de la búsqueda:</small></p>
                             <ul class="list-group" id="vehicleSearchResults">
