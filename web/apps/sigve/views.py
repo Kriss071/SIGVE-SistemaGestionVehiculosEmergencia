@@ -8,13 +8,15 @@ from accounts.decorators import require_supabase_login, require_role
 
 from .services.dashboard_service import DashboardService
 from .services.request_service import RequestService
+from .services.request_type_service import RequestTypeService
 from .services.workshop_service import WorkshopService
 from .services.fire_station_service import FireStationService
 from .services.catalog_service import CatalogService
 from .services.user_service import UserService
 from .forms import (
     WorkshopForm, FireStationForm, SparePartForm, SupplierForm,
-    CatalogItemForm, UserProfileForm, RejectRequestForm, UserCreateForm
+    CatalogItemForm, UserProfileForm, RejectRequestForm, UserCreateForm,
+    RequestTypeForm
 )
 
 logger = logging.getLogger('apps.workshop')
@@ -1189,6 +1191,151 @@ def user_delete(request, user_id):
     
     return redirect('sigve:users_list')
 
+
+# ===== GESTIÓN DE TIPOS DE SOLICITUDES =====
+
+@require_supabase_login
+@require_role("Admin SIGVE")
+def request_types_list(request):
+    """Lista de tipos de solicitudes."""
+    context = {
+        'page_title': 'Tipos de Solicitudes',
+        'active_page': 'request_types',
+        'request_types': RequestTypeService.get_all_request_types()
+    }
+    
+    return render(request, 'sigve/request_types_list.html', context)
+
+
+@require_http_methods(["POST"])
+@require_supabase_login
+@require_role("Admin SIGVE")
+def request_type_create(request):
+    """Crea un nuevo tipo de solicitud."""
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    form = RequestTypeForm(request.POST)
+    if form.is_valid():
+        import json
+        
+        # Validar que form_schema sea JSON válido
+        try:
+            form_schema = json.loads(form.cleaned_data['form_schema'])
+        except json.JSONDecodeError:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'errors': {'form_schema': ['El esquema del formulario debe ser JSON válido.']}
+                })
+            messages.error(request, '❌ El esquema del formulario debe ser JSON válido.')
+            return redirect('sigve:request_types_list')
+        
+        data = {
+            'name': form.cleaned_data['name'],
+            'description': form.cleaned_data.get('description'),
+            'target_table': form.cleaned_data['target_table'],
+            'form_schema': form_schema
+        }
+        
+        request_type = RequestTypeService.create_request_type(data)
+        
+        if request_type:
+            message = f'✅ Tipo de solicitud "{data["name"]}" creado correctamente.'
+            if is_ajax:
+                messages.success(request, message)
+                return JsonResponse({'success': True, 'reload_page': True})
+            
+            messages.success(request, message)
+            return redirect('sigve:request_types_list')
+        else:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el tipo de solicitud.']}})
+            messages.error(request, '❌ Error al crear el tipo de solicitud.')
+    else:
+        response = handle_form_errors(
+            request,
+            form,
+            is_ajax,
+            message='⚠️ Corrige los errores del formulario para crear el tipo de solicitud.'
+        )
+        if response:
+            return response
+    
+    return redirect('sigve:request_types_list')
+
+
+@require_http_methods(["POST"])
+@require_supabase_login
+@require_role("Admin SIGVE")
+def request_type_update(request, request_type_id):
+    """Actualiza un tipo de solicitud."""
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    form = RequestTypeForm(request.POST)
+    if form.is_valid():
+        import json
+        
+        # Validar que form_schema sea JSON válido
+        try:
+            form_schema = json.loads(form.cleaned_data['form_schema'])
+        except json.JSONDecodeError:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'errors': {'form_schema': ['El esquema del formulario debe ser JSON válido.']}
+                })
+            messages.error(request, '❌ El esquema del formulario debe ser JSON válido.')
+            return redirect('sigve:request_types_list')
+        
+        data = {
+            'name': form.cleaned_data['name'],
+            'description': form.cleaned_data.get('description'),
+            'target_table': form.cleaned_data['target_table'],
+            'form_schema': form_schema
+        }
+        
+        success = RequestTypeService.update_request_type(request_type_id, data)
+        
+        if success:
+            message = '✅ Tipo de solicitud actualizado correctamente.'
+            if is_ajax:
+                messages.success(request, message)
+                return JsonResponse({'success': True, 'reload_page': True})
+            
+            messages.success(request, message)
+            return redirect('sigve:request_types_list')
+        else:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el tipo de solicitud.']}})
+            messages.error(request, '❌ Error al actualizar el tipo de solicitud.')
+    else:
+        response = handle_form_errors(
+            request,
+            form,
+            is_ajax,
+            message='⚠️ Corrige los errores del formulario para actualizar el tipo de solicitud.'
+        )
+        if response:
+            return response
+    
+    return redirect('sigve:request_types_list')
+
+
+@require_http_methods(["POST"])
+@require_supabase_login
+@require_role("Admin SIGVE")
+def request_type_delete(request, request_type_id):
+    """Elimina un tipo de solicitud."""
+    success = RequestTypeService.delete_request_type(request_type_id)
+    
+    if success:
+        messages.success(request, '🗑️ Tipo de solicitud eliminado.')
+    else:
+        messages.error(request, '❌ Error al eliminar el tipo de solicitud (puede tener solicitudes asociadas).')
+    
+    return redirect('sigve:request_types_list')
+
+
 # ===== API ENDPOINTS =====
 
 @require_supabase_login
@@ -1344,4 +1491,29 @@ def api_get_catalog_item(request, catalog_name, item_id):
         return JsonResponse({
             'success': False,
             'error': 'Item no encontrado'
+        }, status=404)
+
+
+@require_supabase_login
+@require_role("Admin SIGVE")
+def api_get_request_type(request, request_type_id):
+    """
+    API endpoint para obtener los datos de un tipo de solicitud específico.
+    """
+    request_type = RequestTypeService.get_request_type(request_type_id)
+    
+    if request_type:
+        import json
+        # Convertir form_schema a string JSON para el frontend
+        if 'form_schema' in request_type:
+            request_type['form_schema'] = json.dumps(request_type['form_schema'], indent=2)
+        
+        return JsonResponse({
+            'success': True,
+            'request_type': request_type
+        })
+    else:
+        return JsonResponse({
+            'success': False,
+            'error': 'Tipo de solicitud no encontrado'
         }, status=404)

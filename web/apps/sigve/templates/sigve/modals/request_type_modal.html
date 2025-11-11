@@ -1,0 +1,103 @@
+<!-- Modal para Crear/Editar Tipo de Solicitud -->
+<div class="modal fade" id="requestTypeModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="requestTypeModalLabel">
+                    <i class="bi bi-file-earmark-text"></i> <span id="modalTitle">Nuevo Tipo de Solicitud</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="requestTypeForm" method="POST">
+                {% csrf_token %}
+                <input type="hidden" id="requestTypeId" name="request_type_id" value="">
+                
+                <div class="modal-body">
+                    <!-- Alert para errores -->
+                    <div id="modalErrorAlert" class="alert alert-danger d-none" role="alert">
+                        <ul id="modalErrorList" class="mb-0"></ul>
+                    </div>
+
+                    <div class="row">
+                        <!-- Columna izquierda: Información básica -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Nombre del Tipo de Solicitud <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" required 
+                                       placeholder="Ej: Solicitud de Nuevo Repuesto">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="target_table" class="form-label">Tabla Objetivo <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="target_table" name="target_table" required 
+                                       placeholder="Ej: spare_part, supplier">
+                                <div class="form-text">Nombre de la tabla donde se guardará la información solicitada</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Descripción</label>
+                                <textarea class="form-control" id="description" name="description" rows="4" 
+                                          placeholder="Descripción del tipo de solicitud"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Columna derecha: Esquema del formulario -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="form_schema" class="form-label">
+                                    Esquema del Formulario (JSON) <span class="text-danger">*</span>
+                                </label>
+                                <textarea class="form-control font-monospace" id="form_schema" name="form_schema" 
+                                          rows="15" required 
+                                          placeholder='{"fields": [...]}'></textarea>
+                                <div class="form-text">
+                                    Define los campos del formulario en formato JSON. 
+                                    <button type="button" class="btn btn-link btn-sm p-0" onclick="showSchemaExample()">
+                                        Ver ejemplo
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Ejemplo de esquema (colapsable) -->
+                            <div class="collapse" id="schemaExample">
+                                <div class="card card-body bg-light">
+                                    <h6>Ejemplo de esquema:</h6>
+                                    <pre class="mb-0 small">{
+  "fields": [
+    {
+      "name": "nombre",
+      "label": "Nombre del Repuesto",
+      "type": "text",
+      "required": true
+    },
+    {
+      "name": "marca",
+      "label": "Marca",
+      "type": "text",
+      "required": false
+    },
+    {
+      "name": "cantidad",
+      "label": "Cantidad",
+      "type": "number",
+      "required": true
+    }
+  ]
+}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="bi bi-save"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+

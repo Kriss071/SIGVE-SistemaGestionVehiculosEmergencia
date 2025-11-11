@@ -1,0 +1,49 @@
+<!-- Modal para Crear Solicitud a SIGVE -->
+<div class="modal fade" id="requestModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-envelope-paper"></i> Nueva Solicitud a SIGVE
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="requestForm" method="POST" action="{% url 'workshop:request_create' %}">
+                {% csrf_token %}
+                
+                <div class="modal-body">
+                    <!-- Selección de tipo de solicitud -->
+                    <div class="mb-3">
+                        <label for="request_type_id" class="form-label">
+                            Tipo de Solicitud <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="request_type_id" name="request_type_id" required>
+                            <option value="">-- Seleccionar tipo de solicitud --</option>
+                            {% for rt in request_types %}
+                            <option value="{{ rt.id }}">{{ rt.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text" id="requestTypeDescription"></div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Campos dinámicos del formulario -->
+                    <div id="dynamicFields">
+                        <p class="text-muted text-center py-4">
+                            <i class="bi bi-arrow-up"></i> Selecciona un tipo de solicitud para ver los campos disponibles
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                        <i class="bi bi-send"></i> Enviar Solicitud
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+

@@ -107,6 +107,13 @@
                                href="{% url 'sigve:catalog_list' 'task_type' %}">Tipos de Tarea</a></li>
                         <li><a class="dropdown-item {% if request.resolver_match.url_name == 'catalog_list' and request.resolver_match.kwargs.model_name == 'role' %}active{% endif %}" 
                                href="{% url 'sigve:catalog_list' 'role' %}">Roles</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item {% if request.resolver_match.url_name == 'request_types_list' %}active{% endif %}" 
+                               href="{% url 'sigve:request_types_list' %}">
+                               <i class="bi bi-file-earmark-text"></i> Tipos de Solicitudes
+                            </a>
+                        </li>
                     </ul>
                 </li>
                 {% endwith %}

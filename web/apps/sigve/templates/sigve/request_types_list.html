@@ -1,0 +1,110 @@
+{% extends 'sigve/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/request_types.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-file-earmark-text"></i> Tipos de Solicitudes</h2>
+            <p class="text-muted">Gestiona los tipos de solicitudes disponibles para los talleres</p>
+        </div>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#requestTypeModal" onclick="openCreateRequestTypeModal()">
+            <i class="bi bi-plus-circle"></i> Nuevo Tipo de Solicitud
+        </button>
+    </div>
+
+    <!-- Tabla de Tipos de Solicitudes -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {% if request_types %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Tabla Objetivo</th>
+                            <th>Esquema</th>
+                            <th class="text-center" style="width: 150px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rt in request_types %}
+                        <tr>
+                            <td><strong>{{ rt.name }}</strong></td>
+                            <td>{{ rt.description|default:"—"|truncatewords:10 }}</td>
+                            <td><code>{{ rt.target_table }}</code></td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-info" onclick="viewSchema({{ rt.id }})">
+                                    <i class="bi bi-code-square"></i> Ver JSON
+                                </button>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-primary" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#requestTypeModal" 
+                                            onclick="openEditRequestTypeModal({{ rt.id }})">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#confirmationModal" 
+                                            data-action="{% url 'sigve:request_type_delete' rt.id %}"
+                                            data-message="¿Estás seguro de que deseas eliminar el tipo de solicitud '<strong>{{ rt.name }}</strong>'?">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox display-1 text-muted"></i>
+                <p class="text-muted mt-3">No hay tipos de solicitudes registrados.</p>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#requestTypeModal" onclick="openCreateRequestTypeModal()">
+                    <i class="bi bi-plus-circle"></i> Crear el Primero
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear/Editar Tipo de Solicitud -->
+{% include 'sigve/modals/request_type_modal.html' %}
+
+<!-- Modal de Confirmación (genérico) -->
+{% include 'sigve/modals/confirmation_modal.html' %}
+
+<!-- Modal para Ver Esquema JSON -->
+<div class="modal fade" id="schemaViewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Esquema del Formulario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="schemaContent" class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/request_types.js' %}"></script>
+{% endblock %}
+

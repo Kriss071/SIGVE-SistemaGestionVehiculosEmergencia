@@ -1,0 +1,119 @@
+{% extends 'workshop/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/vehicles_list.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-truck"></i> Vehículos</h1>
+            <button type="button" class="btn btn-primary" onclick="VehicleModal.open()">
+                <i class="bi bi-plus-circle"></i> Nuevo Vehículo
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" id="filterForm" class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Patente</label>
+                <input type="text" name="license_plate" id="licensePlateFilter" class="form-control" placeholder="Buscar por patente" 
+                       value="{{ filters.license_plate|default:'' }}">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Cuartel</label>
+                <select name="fire_station_id" id="fireStationFilter" class="form-select">
+                    <option value="">Todos los cuarteles</option>
+                    {% for station in fire_stations %}
+                    <option value="{{ station.id }}" {% if filters.fire_station_id == station.id|stringformat:"s" %}selected{% endif %}>
+                        {{ station.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Loader Overlay para Filtros -->
+<div id="filterLoader" class="filter-loader-overlay" style="display: none;">
+    <div class="filter-loader-content">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Filtrando...</span>
+        </div>
+        <p class="mt-3 text-muted mb-0">Filtrando vehículos...</p>
+    </div>
+</div>
+
+<!-- Tabla de Vehículos -->
+<div class="card">
+    <div class="card-body">
+        {% if vehicles %}
+        <div class="table-responsive">
+            <table class="table table-hover vehicles-table">
+                <thead>
+                    <tr>
+                        <th>Patente</th>
+                        <th>Marca</th>
+                        <th>Modelo</th>
+                        <th>Año</th>
+                        <th>Cuartel</th>
+                        <th>Tipo</th>
+                        <th>Estado</th>
+                        <th>Kilometraje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vehicle in vehicles %}
+                    <tr>
+                        <td><span class="badge bg-dark">{{ vehicle.license_plate|default:"N/A" }}</span></td>
+                        <td><strong>{{ vehicle.brand|default:"—" }}</strong></td>
+                        <td>{{ vehicle.model|default:"—" }}</td>
+                        <td>{{ vehicle.year|default:"—" }}</td>
+                        <td>{{ vehicle.fire_station.name|default:"N/A" }}</td>
+                        <td>{{ vehicle.vehicle_type.name|default:"—" }}</td>
+                        <td>
+                            {% with vehicle_status=vehicle.vehicle_status.name %}
+                            <span class="badge 
+                                {% if vehicle_status == 'Disponible' %}bg-success
+                                {% elif vehicle_status == 'En Taller' %}bg-primary
+                                {% elif vehicle_status == 'Fuera de Servicio' %}bg-danger
+                                {% else %}bg-secondary{% endif %}">
+                                {{ vehicle_status|default:"N/A" }}
+                            </span>
+                            {% endwith %}
+                        </td>
+                        <td>{{ vehicle.mileage|default:"—" }} km</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-truck display-1 text-muted"></i>
+            <p class="text-muted mt-3">No hay vehículos registrados{% if filters %} con los filtros aplicados{% endif %}</p>
+            <button type="button" class="btn btn-primary" onclick="VehicleModal.open()">
+                <i class="bi bi-plus-circle"></i> Registrar Primer Vehículo
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal Crear Vehículo -->
+{% include 'workshop/modals/vehicle_modal.html' %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/sigve.js' %}"></script>
+<script src="{% static 'js/vehicles_list.js' %}"></script>
+{% endblock %}
+

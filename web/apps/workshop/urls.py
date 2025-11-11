@@ -44,6 +44,11 @@ urlpatterns = [
     path('employees/<str:user_id>/update/', views.employee_update, name='employee_update'),
     path('employees/<str:user_id>/deactivate/', views.employee_deactivate, name='employee_deactivate'),
     path('employees/<str:user_id>/activate/', views.employee_activate, name='employee_activate'),
+    
+    # Gestión de Solicitudes a SIGVE
+    path('requests/', views.requests_list, name='requests_list'),
+    path('requests/create/', views.request_create, name='request_create'),
+    path('api/request-types/<int:request_type_id>/schema/', views.request_type_schema_api, name='request_type_schema_api'),
 ]
 
 

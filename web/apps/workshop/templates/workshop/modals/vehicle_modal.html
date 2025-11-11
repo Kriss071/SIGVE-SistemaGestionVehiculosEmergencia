@@ -1,0 +1,108 @@
+<div class="modal fade" id="vehicleModal" tabindex="-1" aria-labelledby="vehicleModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="vehicleModalLabel">
+                    <i class="bi bi-plus-circle"></i> Nuevo Vehículo
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            
+            <div class="modal-body">
+                
+                <div id="vehicleModalLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Cargando configuración del formulario...</p>
+                </div>
+
+                <div id="vehicleModalContent" style="display: none;">
+                    <form id="createVehicleForm" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Patente <span class="text-danger">*</span></label>
+                                <input type="text" name="license_plate" id="vehicleLicensePlate" class="form-control" 
+                                       placeholder="Ej: ABCD12" required>
+                                <div class="invalid-feedback" id="licensePlateError">
+                                    Por favor ingresa una patente válida.
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Año <span class="text-danger">*</span></label>
+                                <input type="number" name="year" class="form-control" 
+                                       placeholder="Ej: 2020" min="1900" max="2100" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Marca <span class="text-danger">*</span></label>
+                                <input type="text" name="brand" class="form-control" 
+                                       placeholder="Ej: Mercedes-Benz" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Modelo <span class="text-danger">*</span></label>
+                                <input type="text" name="model" class="form-control" 
+                                       placeholder="Ej: Atego 1725" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tipo Vehículo <span class="text-danger">*</span></label>
+                                <select name="vehicle_type_id" id="selectVehicleType" class="form-select" required>
+                                    <option value="">Seleccionar...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Cuartel <span class="text-danger">*</span></label>
+                                <select name="fire_station_id" id="selectFireStation" class="form-select" required>
+                                    <option value="">Seleccionar...</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tipo de Combustible</label>
+                                <select name="fuel_type_id" id="selectFuelType" class="form-select">
+                                    <option value="">Seleccionar...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tipo de Transmisión</label>
+                                <select name="transmission_type_id" id="selectTransmissionType" class="form-select">
+                                    <option value="">Seleccionar...</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Número de Motor</label>
+                                <input type="text" name="engine_number" class="form-control" 
+                                       placeholder="Número de motor (opcional)">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">VIN / Chasis</label>
+                                <input type="text" name="vin" class="form-control" 
+                                       placeholder="Número de chasis (opcional)">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="modal-footer" id="vehicleModalFooter">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="saveVehicleBtn" onclick="VehicleModal.save()">
+                    <i class="bi bi-save"></i> Guardar Vehículo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+

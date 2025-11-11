@@ -306,3 +306,31 @@ class RejectRequestForm(forms.Form):
     )
 
 
+class RequestTypeForm(forms.Form):
+    """Formulario para crear/editar tipos de solicitudes."""
+    name = forms.CharField(
+        max_length=255,
+        label="Nombre del Tipo de Solicitud",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Solicitud de Nuevo Repuesto'})
+    )
+    description = forms.CharField(
+        label="Descripción",
+        required=False,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Descripción del tipo de solicitud'})
+    )
+    target_table = forms.CharField(
+        max_length=255,
+        label="Tabla Objetivo",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: spare_part, supplier'})
+    )
+    form_schema = forms.CharField(
+        label="Esquema del Formulario (JSON)",
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 10,
+            'placeholder': '{"fields": [{"name": "nombre_campo", "label": "Etiqueta", "type": "text", "required": true}]}'
+        }),
+        help_text="Define los campos del formulario en formato JSON"
+    )
+
+

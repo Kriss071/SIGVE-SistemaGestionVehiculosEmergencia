@@ -7,8 +7,10 @@
                 bg-success
             {% elif request.resolver_match.url_name == 'suppliers_list' %}
                 bg-info
-            {% elif request.resolver_match.url_name == 'employees_list' %}
+            {% elif request.resolver_match.url_name == 'requests_list' %}
                 bg-warning
+            {% elif request.resolver_match.url_name == 'employees_list' %}
+                bg-danger
             {% else %}
                 bg-primary
             {% endif %}">
@@ -45,6 +47,12 @@
                     <a class="nav-link {% if request.resolver_match.url_name == 'suppliers_list' %}active{% endif %}" 
                        href="{% url 'workshop:suppliers_list' %}">
                         <i class="bi bi-truck"></i> Proveedores
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'requests_list' %}active{% endif %}" 
+                       href="{% url 'workshop:requests_list' %}">
+                        <i class="bi bi-envelope-paper"></i> Solicitudes
                     </a>
                 </li>
                 

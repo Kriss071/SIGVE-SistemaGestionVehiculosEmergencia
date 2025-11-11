@@ -13,11 +13,12 @@ from .services.inventory_service import InventoryService
 from .services.supplier_service import SupplierService
 from .services.employee_service import EmployeeService
 from .services.vehicle_service import VehicleService
+from .services.request_service import RequestService
 from apps.sigve.services.workshop_service import WorkshopService
 from .forms import (
     VehicleSearchForm, VehicleCreateForm, MaintenanceOrderForm,
     MaintenanceTaskForm, TaskPartForm, InventoryAddForm,
-    InventoryUpdateForm, SupplierForm, EmployeeForm
+    InventoryUpdateForm, SupplierForm, EmployeeForm, DataRequestForm
 )
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,9 @@ def dashboard(request):
     
     # Obtener órdenes activas (en taller)
     context['active_orders'] = DashboardService.get_active_orders(workshop_id, limit=10)
+    
+    # Obtener solicitudes pendientes
+    context['pending_requests_count'] = RequestService.get_pending_requests_count(workshop_id)
     
     return render(request, 'workshop/dashboard.html', context)
 
@@ -752,3 +756,121 @@ def employee_activate(request, user_id):
         messages.error(request, '❌ Error al activar.')
     
     return redirect('workshop:employees_list')
+
+
+# ===== GESTIÓN DE SOLICITUDES A SIGVE =====
+
+@require_workshop_user
+def requests_list(request):
+    """Lista de solicitudes del taller a SIGVE."""
+    workshop_id = request.workshop_id
+    
+    # Obtener filtros
+    filters = {}
+    if request.GET.get('status'):
+        filters['status'] = request.GET.get('status')
+    if request.GET.get('request_type_id'):
+        filters['request_type_id'] = request.GET.get('request_type_id')
+    
+    context = {
+        'page_title': 'Solicitudes a SIGVE',
+        'active_page': 'requests',
+        'requests': RequestService.get_all_requests(workshop_id, filters),
+        'request_types': RequestService.get_all_request_types(),
+        'filters': filters
+    }
+    
+    return render(request, 'workshop/requests_list.html', context)
+
+
+@require_http_methods(["GET"])
+@require_workshop_user
+def request_type_schema_api(request, request_type_id):
+    """API para obtener el esquema de un tipo de solicitud."""
+    try:
+        request_type = RequestService.get_request_type(request_type_id)
+        
+        if not request_type:
+            return JsonResponse({
+                'success': False,
+                'error': 'Tipo de solicitud no encontrado'
+            }, status=404)
+        
+        # Asegurarse de que form_schema sea un objeto, no un string
+        # Supabase devuelve JSONB como dict de Python, pero Django lo serializa correctamente
+        # Solo necesitamos asegurarnos de que esté presente
+        if 'form_schema' in request_type and request_type['form_schema']:
+            # Si viene como string, parsearlo
+            if isinstance(request_type['form_schema'], str):
+                import json
+                try:
+                    request_type['form_schema'] = json.loads(request_type['form_schema'])
+                except json.JSONDecodeError as e:
+                    logger.error(f"Error al parsear form_schema del request_type {request_type_id}: {e}")
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'El esquema del formulario no es válido'
+                    }, status=400)
+        
+        return JsonResponse({
+            'success': True,
+            'request_type': request_type
+        })
+    except Exception as e:
+        logger.error(f"Error en request_type_schema_api para request_type_id {request_type_id}: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': f'Error del servidor: {str(e)}'
+        }, status=500)
+
+
+@require_http_methods(["POST"])
+@require_workshop_user
+def request_create(request):
+    """Crea una nueva solicitud a SIGVE."""
+    user_id = request.session.get('sb_user_id')
+    
+    # Obtener los datos del formulario
+    request_type_id = request.POST.get('request_type_id')
+    
+    if not request_type_id:
+        messages.error(request, '❌ Debe seleccionar un tipo de solicitud.')
+        return redirect('workshop:requests_list')
+    
+    # Obtener el tipo de solicitud para validar los campos
+    request_type = RequestService.get_request_type(int(request_type_id))
+    
+    if not request_type:
+        messages.error(request, '❌ Tipo de solicitud no encontrado.')
+        return redirect('workshop:requests_list')
+    
+    # Construir el diccionario de datos solicitados basándose en el form_schema
+    requested_data = {}
+    form_schema = request_type.get('form_schema', {})
+    fields = form_schema.get('fields', [])
+    
+    for field in fields:
+        field_name = field.get('name')
+        field_value = request.POST.get(field_name)
+        
+        # Validar campos requeridos
+        if field.get('required') and not field_value:
+            messages.error(request, f'❌ El campo "{field.get("label", field_name)}" es requerido.')
+            return redirect('workshop:requests_list')
+        
+        requested_data[field_name] = field_value
+    
+    # Crear la solicitud
+    data = {
+        'request_type_id': int(request_type_id),
+        'requested_data': requested_data
+    }
+    
+    new_request = RequestService.create_request(user_id, data)
+    
+    if new_request:
+        messages.success(request, f'✅ Solicitud de "{request_type["name"]}" enviada correctamente.')
+    else:
+        messages.error(request, '❌ Error al crear la solicitud.')
+    
+    return redirect('workshop:requests_list')

@@ -1,0 +1,159 @@
+{% extends 'workshop/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/requests_list.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-envelope-paper"></i> Solicitudes a SIGVE</h2>
+            <p class="text-muted">Gestiona las solicitudes enviadas al sistema central</p>
+        </div>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#requestModal" onclick="openCreateRequestModal()">
+            <i class="bi bi-plus-circle"></i> Nueva Solicitud
+        </button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="status" class="form-label">Estado</label>
+                    <select class="form-select" id="status" name="status" onchange="this.form.submit()">
+                        <option value="">Todos los estados</option>
+                        <option value="pendiente" {% if filters.status == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                        <option value="aprobada" {% if filters.status == 'aprobada' %}selected{% endif %}>Aprobada</option>
+                        <option value="rechazada" {% if filters.status == 'rechazada' %}selected{% endif %}>Rechazada</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="filter_request_type_id" class="form-label">Tipo de Solicitud</label>
+                    <select class="form-select" id="filter_request_type_id" name="request_type_id" onchange="this.form.submit()">
+                        <option value="">Todos los tipos</option>
+                        {% for rt in request_types %}
+                        <option value="{{ rt.id }}" {% if filters.request_type_id|stringformat:"s" == rt.id|stringformat:"s" %}selected{% endif %}>
+                            {{ rt.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    {% if filters.status or filters.request_type_id %}
+                    <a href="{% url 'workshop:requests_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Limpiar Filtros
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de Solicitudes -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {% if requests %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Tipo de Solicitud</th>
+                            <th>Estado</th>
+                            <th>Solicitante</th>
+                            <th>Fecha</th>
+                            <th class="text-center" style="width: 120px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requests %}
+                        <tr>
+                            <td><strong>#{{ req.id }}</strong></td>
+                            <td>{{ req.request_type.name|default:"—" }}</td>
+                            <td>
+                                {% if req.status == 'pendiente' %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-clock"></i> Pendiente
+                                    </span>
+                                {% elif req.status == 'aprobada' %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Aprobada
+                                    </span>
+                                {% elif req.status == 'rechazada' %}
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-x-circle"></i> Rechazada
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ req.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if req.user_profile %}
+                                    {{ req.user_profile.first_name }} {{ req.user_profile.last_name }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>{{ req.created_at|date:"d/m/Y H:i" }}</td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                        onclick="viewRequestDetails({{ req.id }})">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox display-1 text-muted"></i>
+                <p class="text-muted mt-3">No hay solicitudes registradas.</p>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#requestModal" onclick="openCreateRequestModal()">
+                    <i class="bi bi-plus-circle"></i> Crear la Primera
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear Solicitud -->
+{% include 'workshop/modals/request_modal.html' %}
+
+<!-- Modal para Ver Detalles de Solicitud -->
+<div class="modal fade" id="requestDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-file-earmark-text"></i> Detalles de la Solicitud
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="requestDetailsContent">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/requests_list.js' %}"></script>
+{% endblock %}
+

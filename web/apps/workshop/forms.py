@@ -356,4 +356,13 @@ class EmployeeForm(forms.Form):
     )
 
 
+class DataRequestForm(forms.Form):
+    """Formulario para crear una solicitud a SIGVE."""
+    request_type_id = forms.IntegerField(
+        label="Tipo de Solicitud",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    # Los campos dinámicos se agregan via JavaScript basándose en el form_schema
+
+
 

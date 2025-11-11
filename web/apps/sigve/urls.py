@@ -50,6 +50,12 @@ urlpatterns = [
     path('users/<str:user_id>/activate/', views.user_activate, name='user_activate'),
     path('users/<str:user_id>/delete/', views.user_delete, name='user_delete'),
     
+    # Gestión de Tipos de Solicitudes
+    path('request-types/', views.request_types_list, name='request_types_list'),
+    path('request-types/create/', views.request_type_create, name='request_type_create'),
+    path('request-types/<int:request_type_id>/update/', views.request_type_update, name='request_type_update'),
+    path('request-types/<int:request_type_id>/delete/', views.request_type_delete, name='request_type_delete'),
+    
     # API Endpoints
     path('api/communes/', views.api_get_communes, name='api_get_communes'),
     path('api/workshops/<int:workshop_id>/', views.api_get_workshop, name='api_get_workshop'),
@@ -57,7 +63,8 @@ urlpatterns = [
     path('api/spare-parts/<int:spare_part_id>/', views.api_get_spare_part, name='api_get_spare_part'),
     path('api/suppliers/<int:supplier_id>/', views.api_get_supplier, name='api_get_supplier'),
     path('api/users/<str:user_id>/', views.api_get_user, name='api_get_user'),
-    path('api/catalogs/<str:catalog_name>/<int:item_id>/', views.api_get_catalog_item, name='api_get_catalog_item')
+    path('api/catalogs/<str:catalog_name>/<int:item_id>/', views.api_get_catalog_item, name='api_get_catalog_item'),
+    path('api/request-types/<int:request_type_id>/', views.api_get_request_type, name='api_get_request_type'),
 ]
 
 
