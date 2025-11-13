@@ -1,0 +1,126 @@
+/**
+ * SIGVE Workshop - Estilos para Detalle de Orden
+ * 
+ * Estilos específicos para la vista de detalle de orden de mantención
+ */
+
+/* Estilos para formulario de orden bloqueada */
+.order-completed-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: #ffc107;
+    color: #000;
+    border-radius: 0.375rem;
+    font-weight: 500;
+}
+
+/* Estilos para campos deshabilitados cuando la orden está completada */
+select:disabled,
+input:disabled {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Alerta de orden completada */
+.alert-info {
+    border-left: 4px solid #0dcaf0;
+}
+
+.alert-warning {
+    border-left: 4px solid #ffc107;
+}
+
+/* Modal de confirmación */
+#confirmCompletionModal .modal-header {
+    border-bottom: 2px solid #ffb700;
+}
+
+#confirmCompletionModal .modal-body p strong {
+    color: #212529;
+    font-size: 1.05rem;
+}
+
+#confirmCompletionModal .btn-warning {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #000;
+    font-weight: 500;
+}
+
+#confirmCompletionModal .btn-warning:hover {
+    background-color: #ffb700;
+    border-color: #ffb700;
+    color: #000;
+}
+
+/* Animación para botones en estado de carga */
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.btn-loading::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+/* Estilos para select de tipo de mantención */
+.form-select.maintenance-type-select {
+    font-weight: 500;
+}
+
+/* Badges para tipos de mantención */
+.badge.maintenance-type-preventiva {
+    background-color: #0d6efd;
+}
+
+.badge.maintenance-type-correctiva {
+    background-color: #dc3545;
+}
+
+/* Mejorar visualización de tablas en detalle de orden */
+.table-borderless th {
+    width: 35%;
+    font-weight: 600;
+    color: #495057;
+    padding: 0.5rem 0;
+}
+
+.table-borderless td {
+    padding: 0.5rem 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .table-borderless th,
+    .table-borderless td {
+        display: block;
+        width: 100%;
+    }
+    
+    .table-borderless th {
+        padding-top: 1rem;
+        border-top: 1px solid #dee2e6;
+    }
+}
+
+

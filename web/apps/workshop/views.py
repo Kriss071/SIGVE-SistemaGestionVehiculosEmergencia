@@ -346,6 +346,9 @@ def order_detail(request, order_id):
         messages.error(request, '❌ Orden no encontrada o no pertenece a este taller.')
         return redirect('workshop:orders_list')
     
+    # Verificar si la orden está completada
+    order['is_completed'] = OrderService.is_order_completed(order)
+    
     # Obtener tareas y repuestos
     tasks = OrderService.get_order_tasks(order_id)
     
@@ -361,6 +364,7 @@ def order_detail(request, order_id):
         'task_types': VehicleService.get_task_types(),
         'inventory': InventoryService.get_all_inventory(workshop_id),
         'order_statuses': VehicleService.get_order_statuses(),
+        'maintenance_types': VehicleService.get_maintenance_types(),
         'mechanics': EmployeeService.get_mechanics(workshop_id)
     }
     
@@ -373,9 +377,22 @@ def order_update(request, order_id):
     """Actualiza información general de una orden."""
     workshop_id = request.workshop_id
     
+    # Verificar que la orden existe y pertenece al taller
+    order = OrderService.get_order(order_id, workshop_id)
+    if not order:
+        messages.error(request, '❌ Orden no encontrada.')
+        return redirect('workshop:orders_list')
+    
+    # Verificar si la orden ya está completada
+    if OrderService.is_order_completed(order):
+        messages.error(request, '❌ No se puede modificar una orden que ya está terminada.')
+        return redirect('workshop:order_detail', order_id=order_id)
+    
     data = {}
     if request.POST.get('order_status_id'):
         data['order_status_id'] = int(request.POST.get('order_status_id'))
+    if request.POST.get('maintenance_type_id'):
+        data['maintenance_type_id'] = int(request.POST.get('maintenance_type_id'))
     if request.POST.get('assigned_mechanic_id'):
         data['assigned_mechanic_id'] = request.POST.get('assigned_mechanic_id')
     if request.POST.get('exit_date'):
@@ -386,7 +403,17 @@ def order_update(request, order_id):
     success = OrderService.update_order(order_id, workshop_id, data)
     
     if success:
-        messages.success(request, '✅ Orden actualizada correctamente.')
+        # Verificar si la orden fue marcada como terminada
+        new_status_id = data.get('order_status_id')
+        if new_status_id:
+            order_statuses = VehicleService.get_order_statuses()
+            selected_status = next((s for s in order_statuses if s['id'] == new_status_id), None)
+            if selected_status and OrderService.is_completion_status(selected_status.get('name', '')):
+                messages.success(request, '✅ Orden marcada como terminada. Ya no se podrá modificar.')
+            else:
+                messages.success(request, '✅ Orden actualizada correctamente.')
+        else:
+            messages.success(request, '✅ Orden actualizada correctamente.')
     else:
         messages.error(request, '❌ Error al actualizar la orden.')
     
@@ -404,6 +431,11 @@ def task_create(request, order_id):
     if not order:
         messages.error(request, '❌ Orden no encontrada.')
         return redirect('workshop:orders_list')
+    
+    # Verificar si la orden está completada
+    if OrderService.is_order_completed(order):
+        messages.error(request, '❌ No se pueden agregar tareas a una orden terminada.')
+        return redirect('workshop:order_detail', order_id=order_id)
     
     form = MaintenanceTaskForm(request.POST)
     if form.is_valid():
@@ -437,6 +469,11 @@ def task_delete(request, order_id, task_id):
         messages.error(request, '❌ Orden no encontrada.')
         return redirect('workshop:orders_list')
     
+    # Verificar si la orden está completada
+    if OrderService.is_order_completed(order):
+        messages.error(request, '❌ No se pueden eliminar tareas de una orden terminada.')
+        return redirect('workshop:order_detail', order_id=order_id)
+    
     success = OrderService.delete_task(task_id)
     
     if success:
@@ -458,6 +495,11 @@ def part_add_to_task(request, order_id):
     if not order:
         messages.error(request, '❌ Orden no encontrada.')
         return redirect('workshop:orders_list')
+    
+    # Verificar si la orden está completada
+    if OrderService.is_order_completed(order):
+        messages.error(request, '❌ No se pueden agregar repuestos a una orden terminada.')
+        return redirect('workshop:order_detail', order_id=order_id)
     
     task_id = int(request.POST.get('maintenance_task_id'))
     inventory_id = int(request.POST.get('workshop_inventory_id'))
@@ -484,6 +526,11 @@ def part_remove_from_task(request, order_id, part_id):
     if not order:
         messages.error(request, '❌ Orden no encontrada.')
         return redirect('workshop:orders_list')
+    
+    # Verificar si la orden está completada
+    if OrderService.is_order_completed(order):
+        messages.error(request, '❌ No se pueden eliminar repuestos de una orden terminada.')
+        return redirect('workshop:order_detail', order_id=order_id)
     
     success = OrderService.delete_part_from_task(part_id)
     

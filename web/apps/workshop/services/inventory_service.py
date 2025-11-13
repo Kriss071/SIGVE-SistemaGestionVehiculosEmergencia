@@ -1,5 +1,6 @@
 import logging
 from typing import Dict, List, Any, Optional
+from decimal import Decimal
 from .base_service import WorkshopBaseService
 
 logger = logging.getLogger(__name__)
@@ -7,6 +8,21 @@ logger = logging.getLogger(__name__)
 
 class InventoryService(WorkshopBaseService):
     """Servicio para gestionar el inventario del taller."""
+    
+    @staticmethod
+    def _convert_decimal_to_float(value: Any) -> Any:
+        """
+        Convierte un valor Decimal a float para serialización JSON.
+        
+        Args:
+            value: Valor que puede ser Decimal, float, int, etc.
+            
+        Returns:
+            float si era Decimal, el valor original en caso contrario.
+        """
+        if isinstance(value, Decimal):
+            return float(value)
+        return value
     
     @staticmethod
     def get_all_inventory(workshop_id: int):
@@ -91,9 +107,10 @@ class InventoryService(WorkshopBaseService):
             if existing.data:
                 # Actualizar cantidad existente
                 new_quantity = existing.data['quantity'] + data.get('quantity', 0)
+                current_cost = InventoryService._convert_decimal_to_float(data.get('current_cost'))
                 update_data = {
                     'quantity': new_quantity,
-                    'current_cost': data.get('current_cost'),
+                    'current_cost': current_cost,
                     'supplier_id': data.get('supplier_id'),
                     'location': data.get('location'),
                     'workshop_sku': data.get('workshop_sku'),
@@ -110,11 +127,12 @@ class InventoryService(WorkshopBaseService):
                 return result.data[0] if result.data else None
             else:
                 # Crear nuevo registro
+                current_cost = InventoryService._convert_decimal_to_float(data.get('current_cost', 0))
                 inventory_data = {
                     'workshop_id': workshop_id,
                     'spare_part_id': spare_part_id,
                     'quantity': data.get('quantity', 0),
-                    'current_cost': data.get('current_cost', 0),
+                    'current_cost': current_cost,
                     'supplier_id': data.get('supplier_id'),
                     'location': data.get('location'),
                     'workshop_sku': data.get('workshop_sku'),
@@ -158,7 +176,7 @@ class InventoryService(WorkshopBaseService):
             if 'quantity' in data:
                 update_data['quantity'] = data['quantity']
             if 'current_cost' in data:
-                update_data['current_cost'] = data['current_cost']
+                update_data['current_cost'] = InventoryService._convert_decimal_to_float(data['current_cost'])
             if 'supplier_id' in data:
                 update_data['supplier_id'] = data['supplier_id']
             if 'location' in data:

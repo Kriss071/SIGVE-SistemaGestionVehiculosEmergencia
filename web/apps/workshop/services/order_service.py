@@ -1,6 +1,7 @@
 import logging
 from typing import Dict, List, Any, Optional, Set
 from datetime import datetime
+from decimal import Decimal
 from .base_service import WorkshopBaseService
 
 logger = logging.getLogger(__name__)
@@ -8,6 +9,73 @@ logger = logging.getLogger(__name__)
 
 class OrderService(WorkshopBaseService):
     """Servicio para gestionar órdenes de mantención."""
+    
+    # Keywords para identificar estados de finalización
+    COMPLETION_KEYWORDS: Set[str] = {'cancel', 'termin', 'final', 'complet', 'cerrad'}
+    
+    @staticmethod
+    def _convert_decimal_to_float(value: Any) -> Any:
+        """
+        Convierte un valor Decimal a float para serialización JSON.
+        
+        Args:
+            value: Valor que puede ser Decimal, float, int, etc.
+            
+        Returns:
+            float si era Decimal, el valor original en caso contrario.
+        """
+        if isinstance(value, Decimal):
+            return float(value)
+        return value
+    
+    @staticmethod
+    def is_completion_status(status_name: str) -> bool:
+        """
+        Verifica si un nombre de estado indica finalización de orden.
+        
+        Args:
+            status_name: Nombre del estado.
+            
+        Returns:
+            True si el estado indica finalización, False en caso contrario.
+        """
+        if not status_name:
+            return False
+        
+        status_lower = status_name.lower()
+        return any(keyword in status_lower for keyword in OrderService.COMPLETION_KEYWORDS)
+    
+    @staticmethod
+    def is_order_completed(order: Dict[str, Any]) -> bool:
+        """
+        Verifica si una orden está completada/finalizada.
+        
+        Una orden se considera completada si:
+        - Su estado contiene keywords de finalización (terminada, finalizada, etc.)
+        - O tiene fecha de salida definida
+        
+        Args:
+            order: Diccionario con información de la orden.
+            
+        Returns:
+            True si la orden está completada, False en caso contrario.
+        """
+        if not order:
+            return False
+        
+        # Verificar por nombre de estado
+        order_status = order.get('order_status') or {}
+        status_name = order_status.get('name', '')
+        
+        if OrderService.is_completion_status(status_name):
+            return True
+        
+        # Verificar por fecha de salida
+        exit_date = order.get('exit_date')
+        if exit_date:
+            return True
+        
+        return False
     
     @staticmethod
     def get_all_orders(workshop_id: int, filters: Dict[str, Any] = None):
@@ -170,7 +238,6 @@ class OrderService(WorkshopBaseService):
             
             orders = WorkshopBaseService._execute_query(query, "get_active_orders_for_vehicles")
             active_map: Dict[int, Dict[str, Any]] = {}
-            inactive_keywords: Set[str] = {'cancel', 'termin', 'final', 'complet'}
             
             for order in orders:
                 vehicle_id = order.get('vehicle_id')
@@ -178,11 +245,12 @@ class OrderService(WorkshopBaseService):
                     continue
                 
                 status_name = (order.get('order_status') or {}).get('name', '') or ''
-                status_lower = status_name.lower()
-                has_inactive_keyword = any(keyword in status_lower for keyword in inactive_keywords)
                 exit_date = order.get('exit_date')
                 
-                if exit_date is None and not has_inactive_keyword:
+                # Usar el método centralizado para verificar si está completada
+                is_completed = OrderService.is_completion_status(status_name) or exit_date is not None
+                
+                if not is_completed:
                     active_map[vehicle_id] = {
                         'order_id': order.get('id'),
                         'status_name': status_name
@@ -217,6 +285,12 @@ class OrderService(WorkshopBaseService):
         client = WorkshopBaseService.get_client()
         
         try:
+            # Verificar que la orden no esté completada antes de actualizar
+            order = OrderService.get_order(order_id, workshop_id)
+            if order and OrderService.is_order_completed(order):
+                logger.warning(f"⚠️ Intento de actualizar orden completada {order_id}")
+                return False
+            
             result = client.table("maintenance_order") \
                 .update(data) \
                 .eq("id", order_id) \
@@ -269,11 +343,15 @@ class OrderService(WorkshopBaseService):
         """
         client = WorkshopBaseService.get_client()
         
+        # Convertir Decimal a float para evitar problemas de serialización JSON
+        cost = data.get('cost', 0)
+        cost = OrderService._convert_decimal_to_float(cost)
+        
         task_data = {
             'maintenance_order_id': order_id,
             'task_type_id': data['task_type_id'],
             'description': data.get('description', ''),
-            'cost': data.get('cost', 0)
+            'cost': cost
         }
         
         try:
@@ -375,6 +453,8 @@ class OrderService(WorkshopBaseService):
                 return None
             
             current_cost = inventory.data.get('current_cost', 0)
+            # Convertir Decimal a float si es necesario (puede venir de la BD como Decimal)
+            current_cost = OrderService._convert_decimal_to_float(current_cost)
             available_quantity = inventory.data.get('quantity', 0)
             
             # Verificar stock disponible
