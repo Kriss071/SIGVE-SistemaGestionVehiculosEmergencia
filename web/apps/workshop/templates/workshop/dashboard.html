@@ -3,6 +3,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/workshop.css' %}">
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -26,9 +27,13 @@
                 </div>
             </div>
             <div class="card-footer bg-transparent border-top border-white border-opacity-25">
-                <a href="{% url 'workshop:orders_list' %}?status=en_taller" class="text-white text-decoration-none small">
+                {% if status_id_en_taller %}
+                <a href="{% url 'workshop:orders_list' %}?status_id={{ status_id_en_taller }}" class="text-white text-decoration-none small">
                     Ver todas <i class="bi bi-arrow-right"></i>
                 </a>
+                {% else %}
+                <span class="text-white small">Ver todas</span>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -45,9 +50,13 @@
                 </div>
             </div>
             <div class="card-footer bg-transparent border-top border-white border-opacity-25">
-                <a href="{% url 'workshop:orders_list' %}?status=pendiente" class="text-white text-decoration-none small">
+                {% if status_id_pendiente %}
+                <a href="{% url 'workshop:orders_list' %}?status_id={{ status_id_pendiente }}" class="text-white text-decoration-none small">
                     Ver todas <i class="bi bi-arrow-right"></i>
                 </a>
+                {% else %}
+                <span class="text-white small">Ver todas</span>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -64,7 +73,13 @@
                 </div>
             </div>
             <div class="card-footer bg-transparent border-top border-white border-opacity-25">
+                {% if status_id_espera_repuesto %}
+                <a href="{% url 'workshop:orders_list' %}?status_id={{ status_id_espera_repuesto }}" class="text-white text-decoration-none small">
+                    Ver todas <i class="bi bi-arrow-right"></i>
+                </a>
+                {% else %}
                 <span class="text-white small">Órdenes en pausa</span>
+                {% endif %}
             </div>
         </div>
     </div>

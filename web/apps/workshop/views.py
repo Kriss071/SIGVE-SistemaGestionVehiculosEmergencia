@@ -54,6 +54,13 @@ def dashboard(request):
     # Obtener solicitudes pendientes
     context['pending_requests_count'] = RequestService.get_pending_requests_count(workshop_id)
     
+    # Obtener IDs de estados de orden para los links del dashboard
+    order_statuses = VehicleService.get_order_statuses()
+    status_id_map = {status['name']: status['id'] for status in order_statuses}
+    context['status_id_en_taller'] = status_id_map.get('En Taller')
+    context['status_id_pendiente'] = status_id_map.get('Pendiente')
+    context['status_id_espera_repuesto'] = status_id_map.get('En Espera de Repuestos')
+    
     return render(request, 'workshop/dashboard.html', context)
 
 
