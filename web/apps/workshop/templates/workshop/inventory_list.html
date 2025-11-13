@@ -1,6 +1,10 @@
 {% extends 'workshop/base.html' %}
 {% load static %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/inventory_list.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-12">
@@ -36,12 +40,12 @@
                 </thead>
                 <tbody>
                     {% for item in inventory %}
-                    <tr class="{% if item.quantity < 5 %}table-warning{% endif %}">
+                    <tr class="{% if item.quantity < 5 %}stock-critical{% elif item.quantity < 10 %}stock-low{% endif %}">
                         <td><code>{{ item.spare_part.sku }}</code></td>
                         <td><strong>{{ item.spare_part.name }}</strong></td>
                         <td>{{ item.spare_part.brand|default:"—" }}</td>
                         <td>
-                            <span class="badge {% if item.quantity < 5 %}bg-danger{% elif item.quantity < 10 %}bg-warning{% else %}bg-success{% endif %}">
+                            <span class="badge stock-badge {% if item.quantity < 5 %}bg-danger{% elif item.quantity < 10 %}bg-warning{% else %}bg-success{% endif %}">
                                 {{ item.quantity }} unidades
                             </span>
                         </td>
@@ -50,12 +54,12 @@
                         <td>{{ item.location|default:"—" }}</td>
                         <td class="text-end">
                             <button type="button" class="btn btn-sm btn-outline-primary" 
-                                    onclick="openUpdateModal({{ item.id }}, {{ item.quantity }}, {{ item.current_cost }})">
+                                    onclick="openUpdateModal({{ item.id }}, {{ item.quantity }}, {{ item.current_cost }}, {{ item.supplier.id|default:'null' }}, '{{ item.location|default:""|escapejs }}', '{{ item.workshop_sku|default:""|escapejs }}')">
                                 <i class="bi bi-pencil"></i> Editar
                             </button>
                             <form method="post" action="{% url 'workshop:inventory_delete' item.id %}" 
                                   style="display:inline;" 
-                                  onsubmit="return confirm('¿Eliminar este repuesto del inventario?')">
+                                  onsubmit="return confirm('¿Eliminar este repuesto del inventario? Esta acción no se puede deshacer.')">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                     <i class="bi bi-trash"></i>
@@ -68,7 +72,7 @@
             </table>
         </div>
         {% else %}
-        <div class="text-center py-5">
+        <div class="text-center empty-inventory">
             <i class="bi bi-inbox display-1 text-muted"></i>
             <p class="text-muted mt-3">No hay repuestos en el inventario</p>
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addInventoryModal">
@@ -92,13 +96,23 @@
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-12">
-                            <label class="form-label">Repuesto del Catálogo Maestro</label>
-                            <select name="spare_part_id" class="form-select" required>
-                                <option value="">Selecciona un repuesto</option>
-                                {% for part in spare_parts %}
-                                <option value="{{ part.id }}">{{ part.sku }} - {{ part.name }} ({{ part.brand|default:"Sin marca" }})</option>
-                                {% endfor %}
-                            </select>
+                            <label class="form-label">Repuesto del Catálogo Maestro <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <select name="spare_part_id" id="sparePartSelect" class="form-select" required>
+                                    <option value="">Selecciona un repuesto</option>
+                                    {% for part in spare_parts %}
+                                    <option value="{{ part.id }}" data-sku="{{ part.sku }}" data-name="{{ part.name }}" data-brand="{{ part.brand|default:'' }}">
+                                        {{ part.sku }} - {{ part.name }} {% if part.brand %}({{ part.brand }}){% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" class="btn btn-outline-primary" onclick="openRequestSparePartModal()" title="Solicitar nuevo repuesto al catálogo maestro">
+                                    <i class="bi bi-envelope-plus"></i> Solicitar Repuesto
+                                </button>
+                            </div>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> Busca por SKU, nombre o marca. Si no encuentras el repuesto, puedes solicitar que se agregue al catálogo maestro.
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Cantidad</label>
@@ -138,56 +152,64 @@
 
 <!-- Modal: Actualizar Inventario -->
 <div class="modal fade" id="updateInventoryModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Actualizar Stock/Costo</h5>
+                <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Actualizar Repuesto del Inventario</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="updateInventoryForm" method="post">
+            <form id="updateInventoryForm" method="post" data-update-url-base="{% url 'workshop:inventory_list' %}" action="">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Cantidad</label>
-                        <input type="number" name="quantity" id="updateQuantity" class="form-control" min="0" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Costo Unitario (CLP)</label>
-                        <input type="number" name="current_cost" id="updateCost" class="form-control" min="0" step="0.01" required>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Cantidad <span class="text-danger">*</span></label>
+                            <input type="number" name="quantity" id="updateQuantity" class="form-control" min="0" required>
+                            <div class="form-text">Cantidad actual en stock</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Costo Unitario (CLP) <span class="text-danger">*</span></label>
+                            <input type="number" name="current_cost" id="updateCost" class="form-control" min="0" step="0.01" required>
+                            <div class="form-text">Costo de compra por unidad</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Proveedor</label>
+                            <select name="supplier_id" id="updateSupplier" class="form-select">
+                                <option value="">Sin proveedor</option>
+                                {% for supplier in suppliers %}
+                                <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Ubicación en Bodega</label>
+                            <input type="text" name="location" id="updateLocation" class="form-control" placeholder="Ej: Estante A-3">
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">SKU Interno del Taller</label>
+                            <input type="text" name="workshop_sku" id="updateWorkshopSku" class="form-control" placeholder="Código interno (opcional)">
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Actualizar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Actualizar
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
+<!-- Modal para Crear Solicitud (para solicitar repuesto maestro) -->
+{% include 'workshop/modals/request_modal.html' %}
+
 {% endblock %}
 
 {% block extra_js %}
-<script>
-function openUpdateModal(itemId, quantity, cost) {
-    const modal = new bootstrap.Modal(document.getElementById('updateInventoryModal'));
-    const form = document.getElementById('updateInventoryForm');
-    form.action = `/workshop/inventory/${itemId}/update/`;
-    document.getElementById('updateQuantity').value = quantity;
-    document.getElementById('updateCost').value = cost;
-    modal.show();
-}
-
-// Búsqueda en la tabla
-document.getElementById('inventorySearch')?.addEventListener('keyup', function() {
-    const searchTerm = this.value.toLowerCase();
-    const rows = document.querySelectorAll('#inventoryTable tbody tr');
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-    });
-});
-</script>
+<script src="{% static 'js/requests_list.js' %}"></script>
+<script src="{% static 'js/inventory_list.js' %}"></script>
 {% endblock %}
 
 

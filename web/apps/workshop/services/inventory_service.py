@@ -104,19 +104,27 @@ class InventoryService(WorkshopBaseService):
                 .maybe_single() \
                 .execute()
             
-            if existing.data:
-                # Actualizar cantidad existente
+            logger.debug(f"🔍 Verificando existencia: workshop_id={workshop_id}, spare_part_id={spare_part_id}, existing={existing}")
+            
+            # Verificar si existe un registro (existing puede ser None o existing.data puede ser None)
+            if existing and existing.data:
+                # Actualizar cantidad existente (sumar a la existente)
                 new_quantity = existing.data['quantity'] + data.get('quantity', 0)
                 current_cost = InventoryService._convert_decimal_to_float(data.get('current_cost'))
                 update_data = {
                     'quantity': new_quantity,
                     'current_cost': current_cost,
-                    'supplier_id': data.get('supplier_id'),
-                    'location': data.get('location'),
-                    'workshop_sku': data.get('workshop_sku'),
                     'last_updated_by_user_id': user_id,
                     'updated_at': 'now()'
                 }
+                
+                # Solo actualizar campos opcionales si se proporcionan valores
+                if 'supplier_id' in data and data.get('supplier_id') is not None:
+                    update_data['supplier_id'] = data['supplier_id']
+                if 'location' in data and data.get('location') is not None:
+                    update_data['location'] = data['location']
+                if 'workshop_sku' in data and data.get('workshop_sku') is not None:
+                    update_data['workshop_sku'] = data['workshop_sku']
                 
                 result = client.table("workshop_inventory") \
                     .update(update_data) \
@@ -139,6 +147,8 @@ class InventoryService(WorkshopBaseService):
                     'last_updated_by_user_id': user_id
                 }
                 
+                logger.debug(f"➕ Creando nuevo registro de inventario: {inventory_data}")
+                
                 result = client.table("workshop_inventory").insert(inventory_data).execute()
                 
                 if result.data:
@@ -147,7 +157,13 @@ class InventoryService(WorkshopBaseService):
                 return None
                 
         except Exception as e:
-            logger.error(f"❌ Error agregando repuesto al inventario: {e}", exc_info=True)
+            error_msg = str(e)
+            # Detectar error de clave duplicada
+            if 'duplicate key value violates unique constraint' in error_msg or '23505' in error_msg:
+                logger.error(f"❌ Error de clave duplicada al agregar repuesto. Esto indica que la secuencia de auto-incremento está desincronizada. Error: {error_msg}")
+                logger.error("💡 Solución: Ejecuta en Supabase SQL Editor: SELECT setval('workshop_inventory_id_seq', (SELECT MAX(id) FROM workshop_inventory));")
+            else:
+                logger.error(f"❌ Error agregando repuesto al inventario: {error_msg}", exc_info=True)
             return None
     
     @staticmethod
@@ -177,6 +193,7 @@ class InventoryService(WorkshopBaseService):
                 update_data['quantity'] = data['quantity']
             if 'current_cost' in data:
                 update_data['current_cost'] = InventoryService._convert_decimal_to_float(data['current_cost'])
+            # Para campos opcionales, incluir incluso si son None (para poder limpiarlos)
             if 'supplier_id' in data:
                 update_data['supplier_id'] = data['supplier_id']
             if 'location' in data:
@@ -224,12 +241,13 @@ class InventoryService(WorkshopBaseService):
             return False
     
     @staticmethod
-    def search_spare_parts(search_term: str = None):
+    def search_spare_parts(search_term: str = None, limit: int = None):
         """
         Busca repuestos en el catálogo maestro.
         
         Args:
             search_term: Término de búsqueda (nombre, SKU o marca).
+            limit: Límite de resultados (opcional, para mejorar rendimiento).
             
         Returns:
             Lista de repuestos que coinciden.
@@ -237,6 +255,10 @@ class InventoryService(WorkshopBaseService):
         client = WorkshopBaseService.get_client()
         
         query = client.table("spare_part").select("*").order("name")
+        
+        # Aplicar límite si se especifica
+        if limit:
+            query = query.limit(limit)
         
         # Si hay término de búsqueda, filtrar
         if search_term:

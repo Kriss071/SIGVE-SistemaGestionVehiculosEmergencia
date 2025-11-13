@@ -240,7 +240,7 @@ class InventoryAddForm(forms.Form):
 
 
 class InventoryUpdateForm(forms.Form):
-    """Formulario para actualizar stock o costo de un repuesto."""
+    """Formulario para actualizar stock, costo y otros datos de un repuesto."""
     quantity = forms.IntegerField(
         label="Cantidad",
         widget=forms.NumberInput(attrs={
@@ -266,6 +266,12 @@ class InventoryUpdateForm(forms.Form):
     location = forms.CharField(
         max_length=100,
         label="Ubicación",
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    workshop_sku = forms.CharField(
+        max_length=100,
+        label="SKU Interno del Taller",
         required=False,
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )

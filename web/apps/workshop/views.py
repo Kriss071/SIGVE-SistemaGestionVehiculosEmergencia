@@ -562,7 +562,8 @@ def inventory_list(request):
         'active_page': 'inventory',
         'inventory': InventoryService.get_all_inventory(workshop_id),
         'spare_parts': InventoryService.search_spare_parts(),
-        'suppliers': SupplierService.get_all_suppliers(workshop_id)
+        'suppliers': SupplierService.get_all_suppliers(workshop_id),
+        'request_types': RequestService.get_all_request_types()
     }
     
     return render(request, 'workshop/inventory_list.html', context)
@@ -581,19 +582,32 @@ def inventory_add(request):
             'spare_part_id': form.cleaned_data['spare_part_id'],
             'quantity': form.cleaned_data['quantity'],
             'current_cost': form.cleaned_data['current_cost'],
-            'supplier_id': form.cleaned_data.get('supplier_id'),
-            'location': form.cleaned_data.get('location'),
-            'workshop_sku': form.cleaned_data.get('workshop_sku')
+            'supplier_id': form.cleaned_data.get('supplier_id') or None,
+            'location': form.cleaned_data.get('location') or None,
+            'workshop_sku': form.cleaned_data.get('workshop_sku') or None
         }
+        
+        # Validar que la cantidad sea positiva
+        if data['quantity'] <= 0:
+            messages.error(request, '❌ La cantidad debe ser mayor a cero.')
+            return redirect('workshop:inventory_list')
+        
+        # Validar que el costo sea positivo
+        if data['current_cost'] <= 0:
+            messages.error(request, '❌ El costo debe ser mayor a cero.')
+            return redirect('workshop:inventory_list')
         
         item = InventoryService.add_to_inventory(workshop_id, user_id, data)
         
         if item:
-            messages.success(request, '✅ Repuesto agregado al inventario.')
+            messages.success(request, '✅ Repuesto agregado al inventario correctamente.')
         else:
-            messages.error(request, '❌ Error al agregar el repuesto.')
+            # Verificar si hay un error específico de secuencia desincronizada
+            # (esto se loguea en el servicio, pero podemos dar un mensaje más amigable)
+            messages.error(request, '❌ Error al agregar el repuesto. Si el error persiste, puede ser un problema de sincronización de la base de datos. Contacta al administrador.')
     else:
-        messages.error(request, '❌ Datos inválidos.')
+        messages.error(request, '❌ Datos inválidos. Verifica los campos del formulario.')
+        logger.warning(f"Errores en formulario de agregar inventario: {form.errors}")
     
     return redirect('workshop:inventory_list')
 
@@ -601,7 +615,7 @@ def inventory_add(request):
 @require_http_methods(["POST"])
 @require_workshop_user
 def inventory_update(request, inventory_id):
-    """Actualiza stock o costo de un repuesto."""
+    """Actualiza stock, costo y otros datos de un repuesto."""
     workshop_id = request.workshop_id
     user_id = request.session.get('sb_user_id')
     
@@ -610,18 +624,21 @@ def inventory_update(request, inventory_id):
         data = {
             'quantity': form.cleaned_data['quantity'],
             'current_cost': form.cleaned_data['current_cost'],
-            'supplier_id': form.cleaned_data.get('supplier_id'),
-            'location': form.cleaned_data.get('location')
+            'supplier_id': form.cleaned_data.get('supplier_id') or None,
+            'location': form.cleaned_data.get('location') or None,
+            'workshop_sku': form.cleaned_data.get('workshop_sku') or None
         }
         
         success = InventoryService.update_inventory(inventory_id, workshop_id, user_id, data)
         
         if success:
-            messages.success(request, '✅ Inventario actualizado.')
+            messages.success(request, '✅ Inventario actualizado correctamente.')
         else:
-            messages.error(request, '❌ Error al actualizar.')
+            messages.error(request, '❌ Error al actualizar el inventario.')
     else:
-        messages.error(request, '❌ Datos inválidos.')
+        messages.error(request, '❌ Datos inválidos. Verifica los campos del formulario.')
+        # Log de errores para debugging
+        logger.warning(f"Errores en formulario de actualización de inventario: {form.errors}")
     
     return redirect('workshop:inventory_list')
 
