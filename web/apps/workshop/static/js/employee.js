@@ -22,6 +22,7 @@
         // Estado actual
         let currentMode = 'create'; // 'create', 'view', 'edit'
         let currentEmployeeId = null;
+        let currentEmployeeData = null; // Guardar datos del empleado actual
         let modalInstance = null;
         
         /**
@@ -71,6 +72,7 @@
             form.action = '/taller/employees/create/';
             form.reset();
             document.getElementById('employeeId').value = '';
+            currentEmployeeData = null;
             setFieldsEnabled(true);
             showPasswordFields(true);
             renderButtons('create');
@@ -120,6 +122,17 @@
             titleSpan.textContent = 'Ver Empleado';
             renderButtons('view');
             showPasswordFields(false);
+            
+            // Actualizar botón de estado si hay datos del empleado
+            if (currentEmployeeData) {
+                updateStatusButton(
+                    currentEmployeeData.is_active,
+                    currentEmployeeData.id,
+                    currentEmployeeData.first_name,
+                    currentEmployeeData.last_name
+                );
+            }
+            
             setTimeout(() => setFieldsEnabled(false), 0);
         }
         
@@ -129,6 +142,16 @@
         function setupEditMode() {
             titleSpan.textContent = 'Editar Empleado';
             form.action = `/taller/employees/${currentEmployeeId}/update/`;
+            
+            // Actualizar botón de estado si hay datos del empleado
+            if (currentEmployeeData) {
+                updateStatusButton(
+                    currentEmployeeData.is_active,
+                    currentEmployeeData.id,
+                    currentEmployeeData.first_name,
+                    currentEmployeeData.last_name
+                );
+            }
             renderButtons('edit');
             showPasswordFields(false);
             setTimeout(() => setFieldsEnabled(true), 0);
@@ -140,6 +163,16 @@
         function switchToEditMode() {
             currentMode = 'edit';
             setupEditMode();
+            
+            // Asegurar que el botón de estado se actualice
+            if (currentEmployeeData) {
+                updateStatusButton(
+                    currentEmployeeData.is_active,
+                    currentEmployeeData.id,
+                    currentEmployeeData.first_name,
+                    currentEmployeeData.last_name
+                );
+            }
         }
         
         /**
@@ -155,6 +188,8 @@
          * Llena el formulario con los datos del empleado
          */
         function populateForm(employee) {
+            currentEmployeeData = employee; // Guardar datos del empleado
+            
             document.getElementById('employeeId').value = employee.id || '';
             document.getElementById('id_first_name').value = employee.first_name || '';
             document.getElementById('id_last_name').value = employee.last_name || '';
@@ -170,11 +205,8 @@
                 emailField.disabled = true;
             }
             
-            // Checkbox is_active
-            const isActiveCheckbox = document.getElementById('id_is_active');
-            if (isActiveCheckbox) {
-                isActiveCheckbox.checked = employee.is_active;
-            }
+            // Actualizar botón de estado
+            updateStatusButton(employee.is_active, employee.id, employee.first_name, employee.last_name);
         }
         
         /**
@@ -188,10 +220,45 @@
                         field.removeAttribute('readonly');
                         field.removeAttribute('disabled');
                     } else {
-                        field.setAttribute('readonly', 'readonly');
+                        // Para inputs y textareas usar readonly, para selects usar disabled
+                        if (field.tagName === 'SELECT') {
+                            field.setAttribute('disabled', 'disabled');
+                        } else {
+                            field.setAttribute('readonly', 'readonly');
+                        }
                     }
                 }
             });
+        }
+        
+        /**
+         * Actualiza el botón de estado (activo/inactivo)
+         */
+        function updateStatusButton(isActive, employeeId, firstName, lastName) {
+            const statusButtonContainer = document.getElementById('statusButtonContainer');
+            if (!statusButtonContainer) return;
+            
+            const employeeName = `${firstName} ${lastName}`;
+            const escapedName = employeeName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            
+            if (isActive) {
+                statusButtonContainer.innerHTML = `
+                    <button type="button" class="btn btn-warning" 
+                            onclick="DeactivateEmployeeModal.open('${employeeId}', '${escapedName}')">
+                        <i class="bi bi-pause-circle"></i> Desactivar
+                    </button>
+                `;
+            } else {
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+                statusButtonContainer.innerHTML = `
+                    <form method="post" action="/taller/employees/${employeeId}/activate/" style="display:inline-block; margin:0;">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-play-circle"></i> Activar
+                        </button>
+                    </form>
+                `;
+            }
         }
         
         /**
@@ -225,10 +292,21 @@
          * Renderiza los botones del footer según el modo
          */
         function renderButtons(mode) {
-            footer.innerHTML = '';
+            const statusButtonContainer = document.getElementById('statusButtonContainer');
             
+            // Limpiar solo los botones de acción, mantener el contenedor de estado
+            const actionButtons = footer.querySelectorAll('button:not(#statusButtonContainer button)');
+            actionButtons.forEach(btn => btn.remove());
+            
+            // Limpiar el contenedor de estado si es modo crear
+            if (mode === 'create' && statusButtonContainer) {
+                statusButtonContainer.innerHTML = '';
+            }
+            
+            // Agregar los botones según el modo
             if (mode === 'view') {
                 footer.innerHTML = `
+                    <div id="statusButtonContainer" class="me-auto"></div>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-lg"></i> Cerrar
                     </button>
@@ -238,6 +316,7 @@
                 `;
             } else if (mode === 'edit') {
                 footer.innerHTML = `
+                    <div id="statusButtonContainer" class="me-auto"></div>
                     <button type="button" class="btn btn-secondary" onclick="EmployeeModal.cancelEdit()">
                         <i class="bi bi-x-lg"></i> Cancelar
                     </button>
@@ -247,6 +326,7 @@
                 `;
             } else if (mode === 'create') {
                 footer.innerHTML = `
+                    <div id="statusButtonContainer" class="me-auto" style="display:none;"></div>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-lg"></i> Cancelar
                     </button>
@@ -254,6 +334,16 @@
                         <i class="bi bi-check-lg"></i> Crear Empleado
                     </button>
                 `;
+            }
+            
+            // Actualizar el botón de estado si hay datos del empleado y no es modo crear
+            if (mode !== 'create' && currentEmployeeData) {
+                updateStatusButton(
+                    currentEmployeeData.is_active,
+                    currentEmployeeData.id,
+                    currentEmployeeData.first_name,
+                    currentEmployeeData.last_name
+                );
             }
         }
         
@@ -361,6 +451,7 @@
             form.classList.remove('was-validated');
             currentMode = 'create';
             currentEmployeeId = null;
+            currentEmployeeData = null;
             showPasswordFields(true);
         }
         

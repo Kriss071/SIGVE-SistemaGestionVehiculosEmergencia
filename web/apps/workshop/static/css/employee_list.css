@@ -2,29 +2,45 @@
  * SIGVE - Estilos para el Listado de Empleados del Taller
  */
 
-/* Filas clickeables */
-.employees-table tbody tr {
-    cursor: pointer;
+/* Filas clickeables - Aplicar a todas las tablas con clase employees-table */
+table.employees-table tbody tr {
+    cursor: pointer !important;
     transition: background-color 0.2s ease;
 }
 
-.employees-table.table-hover tbody tr:hover,
-.employees-table tbody tr:hover {
+table.employees-table.table-hover tbody tr:hover,
+table.employees-table tbody tr:hover {
     background-color: #f8f9fa !important;
 }
 
 /* Prevenir que los botones activen el click de la fila */
-.employees-table tbody tr td:last-child {
-    cursor: default;
+table.employees-table tbody tr td:last-child {
+    cursor: default !important;
 }
 
-.employees-table tbody tr td:last-child:hover {
+table.employees-table tbody tr td:last-child:hover {
     background-color: transparent !important;
 }
 
-.employees-table tbody tr td:last-child button,
-.employees-table tbody tr td:last-child form {
-    cursor: pointer;
+table.employees-table tbody tr td:last-child button,
+table.employees-table tbody tr td:last-child form,
+table.employees-table tbody tr td:last-child .btn {
+    cursor: pointer !important;
+}
+
+/* Asegurar que el hover funcione correctamente */
+table.employees-table tbody tr:not(:hover) td:last-child {
+    background-color: transparent;
+}
+
+/* Prevenir que el click se propague desde los botones */
+table.employees-table tbody tr td:last-child * {
+    pointer-events: auto;
+}
+
+/* Asegurar que el click en la fila funcione */
+table.employees-table tbody tr {
+    position: relative;
 }
 
 /* Estilos para badges de empleados */
