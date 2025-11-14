@@ -1,10 +1,19 @@
 {% extends 'workshop/base.html' %}
 {% load static %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/employee_list.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-12">
-        <h1 class="mb-4"><i class="bi bi-people"></i> Empleados del Taller</h1>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-people"></i> Empleados del Taller</h1>
+            <button type="button" class="btn btn-primary" onclick="EmployeeModal.open('create')">
+                <i class="bi bi-plus-circle"></i> Nuevo Empleado
+            </button>
+        </div>
     </div>
 </div>
 
@@ -12,7 +21,7 @@
     <div class="card-body">
         {% if employees %}
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover employees-table">
                 <thead>
                     <tr>
                         <th>Nombre</th>
@@ -25,7 +34,7 @@
                 </thead>
                 <tbody>
                     {% for employee in employees %}
-                    <tr>
+                    <tr onclick="EmployeeModal.open('view', '{{ employee.id }}')">
                         <td><strong>{{ employee.first_name }} {{ employee.last_name }}</strong></td>
                         <td>{{ employee.rut|default:"—" }}</td>
                         <td><span class="badge bg-primary">{{ employee.role.name }}</span></td>
@@ -37,24 +46,23 @@
                                 <span class="badge bg-danger">Inactivo</span>
                             {% endif %}
                         </td>
-                        <td class="text-end">
+                        <td class="text-end employee-actions" onclick="event.stopPropagation()">
                             <button type="button" class="btn btn-sm btn-outline-primary" 
-                                    onclick="openEditModal('{{ employee.id }}', '{{ employee.first_name|escapejs }}', '{{ employee.last_name|escapejs }}', '{{ employee.rut|default:''|escapejs }}', '{{ employee.phone|default:''|escapejs }}', {{ employee.role.id }}, {{ employee.is_active|lower }})">
+                                    onclick="EmployeeModal.open('edit', '{{ employee.id }}')"
+                                    title="Editar">
                                 <i class="bi bi-pencil"></i>
                             </button>
                             {% if employee.is_active %}
-                            <form method="post" action="{% url 'workshop:employee_deactivate' employee.id %}" 
-                                  style="display:inline;" 
-                                  onsubmit="return confirm('¿Desactivar empleado?')">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-warning">
-                                    <i class="bi bi-pause-circle"></i>
-                                </button>
-                            </form>
+                            <button type="button" class="btn btn-sm btn-outline-warning"
+                                    onclick="DeactivateEmployeeModal.open('{{ employee.id }}', '{{ employee.first_name }} {{ employee.last_name }}')"
+                                    title="Desactivar">
+                                <i class="bi bi-pause-circle"></i>
+                            </button>
                             {% else %}
-                            <form method="post" action="{% url 'workshop:employee_activate' employee.id %}" style="display:inline;">
+                            <form method="post" action="{% url 'workshop:employee_activate' employee.id %}" 
+                                  style="display:inline;">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-success">
+                                <button type="submit" class="btn btn-sm btn-outline-success" title="Activar">
                                     <i class="bi bi-play-circle"></i>
                                 </button>
                             </form>
@@ -69,54 +77,149 @@
         <div class="text-center py-5">
             <i class="bi bi-people display-1 text-muted"></i>
             <p class="text-muted mt-3">No hay empleados registrados</p>
+            <button type="button" class="btn btn-primary mt-3" onclick="EmployeeModal.open('create')">
+                <i class="bi bi-plus-circle"></i> Crear Primer Empleado
+            </button>
         </div>
         {% endif %}
     </div>
 </div>
 
-<!-- Modal: Editar Empleado -->
-<div class="modal fade" id="editEmployeeModal" tabindex="-1">
-    <div class="modal-dialog">
+<!-- Modal: Gestionar Empleado (Crear/Ver/Editar) -->
+<div class="modal fade" id="employeeModal" tabindex="-1" aria-labelledby="employeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Editar Empleado</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="employeeModalLabel">
+                    <i class="bi bi-person"></i> <span id="employeeModalTitle">Empleado</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-            <form id="editEmployeeForm" method="post">
+            
+            <!-- Indicador de carga -->
+            <div id="employeeModalLoading" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="text-muted mt-3">Cargando datos del empleado...</p>
+            </div>
+            
+            <!-- Formulario -->
+            <form id="employeeForm" method="post" novalidate>
                 {% csrf_token %}
+                <input type="hidden" id="employeeId" name="employee_id">
+                
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Nombre</label>
-                        <input type="text" name="first_name" id="editFirstName" class="form-control" required>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_first_name" class="form-label">Nombre <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="id_first_name" name="first_name" required>
+                            <div class="invalid-feedback">Por favor ingresa el nombre.</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="id_last_name" class="form-label">Apellido <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="id_last_name" name="last_name" required>
+                            <div class="invalid-feedback">Por favor ingresa el apellido.</div>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Apellido</label>
-                        <input type="text" name="last_name" id="editLastName" class="form-control" required>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_rut" class="form-label">RUT</label>
+                            <input type="text" class="form-control" id="id_rut" name="rut" placeholder="12345678-9">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="id_phone" class="form-label">Teléfono</label>
+                            <input type="text" class="form-control" id="id_phone" name="phone" placeholder="+56912345678">
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">RUT</label>
-                        <input type="text" name="rut" id="editRut" class="form-control">
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_role_id" class="form-label">Rol <span class="text-danger">*</span></label>
+                            <select class="form-select" id="id_role_id" name="role_id" required>
+                                <option value="">Seleccionar rol...</option>
+                                {% for role in roles %}
+                                <option value="{{ role.id }}">{{ role.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">Por favor selecciona un rol.</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="id_is_active" name="is_active" value="true">
+                                <label class="form-check-label" for="id_is_active">
+                                    Empleado Activo
+                                </label>
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Teléfono</label>
-                        <input type="text" name="phone" id="editPhone" class="form-control">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Rol</label>
-                        <select name="role_id" id="editRole" class="form-select" required>
-                            {% for role in roles %}
-                            <option value="{{ role.id }}">{{ role.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" name="is_active" id="editIsActive" class="form-check-input">
-                        <label class="form-check-label" for="editIsActive">Activo</label>
+                    
+                    <!-- Campos de Email y Contraseña (solo para crear) -->
+                    <div id="passwordFieldsGroup">
+                        <h6><i class="bi bi-shield-lock"></i> Credenciales de Acceso</h6>
+                        
+                        <div class="mb-3">
+                            <label for="id_email" class="form-label">Correo Electrónico <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="id_email" name="email" placeholder="empleado@ejemplo.cl" required>
+                            <div class="invalid-feedback">Por favor ingresa un correo electrónico válido.</div>
+                            <small class="form-text text-muted">
+                                El empleado usará este correo para iniciar sesión en el sistema.
+                            </small>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_password" class="form-label">Contraseña <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="id_password" name="password" minlength="6" required>
+                                <div class="invalid-feedback">La contraseña debe tener al menos 6 caracteres.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_password_confirm" class="form-label">Confirmar Contraseña <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="id_password_confirm" name="password_confirm" minlength="6" required>
+                                <div class="invalid-feedback">Las contraseñas deben coincidir.</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
+                
+                <div class="modal-footer" id="employeeModalFooter">
+                    <!-- Los botones se generan dinámicamente según el modo -->
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Confirmar Desactivación -->
+<div class="modal fade" id="deactivateEmployeeModal" tabindex="-1" aria-labelledby="deactivateEmployeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="deactivateEmployeeModalLabel">
+                    <i class="bi bi-exclamation-triangle"></i> Confirmar Desactivación
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form id="deactivateEmployeeForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>¿Estás seguro que deseas desactivar al empleado <strong id="deactivateEmployeeName"></strong>?</p>
+                    <p class="text-muted mb-0">
+                        <small>
+                            <i class="bi bi-info-circle"></i> 
+                            El empleado no podrá iniciar sesión pero sus datos se conservarán. 
+                            Puedes reactivarlo más tarde si es necesario.
+                        </small>
+                    </p>
+                </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-pause-circle"></i> Desactivar Empleado
+                    </button>
                 </div>
             </form>
         </div>
@@ -126,22 +229,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-function openEditModal(id, firstName, lastName, rut, phone, roleId, isActive) {
-    const modal = new bootstrap.Modal(document.getElementById('editEmployeeModal'));
-    const form = document.getElementById('editEmployeeForm');
-    form.action = `/workshop/employees/${id}/update/`;
-    document.getElementById('editFirstName').value = firstName;
-    document.getElementById('editLastName').value = lastName;
-    document.getElementById('editRut').value = rut;
-    document.getElementById('editPhone').value = phone;
-    document.getElementById('editRole').value = roleId;
-    document.getElementById('editIsActive').checked = isActive;
-    modal.show();
-}
-</script>
+<script src="{% static 'js/employee.js' %}"></script>
 {% endblock %}
-
-
-
-

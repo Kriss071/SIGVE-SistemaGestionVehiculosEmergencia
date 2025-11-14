@@ -362,6 +362,68 @@ class EmployeeForm(forms.Form):
     )
 
 
+class EmployeeCreateForm(forms.Form):
+    """Formulario para crear un nuevo empleado del taller."""
+    email = forms.EmailField(
+        label="Correo Electrónico",
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'empleado@ejemplo.cl'
+        })
+    )
+    password = forms.CharField(
+        label="Contraseña",
+        min_length=6,
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+    password_confirm = forms.CharField(
+        label="Confirmar Contraseña",
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+    first_name = forms.CharField(
+        max_length=255,
+        label="Nombre",
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    last_name = forms.CharField(
+        max_length=255,
+        label="Apellido",
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    rut = forms.CharField(
+        max_length=20,
+        label="RUT",
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '12345678-9'
+        })
+    )
+    phone = forms.CharField(
+        max_length=20,
+        label="Teléfono",
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '+56912345678'
+        })
+    )
+    role_id = forms.IntegerField(
+        label="Rol",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get('password')
+        password_confirm = cleaned_data.get('password_confirm')
+        
+        if password and password_confirm and password != password_confirm:
+            raise forms.ValidationError('Las contraseñas no coinciden.')
+        
+        return cleaned_data
+
+
 class DataRequestForm(forms.Form):
     """Formulario para crear una solicitud a SIGVE."""
     request_type_id = forms.IntegerField(

@@ -1,0 +1,80 @@
+/**
+ * SIGVE - Estilos para el Listado de Empleados del Taller
+ */
+
+/* Filas clickeables */
+.employees-table tbody tr {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.employees-table.table-hover tbody tr:hover,
+.employees-table tbody tr:hover {
+    background-color: #f8f9fa !important;
+}
+
+/* Prevenir que los botones activen el click de la fila */
+.employees-table tbody tr td:last-child {
+    cursor: default;
+}
+
+.employees-table tbody tr td:last-child:hover {
+    background-color: transparent !important;
+}
+
+.employees-table tbody tr td:last-child button,
+.employees-table tbody tr td:last-child form {
+    cursor: pointer;
+}
+
+/* Estilos para badges de empleados */
+.employee-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.employee-badge-active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.employee-badge-inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Acciones de empleados */
+.employee-actions {
+    white-space: nowrap;
+}
+
+.employee-actions .btn {
+    margin-left: 0.25rem;
+}
+
+/* Estilos para el modal de empleados */
+#passwordFieldsGroup {
+    border-top: 1px solid #dee2e6;
+    padding-top: 1rem;
+    margin-top: 1rem;
+}
+
+#passwordFieldsGroup h6 {
+    color: #6c757d;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+}
+
+/* Loading spinner del modal */
+#employeeModalLoading {
+    text-align: center;
+    padding: 3rem;
+}
+
+#employeeModalLoading .spinner-border {
+    width: 3rem;
+    height: 3rem;
+}

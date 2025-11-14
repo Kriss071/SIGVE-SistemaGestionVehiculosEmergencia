@@ -18,7 +18,8 @@ from apps.sigve.services.workshop_service import WorkshopService
 from .forms import (
     VehicleSearchForm, VehicleCreateForm, MaintenanceOrderForm,
     MaintenanceTaskForm, TaskPartForm, InventoryAddForm,
-    InventoryUpdateForm, SupplierForm, EmployeeForm, DataRequestForm
+    InventoryUpdateForm, SupplierForm, EmployeeForm, EmployeeCreateForm,
+    DataRequestForm
 )
 
 logger = logging.getLogger(__name__)
@@ -827,6 +828,96 @@ def employee_activate(request, user_id):
         messages.error(request, '❌ Error al activar.')
     
     return redirect('workshop:employees_list')
+
+
+@require_http_methods(["POST"])
+@require_workshop_user
+@require_admin_taller
+def employee_create(request):
+    """Crea un nuevo empleado del taller (solo Admin Taller)."""
+    workshop_id = request.workshop_id
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    form = EmployeeCreateForm(request.POST)
+    
+    if form.is_valid():
+        cleaned_data = form.cleaned_data
+        
+        # Validar que el rol es Admin Taller o Mecánico
+        role_id = cleaned_data['role_id']
+        available_roles = EmployeeService.get_available_roles()
+        role_ids = [role['id'] for role in available_roles]
+        
+        if role_id not in role_ids:
+            error_msg = 'Rol no válido. Solo se pueden crear Admin Taller o Mecánicos.'
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'errors': {'role_id': [error_msg]}
+                }, status=400)
+            messages.error(request, f'❌ {error_msg}')
+            return redirect('workshop:employees_list')
+        
+        # Crear el empleado
+        result = EmployeeService.create_employee(
+            email=cleaned_data['email'],
+            password=cleaned_data['password'],
+            first_name=cleaned_data['first_name'],
+            last_name=cleaned_data['last_name'],
+            role_id=role_id,
+            workshop_id=workshop_id,
+            rut=cleaned_data.get('rut'),
+            phone=cleaned_data.get('phone')
+        )
+        
+        if result['success']:
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Empleado creado correctamente.',
+                    'reload_page': True
+                })
+            messages.success(request, '✅ Empleado creado correctamente.')
+            return redirect('workshop:employees_list')
+        
+        error_msg = result.get('error', 'Error al crear el empleado.')
+        if is_ajax:
+            return JsonResponse({
+                'success': False,
+                'errors': {'general': [error_msg]}
+            }, status=400)
+        messages.error(request, f'❌ {error_msg}')
+        return redirect('workshop:employees_list')
+    
+    # Formulario inválido
+    if is_ajax:
+        return JsonResponse({
+            'success': False,
+            'errors': form.errors
+        }, status=400)
+    messages.error(request, '❌ Datos inválidos. Verifica los campos del formulario.')
+    return redirect('workshop:employees_list')
+
+
+@require_http_methods(["GET"])
+@require_workshop_user
+@require_admin_taller
+def employee_detail_api(request, user_id):
+    """API para obtener los datos de un empleado (solo Admin Taller)."""
+    workshop_id = request.workshop_id
+    
+    employee = EmployeeService.get_employee(user_id, workshop_id)
+    
+    if not employee:
+        return JsonResponse({
+            'success': False,
+            'error': 'Empleado no encontrado.'
+        }, status=404)
+    
+    return JsonResponse({
+        'success': True,
+        'employee': employee
+    })
 
 
 # ===== GESTIÓN DE SOLICITUDES A SIGVE =====

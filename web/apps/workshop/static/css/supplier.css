@@ -1,0 +1,23 @@
+/**
+ * SIGVE - Estilos para el Listado de Proveedores del Taller
+ */
+
+/* Filas clickeables */
+.suppliers-table tbody tr {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.suppliers-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Prevenir que los botones activen el click de la fila */
+.suppliers-table tbody tr td:last-child {
+    cursor: default;
+}
+
+.suppliers-table tbody tr td:last-child:hover {
+    background-color: transparent;
+}
+

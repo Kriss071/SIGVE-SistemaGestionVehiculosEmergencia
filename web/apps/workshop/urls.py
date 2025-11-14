@@ -41,6 +41,8 @@ urlpatterns = [
     
     # Gestión de Empleados (Solo Admin Taller)
     path('employees/', views.employees_list, name='employees_list'),
+    path('employees/create/', views.employee_create, name='employee_create'),
+    path('api/employees/<str:user_id>/', views.employee_detail_api, name='employee_detail_api'),
     path('employees/<str:user_id>/update/', views.employee_update, name='employee_update'),
     path('employees/<str:user_id>/deactivate/', views.employee_deactivate, name='employee_deactivate'),
     path('employees/<str:user_id>/activate/', views.employee_activate, name='employee_activate'),
