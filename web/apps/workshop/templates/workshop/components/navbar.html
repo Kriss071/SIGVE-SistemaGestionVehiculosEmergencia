@@ -28,19 +28,19 @@
                 <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
                        href="{% url 'workshop:dashboard' %}">
-                        <i class="bi bi-speedometer2"></i> Dashboard
+                        <i class="bi bi-{% if request.resolver_match.url_name == 'dashboard' %}speedometer{% else %}speedometer2{% endif %}"></i> Dashboard
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if 'orders' in request.resolver_match.url_name %}active{% endif %}" 
                        href="{% url 'workshop:orders_list' %}">
-                        <i class="bi bi-clipboard-check"></i> Órdenes de Mantención
+                        <i class="bi bi-clipboard-check{% if request.resolver_match.url_name == 'orders_list' %}-fill{% endif %}"></i> Órdenes de Mantención
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.url_name == 'inventory_list' %}active{% endif %}" 
                        href="{% url 'workshop:inventory_list' %}">
-                        <i class="bi bi-box-seam"></i> Inventario
+                        <i class="bi bi-{% if request.resolver_match.url_name == 'inventory_list' %}box-seam-fill{% else %}box-seam{% endif %}"></i> Inventario
                     </a>
                 </li>
                 <li class="nav-item">
@@ -52,7 +52,7 @@
                 <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.url_name == 'requests_list' %}active{% endif %}" 
                        href="{% url 'workshop:requests_list' %}">
-                        <i class="bi bi-envelope-paper"></i> Solicitudes
+                        <i class="bi bi-{% if request.resolver_match.url_name == 'requests_list' %}envelope-paper-fill{% else %}envelope-paper{% endif %}"></i> Solicitudes
                     </a>
                 </li>
                 
@@ -60,7 +60,7 @@
                 <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.url_name == 'employees_list' %}active{% endif %}" 
                        href="{% url 'workshop:employees_list' %}">
-                        <i class="bi bi-people"></i> Empleados
+                        <i class="bi bi-{% if request.resolver_match.url_name == 'employees_list' %}people-fill{% else %}people{% endif %}"></i> Empleados
                     </a>
                 </li>
                 {% endif %}

@@ -2,95 +2,163 @@
  * SIGVE - Estilos para el Listado de Empleados del Taller
  */
 
-/* Filas clickeables - Aplicar a todas las tablas con clase employees-table */
-table.employees-table tbody tr {
-    cursor: pointer !important;
-    transition: background-color 0.2s ease;
+/* Tabla de empleados */
+.employees-table tbody tr {
+    cursor: pointer;
 }
 
-table.employees-table.table-hover tbody tr:hover,
-table.employees-table tbody tr:hover {
-    background-color: #f8f9fa !important;
+.employees-table tbody tr:hover {
+    background-color: #f8f9fa;
 }
 
-/* Prevenir que los botones activen el click de la fila */
-table.employees-table tbody tr td:last-child {
-    cursor: default !important;
-}
-
-table.employees-table tbody tr td:last-child:hover {
-    background-color: transparent !important;
-}
-
-table.employees-table tbody tr td:last-child button,
-table.employees-table tbody tr td:last-child form,
-table.employees-table tbody tr td:last-child .btn {
-    cursor: pointer !important;
-}
-
-/* Asegurar que el hover funcione correctamente */
-table.employees-table tbody tr:not(:hover) td:last-child {
-    background-color: transparent;
-}
-
-/* Prevenir que el click se propague desde los botones */
-table.employees-table tbody tr td:last-child * {
-    pointer-events: auto;
-}
-
-/* Asegurar que el click en la fila funcione */
-table.employees-table tbody tr {
-    position: relative;
-}
-
-/* Estilos para badges de empleados */
-.employee-badge {
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.875rem;
-}
-
-.employee-badge-active {
-    background-color: #d4edda;
-    color: #155724;
-}
-
-.employee-badge-inactive {
-    background-color: #f8d7da;
-    color: #721c24;
-}
-
-/* Acciones de empleados */
 .employee-actions {
     white-space: nowrap;
 }
 
-.employee-actions .btn {
-    margin-left: 0.25rem;
+/* Estilos del Modal de Empleado */
+#employeeModal .modal-content {
+    border-radius: 0.5rem;
 }
 
-/* Estilos para el modal de empleados */
-#passwordFieldsGroup {
+#employeeModal .modal-header {
+    border-bottom: 1px solid #dee2e6;
+}
+
+#employeeModal .modal-footer {
     border-top: 1px solid #dee2e6;
-    padding-top: 1rem;
-    margin-top: 1rem;
 }
 
-#passwordFieldsGroup h6 {
-    color: #6c757d;
-    font-size: 0.875rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    margin-bottom: 1rem;
-}
-
-/* Loading spinner del modal */
+/* Indicador de carga */
 #employeeModalLoading {
     text-align: center;
-    padding: 3rem;
+    padding: 3rem 1rem;
 }
 
 #employeeModalLoading .spinner-border {
     width: 3rem;
     height: 3rem;
 }
+
+/* Estilos para campos del formulario en modo lectura (disabled/readonly) */
+#employeeForm input[readonly],
+#employeeForm input:disabled,
+#employeeForm textarea[readonly],
+#employeeForm textarea:disabled,
+#employeeForm select:disabled {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+    opacity: 0.7;
+    border-color: #ced4da;
+}
+
+#employeeForm input[readonly]:focus,
+#employeeForm input:disabled:focus,
+#employeeForm textarea[readonly]:focus,
+#employeeForm textarea:disabled:focus {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+    box-shadow: none;
+    outline: none;
+}
+
+#employeeForm select:disabled {
+    background-color: #e9ecef;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    cursor: not-allowed;
+}
+
+/* Estilos para campos del formulario en modo edición (habilitados) */
+#employeeForm input:not([readonly]):not(:disabled),
+#employeeForm textarea:not([readonly]):not(:disabled),
+#employeeForm select:not(:disabled) {
+    background-color: #fff;
+    cursor: text;
+    opacity: 1;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+#employeeForm input:not([readonly]):not(:disabled):focus,
+#employeeForm textarea:not([readonly]):not(:disabled):focus,
+#employeeForm select:not(:disabled):focus {
+    background-color: #fff;
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    outline: none;
+}
+
+/* Estilos específicos para el campo de email (siempre disabled) */
+#employeeForm #id_email:disabled {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Labels en modo lectura */
+#employeeForm .form-label {
+    font-weight: 500;
+    color: #212529;
+    margin-bottom: 0.5rem;
+}
+
+/* Sección de credenciales */
+#passwordFieldsGroup {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #dee2e6;
+}
+
+#passwordFieldsGroup h6 {
+    color: #495057;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+/* Mensajes de ayuda */
+.form-text {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* Validación de formulario */
+#employeeForm .was-validated .form-control:invalid,
+#employeeForm .was-validated .form-select:invalid {
+    border-color: #dc3545;
+}
+
+#employeeForm .was-validated .form-control:valid,
+#employeeForm .was-validated .form-select:valid {
+    border-color: #198754;
+}
+
+/* Botones del footer */
+#employeeModalFooter .btn {
+    min-width: 120px;
+}
+
+#statusButtonContainer {
+    display: flex;
+    align-items: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    #employeeModal .modal-dialog {
+        margin: 0.5rem;
+    }
+    
+    #employeeModalFooter {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    #employeeModalFooter .btn {
+        width: 100%;
+    }
+    
+    #statusButtonContainer {
+        width: 100%;
+        justify-content: center;
+        margin-bottom: 0.5rem;
+    }
+}
+
