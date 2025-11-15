@@ -1,0 +1,23 @@
+{% extends 'bootstrap_base.html' %}
+{% load static %}
+
+{% block body_content %}
+    <!-- Navbar -->
+    {% include 'fire_station/components/navbar.html' %}
+    
+    <!-- Contenido Principal -->
+    <main class="container-fluid py-4">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    {% include 'footer.html' %}
+{% endblock %}
+
+{% block extra_js_bottom %}
+    {{ block.super }}
+    <!-- SIGVE Global JS -->
+    <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/messages.js' %}"></script>
+{% endblock %}
+

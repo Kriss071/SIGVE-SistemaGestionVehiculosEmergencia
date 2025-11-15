@@ -1,0 +1,160 @@
+{% extends 'fire_station/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/vehicles_list.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-truck-front"></i> Gestión de Vehículos</h1>
+            {% if request.session.role_name == 'Jefe de Cuartel' %}
+            <button type="button" class="btn btn-danger" onclick="VehicleModal.open('create')">
+                <i class="bi bi-plus-circle"></i> Agregar Vehículo
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="statusFilter" class="form-label">Estado</label>
+                <select class="form-select" name="status_id" id="statusFilter" onchange="this.form.submit()">
+                    <option value="">Todos los estados</option>
+                    {% for status in vehicle_statuses %}
+                        <option value="{{ status.id }}" {% if filters.status_id == status.id|stringformat:"s" %}selected{% endif %}>
+                            {{ status.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="typeFilter" class="form-label">Tipo</label>
+                <select class="form-select" name="vehicle_type_id" id="typeFilter" onchange="this.form.submit()">
+                    <option value="">Todos los tipos</option>
+                    {% for type in vehicle_types %}
+                        <option value="{{ type.id }}" {% if filters.vehicle_type_id == type.id|stringformat:"s" %}selected{% endif %}>
+                            {{ type.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="licensePlateFilter" class="form-label">Patente</label>
+                <input type="text" class="form-control" name="license_plate" id="licensePlateFilter" 
+                       value="{{ filters.license_plate|default:'' }}" placeholder="Buscar por patente">
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search"></i> Filtrar
+                </button>
+                <a href="{% url 'fire_station:vehicles_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle"></i> Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if vehicles %}
+        
+        <div class="mb-3">
+            <input type="text" id="tableSearchInput" class="form-control" placeholder="Buscar en la tabla...">
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover" id="vehiclesTable">
+                <thead>
+                    <tr>
+                        <th>Patente</th>
+                        <th>Tipo</th>
+                        <th>Marca/Modelo</th>
+                        <th>Año</th>
+                        <th>Estado</th>
+                        <th>Kilometraje</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vehicle in vehicles %}
+                    <tr onclick="VehicleModal.open('view', {{ vehicle.id }})">
+                        <td><strong>{{ vehicle.license_plate }}</strong></td>
+                        <td>{{ vehicle.vehicle_type.name|default:"—" }}</td>
+                        <td>{{ vehicle.brand }} {{ vehicle.model }}</td>
+                        <td>{{ vehicle.year }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if vehicle.vehicle_status.name == 'Disponible' %}bg-success
+                                {% elif vehicle.vehicle_status.name == 'En Mantención' %}bg-warning
+                                {% else %}bg-danger
+                                {% endif %}">
+                                {{ vehicle.vehicle_status.name }}
+                            </span>
+                        </td>
+                        <td>{{ vehicle.mileage|default:"—" }} km</td>
+                        <td class="text-end">
+                            {% if request.session.role_name == 'Jefe de Cuartel' %}
+                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                    onclick="event.stopPropagation(); ConfirmationModal.open({
+                                        formAction: '/fire-station/vehicles/{{ vehicle.id }}/delete/',
+                                        warningText: '¿Estás seguro de eliminar el vehículo {{ vehicle.license_plate|escapejs }}?',
+                                        title: 'Confirmar Eliminación',
+                                        btnClass: 'btn-danger',
+                                        btnText: 'Sí, Eliminar'
+                                    })">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                    onclick="event.stopPropagation(); VehicleModal.open('edit', {{ vehicle.id }})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            {% else %}
+                            <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                    onclick="event.stopPropagation(); VehicleModal.open('view', {{ vehicle.id }})">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-truck-front display-1 text-muted"></i>
+            <p class="text-muted mt-3">No hay vehículos registrados</p>
+            {% if request.session.role_name == 'Jefe de Cuartel' %}
+            <button type="button" class="btn btn-danger" onclick="VehicleModal.open('create')">
+                <i class="bi bi-plus-circle"></i> Agregar Primer Vehículo
+            </button>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Incluir los modales -->
+{% include 'fire_station/modals/vehicle_modal.html' %}
+{% include 'fire_station/modals/confirmation_modal.html' %}
+
+<!-- Form oculto para eliminar -->
+<form id="confirmationForm" method="post" style="display: none;">
+    {% csrf_token %}
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/modal.js' %}"></script>
+<script src="{% static 'js/vehicles_list.js' %}"></script>
+{% endblock %}
+

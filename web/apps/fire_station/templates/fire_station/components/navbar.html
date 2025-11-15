@@ -1,0 +1,61 @@
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm sticky-top
+            {% if request.resolver_match.url_name == 'dashboard' %}
+                bg-danger
+            {% elif request.resolver_match.url_name == 'vehicles_list' %}
+                bg-primary
+            {% elif request.resolver_match.url_name == 'users_list' %}
+                bg-dark
+            {% else %}
+                bg-danger
+            {% endif %}">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{% url 'fire_station:dashboard' %}">
+            <i class="bi bi-fire"></i> {{ fire_station_name|default:"Cuartel" }}
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            
+            <!-- Menú Principal -->
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
+                       href="{% url 'fire_station:dashboard' %}">
+                        <i class="bi bi-{% if request.resolver_match.url_name == 'dashboard' %}speedometer{% else %}speedometer2{% endif %}"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'vehicles_list' %}active{% endif %}" 
+                       href="{% url 'fire_station:vehicles_list' %}">
+                        <i class="bi bi-{% if request.resolver_match.url_name == 'vehicles_list' %}truck-front-fill{% else %}truck-front{% endif %}"></i> Vehículos
+                    </a>
+                </li>
+                
+                {% if request.session.role_name == 'Jefe de Cuartel' %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'users_list' %}active{% endif %}" 
+                       href="{% url 'fire_station:users_list' %}">
+                        <i class="bi bi-{% if request.resolver_match.url_name == 'users_list' %}people-fill{% else %}people{% endif %}"></i> Usuarios
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+            
+            <!-- Menú de Usuario (lado derecho) -->
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle"></i> {{ request.session.role_name|default:"Usuario" }}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><h6 class="dropdown-header">{{ request.session.sb_user_email }}</h6></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+

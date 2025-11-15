@@ -26,7 +26,7 @@ def get_redirect_url_by_role(role: str) -> str:
         'Admin SIGVE': 'sigve:dashboard',
         'Admin Taller': 'workshop:dashboard',
         'Mecánico': 'workshop:dashboard',
-        # 'Jefe Cuartel': 'fire_station:dashboard',
+        'Jefe Cuartel': 'fire_station:dashboard',
     }
     
     # Obtener la URL de redirección según el rol, o usar 'vehicle_list' por defecto

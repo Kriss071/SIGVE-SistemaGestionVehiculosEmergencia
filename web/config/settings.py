@@ -46,7 +46,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts',
     'apps.sigve',
-    'apps.workshop'
+    'apps.workshop',
+    'apps.fire_station'
 ]
 
 MIDDLEWARE = [

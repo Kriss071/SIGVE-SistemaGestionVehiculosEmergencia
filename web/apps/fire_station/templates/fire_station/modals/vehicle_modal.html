@@ -1,0 +1,174 @@
+<!-- Modal para Crear/Editar/Ver Vehículo -->
+<div class="modal fade" id="vehicleModal" tabindex="-1" aria-labelledby="vehicleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="vehicleModalLabel">
+                    <i class="bi bi-truck-front"></i> <span id="vehicleModalTitle">Crear Vehículo</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            
+            <!-- Loading Spinner -->
+            <div id="vehicleModalLoading" class="text-center py-5" style="display: none;">
+                <div class="spinner-border text-danger" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-3 text-muted">Cargando información del vehículo...</p>
+            </div>
+            
+            <form method="post" action="{% url 'fire_station:vehicle_create' %}" id="vehicleForm" class="needs-validation" style="display: none;" novalidate>
+                {% csrf_token %}
+                <input type="hidden" name="vehicle_id" id="vehicleId">
+                
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Columna Izquierda -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Información Básica</h6>
+                            
+                            <div class="mb-3">
+                                <label for="id_license_plate" class="form-label">Patente <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="license_plate" id="id_license_plate" 
+                                       placeholder="Ej: AA-BB-12" required>
+                                <div class="invalid-feedback">Por favor, ingresa una patente.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_brand" class="form-label">Marca <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="brand" id="id_brand" 
+                                       placeholder="Ej: Mercedes-Benz" required>
+                                <div class="invalid-feedback">Por favor, ingresa una marca.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_model" class="form-label">Modelo <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="model" id="id_model" 
+                                       placeholder="Ej: Atego 1725" required>
+                                <div class="invalid-feedback">Por favor, ingresa un modelo.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_year" class="form-label">Año <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" name="year" id="id_year" 
+                                       placeholder="Ej: 2020" min="1900" max="2100" required>
+                                <div class="invalid-feedback">Por favor, ingresa un año válido.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_vehicle_type_id" class="form-label">Tipo de Vehículo <span class="text-danger">*</span></label>
+                                <select class="form-select" name="vehicle_type_id" id="id_vehicle_type_id" required>
+                                    <option value="">Seleccionar tipo...</option>
+                                    {% for type in vehicle_types %}
+                                        <option value="{{ type.id }}">{{ type.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">Por favor, selecciona un tipo.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_vehicle_status_id" class="form-label">Estado <span class="text-danger">*</span></label>
+                                <select class="form-select" name="vehicle_status_id" id="id_vehicle_status_id" required>
+                                    <option value="">Seleccionar estado...</option>
+                                    {% for status in vehicle_statuses %}
+                                        <option value="{{ status.id }}">{{ status.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">Por favor, selecciona un estado.</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Columna Derecha -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Detalles Técnicos (Opcional)</h6>
+                            
+                            <div class="mb-3">
+                                <label for="id_engine_number" class="form-label">Número de Motor</label>
+                                <input type="text" class="form-control" name="engine_number" id="id_engine_number" 
+                                       placeholder="Número de motor">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_vin" class="form-label">Número de Chasis (VIN)</label>
+                                <input type="text" class="form-control" name="vin" id="id_vin" 
+                                       placeholder="VIN">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_mileage" class="form-label">Kilometraje</label>
+                                <input type="number" class="form-control" name="mileage" id="id_mileage" 
+                                       placeholder="Ej: 50000" min="0">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_fuel_type_id" class="form-label">Tipo de Combustible</label>
+                                <select class="form-select" name="fuel_type_id" id="id_fuel_type_id">
+                                    <option value="">Sin especificar</option>
+                                    {% for fuel in fuel_types %}
+                                        <option value="{{ fuel.id }}">{{ fuel.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_transmission_type_id" class="form-label">Tipo de Transmisión</label>
+                                <select class="form-select" name="transmission_type_id" id="id_transmission_type_id">
+                                    <option value="">Sin especificar</option>
+                                    {% for trans in transmission_types %}
+                                        <option value="{{ trans.id }}">{{ trans.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_oil_type_id" class="form-label">Tipo de Aceite</label>
+                                <select class="form-select" name="oil_type_id" id="id_oil_type_id">
+                                    <option value="">Sin especificar</option>
+                                    {% for oil in oil_types %}
+                                        <option value="{{ oil.id }}">{{ oil.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_coolant_type_id" class="form-label">Tipo de Refrigerante</label>
+                                <select class="form-select" name="coolant_type_id" id="id_coolant_type_id">
+                                    <option value="">Sin especificar</option>
+                                    {% for coolant in coolant_types %}
+                                        <option value="{{ coolant.id }}">{{ coolant.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_oil_capacity_liters" class="form-label">Capacidad de Aceite (litros)</label>
+                                <input type="number" class="form-control" name="oil_capacity_liters" id="id_oil_capacity_liters" 
+                                       placeholder="Ej: 12.5" step="0.01" min="0">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_registration_date" class="form-label">Fecha de Inscripción</label>
+                                <input type="date" class="form-control" name="registration_date" id="id_registration_date">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_next_revision_date" class="form-label">Próxima Revisión Técnica</label>
+                                <input type="date" class="form-control" name="next_revision_date" id="id_next_revision_date">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-danger alert-permanent border-0" role="alert">
+                        <small><i class="bi bi-info-circle me-1"></i>Los campos marcados con <span class="text-danger">*</span> son obligatorios. 
+                        La patente, número de motor y VIN no podrán editarse después de crear el vehículo.</small>
+                    </div>
+                </div>
+                
+                <div class="modal-footer" id="vehicleModalFooter">
+                    <!-- Los botones se insertarán dinámicamente según el modo -->
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
