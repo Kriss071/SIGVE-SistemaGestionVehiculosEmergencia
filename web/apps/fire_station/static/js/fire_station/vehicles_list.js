@@ -371,7 +371,82 @@
         if (window.SIGVE && window.SIGVE.setupTableSearch) {
             window.SIGVE.setupTableSearch('tableSearchInput', 'vehiclesTable');
         }
+        
+        // Inicializar el filtrado automático
+        initAutoFilter();
     });
+
+    /**
+     * Inicializa el filtrado automático de vehículos
+     */
+    function initAutoFilter() {
+        console.log("Inicializando filtrado automático de vehículos");
+        const filterForm = document.getElementById('filterForm');
+        const filterLoader = document.getElementById('filterLoader');
+        
+        if (!filterForm) return;
+        
+        // Función para mostrar el loader
+        function showLoader() {
+            if (filterLoader) {
+                filterLoader.style.display = 'flex';
+            }
+        }
+        
+        // Filtrado inmediato para selects (Estado y Tipo)
+        const statusFilter = document.getElementById('statusFilter');
+        const typeFilter = document.getElementById('typeFilter');
+        
+        if (statusFilter) {
+            statusFilter.addEventListener('change', function() {
+                showLoader();
+                filterForm.submit();
+            });
+        }
+        
+        if (typeFilter) {
+            typeFilter.addEventListener('change', function() {
+                showLoader();
+                filterForm.submit();
+            });
+        }
+        
+        // Filtrado con debounce para el input de patente
+        const licensePlateInput = document.getElementById('licensePlateFilter');
+        let debounceTimer = null;
+        
+        if (licensePlateInput) {
+            licensePlateInput.addEventListener('input', function() {
+                clearTimeout(debounceTimer);
+                const inputValue = this.value.trim();
+                
+                // Si el campo está vacío, verificar si hay otros filtros activos
+                if (inputValue.length === 0) {
+                    const hasStatusFilter = statusFilter && statusFilter.value;
+                    const hasTypeFilter = typeFilter && typeFilter.value;
+                    
+                    if (!hasStatusFilter && !hasTypeFilter) {
+                        // No hay filtros, enviar formulario para limpiar todos los filtros
+                        showLoader();
+                        filterForm.submit();
+                        return;
+                    } else {
+                        // Hay otros filtros activos, enviar formulario para mantenerlos pero quitar el de patente
+                        showLoader();
+                        filterForm.submit();
+                        return;
+                    }
+                }
+                
+                // Esperar el debounce antes de mostrar el loader y enviar el formulario
+                debounceTimer = setTimeout(function() {
+                    // Mostrar loader justo antes de enviar el formulario
+                    showLoader();
+                    filterForm.submit();
+                }, 1000); // Espera 1 segundo después de que el usuario deje de escribir
+            });
+        }
+    }
 
 })();
 
