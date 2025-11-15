@@ -35,10 +35,58 @@ class DashboardService(FireStationBaseService):
         )
         
         total_vehicles = len(vehicles)
+        vehicle_ids = [v.get('id') for v in vehicles if v.get('id')]
+        
+        # Obtener vehículos con órdenes de mantenimiento activas (en taller)
+        # Solo contamos vehículos que pertenecen al cuartel del usuario
+        vehicles_in_workshop = set()
+        if vehicle_ids:
+            try:
+                # Crear un set de IDs de vehículos del cuartel para verificación rápida
+                vehicle_ids_set = set(vehicle_ids)
+                
+                # Obtener todas las órdenes de los vehículos del cuartel
+                # Incluimos la relación con vehicle para verificar que pertenece al cuartel
+                orders = cls._execute_query(
+                    client.table('maintenance_order')
+                        .select('vehicle_id, exit_date, order_status:order_status_id(name), vehicle:vehicle_id(fire_station_id)')
+                        .in_('vehicle_id', vehicle_ids)
+                        .order('created_at', desc=True),
+                    'get_orders_for_statistics'
+                )
+                
+                # Estados que indican que la orden está completada
+                completed_statuses = ['Disponible', 'En Taller', 'De Baja']
+                
+                # Procesar órdenes y encontrar las activas
+                # Verificamos que el vehículo realmente pertenece al cuartel
+                for order in orders:
+                    vehicle_id = order.get('vehicle_id')
+                    
+                    # Verificar que el vehículo pertenece al cuartel (doble verificación)
+                    vehicle_data = order.get('vehicle', {})
+                    if vehicle_data and vehicle_data.get('fire_station_id') != fire_station_id:
+                        continue  # El vehículo no pertenece a este cuartel
+                    
+                    # Verificar que el vehicle_id está en nuestra lista (otra verificación)
+                    if vehicle_id not in vehicle_ids_set:
+                        continue  # No debería pasar, pero por seguridad
+                    
+                    if vehicle_id in vehicles_in_workshop:
+                        continue  # Ya está marcado como en taller
+                    
+                    status_name = (order.get('order_status', {}) or {}).get('name', '')
+                    exit_date = order.get('exit_date')
+                    
+                    # Si no tiene fecha de salida y el estado no está completado, está en taller
+                    if not exit_date and status_name not in completed_statuses:
+                        vehicles_in_workshop.add(vehicle_id)
+            except Exception as e:
+                logger.warning(f"⚠️ Error obteniendo órdenes activas: {e}")
         
         # Contar vehículos por estado
         vehicles_available = sum(1 for v in vehicles if v.get('vehicle_status', {}).get('name') == 'Disponible')
-        vehicles_in_maintenance = sum(1 for v in vehicles if v.get('vehicle_status', {}).get('name') == 'En Mantención')
+        vehicles_in_maintenance = sum(1 for v in vehicles if v.get('vehicle_status', {}).get('name') == 'En Taller')
         vehicles_out_of_service = sum(1 for v in vehicles if v.get('vehicle_status', {}).get('name') == 'De Baja')
         
         # Vehículos que requieren revisión técnica próxima (simulado)

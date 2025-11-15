@@ -40,11 +40,11 @@
                     </a>
                 </li>
                 
-                {% if request.session.role_name == 'Jefe de Cuartel' %}
+                {% if request.session.role_name == 'Jefe Cuartel' %}
                 <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.url_name == 'users_list' %}active{% endif %}" 
                        href="{% url 'fire_station:users_list' %}">
-                        <i class="bi bi-{% if request.resolver_match.url_name == 'users_list' %}people-fill{% else %}people{% endif %}"></i> Usuarios
+                        <i class="bi bi-{% if request.resolver_match.url_name == 'users_list' %}people-fill{% else %}people{% endif %}"></i> Empleados
                     </a>
                 </li>
                 {% endif %}
