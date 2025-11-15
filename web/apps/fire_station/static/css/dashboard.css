@@ -1,46 +1,97 @@
-/* Dashboard Styles para Fire Station */
+/**
+ * Fire Station - Dashboard CSS
+ * Estilos específicos para el dashboard del cuartel
+ */
 
+/* Tarjetas de estadísticas */
 .stat-card {
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: default;
 }
 
 .stat-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-3px);
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
 }
 
 .stat-icon {
-    width: 60px;
-    height: 60px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    min-width: 60px;
+    min-height: 60px;
 }
 
-.card-header {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-    background-color: #f8f9fa;
-    font-weight: 600;
+.stat-card h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2c3e50;
 }
 
+.stat-card h6 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+
+/* Lista de vehículos por tipo */
 .list-group-item {
-    border-left: 0;
-    border-right: 0;
+    border-left: none;
+    border-right: none;
+    padding: 0.75rem 0;
 }
 
 .list-group-item:first-child {
-    border-top: 0;
+    border-top: none;
 }
 
 .list-group-item:last-child {
-    border-bottom: 0;
+    border-bottom: none;
 }
 
-/* Animación suave para las tarjetas */
-.card {
-    animation: fadeIn 0.3s ease-in;
+/* Acceso rápido */
+.btn-outline-primary:hover,
+.btn-outline-warning:hover,
+.btn-outline-dark:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* Card headers personalizados */
+.card-header {
+    border-bottom: 2px solid #f8f9fa;
+}
+
+/* Badges en las listas */
+.badge.rounded-pill {
+    padding: 0.5em 0.8em;
+    font-weight: 600;
+}
+
+/* Vehículos recientes */
+.list-group-item h6 {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .stat-card h2 {
+        font-size: 1.5rem;
+    }
+    
+    .stat-icon {
+        min-width: 50px;
+        min-height: 50px;
+    }
+    
+    .stat-icon i {
+        font-size: 1.5rem !important;
+    }
+}
+
+/* Animaciones de carga */
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -50,5 +101,28 @@
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+.card {
+    animation: fadeIn 0.3s ease;
+}
+
+/* Estados de vehículos - badges */
+.badge.bg-success {
+    background-color: #28a745 !important;
+}
+
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+
+.badge.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+/* Sombras suaves */
+.shadow-sm {
+    box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.075) !important;
 }
 
