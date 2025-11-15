@@ -1,0 +1,65 @@
+<!-- Modal para Crear Solicitud de Mantenimiento -->
+<div class="modal fade" id="requestModal" tabindex="-1" aria-labelledby="requestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="requestModalLabel">
+                    <i class="bi bi-wrench-adjustable-circle"></i> Nueva Solicitud de Mantenimiento
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            
+            <form method="post" action="{% url 'fire_station:request_create' %}" id="requestForm" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="id_vehicle_id" class="form-label">Vehículo <span class="text-danger">*</span></label>
+                        <select class="form-select" name="vehicle_id" id="id_vehicle_id" required>
+                            <option value="">Seleccionar vehículo...</option>
+                            {% for vehicle in vehicles %}
+                                <option value="{{ vehicle.id }}">
+                                    {{ vehicle.license_plate }} - {{ vehicle.brand }} {{ vehicle.model }} ({{ vehicle.year }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">Por favor, selecciona un vehículo.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_request_type_id" class="form-label">Tipo de Solicitud <span class="text-danger">*</span></label>
+                        <select class="form-select" name="request_type_id" id="id_request_type_id" required>
+                            <option value="">Seleccionar tipo...</option>
+                            {% for type in request_types %}
+                                <option value="{{ type.id }}">{{ type.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">Por favor, selecciona un tipo de solicitud.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_description" class="form-label">Descripción del Problema <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="description" id="id_description" rows="4" 
+                                  placeholder="Describe detalladamente el problema o motivo de la solicitud..." required></textarea>
+                        <div class="invalid-feedback">Por favor, proporciona una descripción.</div>
+                    </div>
+                    
+                    <div class="alert alert-warning border-0" role="alert">
+                        <small><i class="bi bi-info-circle me-1"></i>Los campos marcados con <span class="text-danger">*</span> son obligatorios. 
+                        Una vez enviada la solicitud, será revisada por el departamento de SIGVE.</small>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-warning" id="requestSubmitBtn">
+                        <i class="bi bi-send"></i> Enviar Solicitud
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+

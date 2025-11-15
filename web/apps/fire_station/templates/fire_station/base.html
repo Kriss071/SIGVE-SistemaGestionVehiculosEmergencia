@@ -1,23 +1,47 @@
-{% extends 'bootstrap_base.html' %}
 {% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Fire Station - SIGVE{% endblock %}</title>
 
-{% block body_content %}
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+
+    <!-- Extra CSS -->
+    {% block extra_css %}{% endblock %}
+
+    <!-- Icono -->
+    <link rel="icon" type="image/x-icon" href="{% static 'img/logo.png' %}">
+</head>
+<body>
+
     <!-- Navbar -->
     {% include 'fire_station/components/navbar.html' %}
     
     <!-- Contenido Principal -->
     <main class="container-fluid py-4">
+        <!-- Mensajes -->
+        {% include 'components/messages.html' %}
+        
         {% block content %}{% endblock %}
     </main>
     
     <!-- Footer -->
     {% include 'footer.html' %}
-{% endblock %}
 
-{% block extra_js_bottom %}
-    {{ block.super }}
+    <!-- Bootstrap JS -->
+    <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    
     <!-- SIGVE Global JS -->
-    <script src="{% static 'js/main.js' %}"></script>
     <script src="{% static 'js/messages.js' %}"></script>
-{% endblock %}
+    <script src="{% static 'js/main.js' %}"></script>
+    
+    <!-- Extra JS -->
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
 

@@ -9,6 +9,7 @@ from .decorators import require_fire_station_user, require_jefe_cuartel
 from .services.dashboard_service import DashboardService
 from .services.vehicle_service import VehicleService
 from .services.user_service import UserService
+from .services.request_service import RequestService
 from .forms import VehicleCreateForm, VehicleEditForm, UserProfileForm
 
 logger = logging.getLogger('apps.fire_station')
@@ -406,5 +407,173 @@ def api_get_user(request, user_id):
         return JsonResponse({
             'success': False,
             'error': 'Usuario no encontrado'
+        }, status=404)
+
+
+# ===== HISTORIAL DE VEHÍCULOS =====
+
+@require_supabase_login
+@require_fire_station_user
+def vehicle_history(request, vehicle_id):
+    """Vista del historial de cambios de estado de un vehículo."""
+    fire_station_id = request.fire_station_id
+    
+    vehicle = VehicleService.get_vehicle(vehicle_id, fire_station_id)
+    if not vehicle:
+        messages.error(request, '❌ Vehículo no encontrado.')
+        return redirect('fire_station:vehicles_list')
+    
+    history = VehicleService.get_vehicle_status_history(vehicle_id, fire_station_id)
+    
+    context = {
+        'page_title': f'Historial - {vehicle["license_plate"]}',
+        'active_page': 'vehicles',
+        'vehicle': vehicle,
+        'history': history
+    }
+    
+    return render(request, 'fire_station/vehicle_history.html', context)
+
+
+# ===== SOLICITUDES DE MANTENIMIENTO =====
+
+@require_supabase_login
+@require_fire_station_user
+def requests_list(request):
+    """Lista de solicitudes de mantenimiento del cuartel."""
+    fire_station_id = request.fire_station_id
+    
+    # Obtener filtros
+    filters = {}
+    if request.GET.get('status_id'):
+        filters['status_id'] = request.GET.get('status_id')
+    if request.GET.get('vehicle_id'):
+        filters['vehicle_id'] = request.GET.get('vehicle_id')
+    
+    context = {
+        'page_title': 'Solicitudes de Mantenimiento',
+        'active_page': 'requests',
+        'requests': RequestService.get_all_requests(fire_station_id, filters),
+        'vehicles': VehicleService.get_all_vehicles(fire_station_id),
+        'request_types': RequestService.get_request_types(),
+        'request_statuses': RequestService.get_request_statuses(),
+        'filters': filters
+    }
+    
+    return render(request, 'fire_station/requests_list.html', context)
+
+
+@require_http_methods(["POST"])
+@require_supabase_login
+@require_fire_station_user
+def request_create(request):
+    """Crea una nueva solicitud de mantenimiento."""
+    fire_station_id = request.fire_station_id
+    user_id = request.session.get('sb_user_id')
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    vehicle_id = request.POST.get('vehicle_id')
+    request_type_id = request.POST.get('request_type_id')
+    description = request.POST.get('description', '').strip()
+    
+    # Validar campos requeridos
+    if not vehicle_id or not request_type_id or not description:
+        if is_ajax:
+            return JsonResponse({'success': False, 'errors': {'general': ['Todos los campos son requeridos.']}})
+        messages.error(request, '❌ Todos los campos son requeridos.')
+        return redirect('fire_station:requests_list')
+    
+    # Verificar que el vehículo pertenece al cuartel
+    vehicle = VehicleService.get_vehicle(int(vehicle_id), fire_station_id)
+    if not vehicle:
+        if is_ajax:
+            return JsonResponse({'success': False, 'errors': {'general': ['Vehículo no encontrado.']}})
+        messages.error(request, '❌ Vehículo no encontrado.')
+        return redirect('fire_station:requests_list')
+    
+    data = {
+        'vehicle_id': int(vehicle_id),
+        'fire_station_id': fire_station_id,
+        'requested_by_user_id': user_id,
+        'request_type_id': int(request_type_id),
+        'description': description
+    }
+    
+    maintenance_request = RequestService.create_request(data)
+    
+    if maintenance_request:
+        message = f'✅ Solicitud de mantenimiento creada correctamente.'
+        if is_ajax:
+            messages.success(request, message)
+            return JsonResponse({'success': True, 'reload_page': True})
+        messages.success(request, message)
+    else:
+        if is_ajax:
+            return JsonResponse({'success': False, 'errors': {'general': ['Error al crear la solicitud.']}})
+        messages.error(request, '❌ Error al crear la solicitud.')
+    
+    return redirect('fire_station:requests_list')
+
+
+@require_supabase_login
+@require_fire_station_user
+def request_detail(request, request_id):
+    """Vista de detalle de una solicitud de mantenimiento."""
+    fire_station_id = request.fire_station_id
+    
+    maintenance_request = RequestService.get_request(request_id, fire_station_id)
+    if not maintenance_request:
+        messages.error(request, '❌ Solicitud no encontrada.')
+        return redirect('fire_station:requests_list')
+    
+    context = {
+        'page_title': f'Solicitud #{request_id}',
+        'active_page': 'requests',
+        'request': maintenance_request
+    }
+    
+    return render(request, 'fire_station/request_detail.html', context)
+
+
+@require_http_methods(["POST"])
+@require_supabase_login
+@require_fire_station_user
+def request_cancel(request, request_id):
+    """Cancela una solicitud de mantenimiento."""
+    fire_station_id = request.fire_station_id
+    
+    success = RequestService.cancel_request(request_id, fire_station_id)
+    
+    if success:
+        messages.success(request, '❌ Solicitud cancelada.')
+    else:
+        messages.error(request, '❌ Error al cancelar la solicitud (puede que ya esté procesada).')
+    
+    return redirect('fire_station:requests_list')
+
+
+@require_supabase_login
+@require_fire_station_user
+def api_get_request(request, request_id):
+    """API endpoint para obtener los datos de una solicitud específica."""
+    fire_station_id = request.fire_station_id
+    
+    maintenance_request = RequestService.get_request(request_id, fire_station_id)
+    
+    if maintenance_request:
+        # Formatear fechas
+        if maintenance_request.get('created_at'):
+            maintenance_request['created_at'] = str(maintenance_request['created_at'])
+        if maintenance_request.get('updated_at'):
+            maintenance_request['updated_at'] = str(maintenance_request['updated_at'])
+        
+        return JsonResponse({
+            'success': True,
+            'request': maintenance_request
+        })
+    else:
+        return JsonResponse({
+            'success': False,
+            'error': 'Solicitud no encontrada'
         }, status=404)
 

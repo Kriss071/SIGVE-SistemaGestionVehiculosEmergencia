@@ -292,4 +292,35 @@ class VehicleService(FireStationBaseService):
         )
         
         return log_created is not None
+    
+    @classmethod
+    def get_vehicle_status_history(cls, vehicle_id: int, fire_station_id: int = None) -> List[Dict[str, Any]]:
+        """
+        Obtiene el historial de cambios de estado de un vehículo.
+        
+        Args:
+            vehicle_id: ID del vehículo.
+            fire_station_id: ID del cuartel (opcional, para validación).
+            
+        Returns:
+            Lista de cambios de estado.
+        """
+        logger.info(f"📋 Obteniendo historial de vehículo {vehicle_id}")
+        
+        client = cls.get_client()
+        
+        # Si se proporciona fire_station_id, validar que el vehículo pertenezca al cuartel
+        if fire_station_id:
+            vehicle = cls.get_vehicle(vehicle_id, fire_station_id)
+            if not vehicle:
+                logger.warning(f"Vehículo {vehicle_id} no pertenece al cuartel {fire_station_id}")
+                return []
+        
+        query = client.table('vehicle_status_log').select(
+            '*, vehicle_status(name), changed_by:user_profile!vehicle_status_log_changed_by_user_id_fkey(first_name, last_name, email)'
+        ).eq('vehicle_id', vehicle_id).order('change_date', desc=True)
+        
+        history = cls._execute_query(query, 'get_vehicle_status_history')
+        
+        return history
 

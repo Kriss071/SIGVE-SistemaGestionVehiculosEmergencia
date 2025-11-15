@@ -1,0 +1,124 @@
+{% extends 'fire_station/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/fire_station/vehicles_list.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-clock-history"></i> Historial de Cambios</h1>
+            <a href="{% url 'fire_station:vehicles_list' %}" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left"></i> Volver a Vehículos
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Información del Vehículo -->
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-truck-front"></i> {{ vehicle.license_plate }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong>Marca/Modelo:</strong><br>
+                        {{ vehicle.brand }} {{ vehicle.model }}
+                    </div>
+                    <div class="col-md-2">
+                        <strong>Año:</strong><br>
+                        {{ vehicle.year }}
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Tipo:</strong><br>
+                        {{ vehicle.vehicle_type.name|default:"—" }}
+                    </div>
+                    <div class="col-md-2">
+                        <strong>Estado Actual:</strong><br>
+                        <span class="badge 
+                            {% if vehicle.vehicle_status.name == 'Disponible' %}bg-success
+                            {% elif vehicle.vehicle_status.name == 'En Mantención' %}bg-warning
+                            {% else %}bg-danger
+                            {% endif %}">
+                            {{ vehicle.vehicle_status.name }}
+                        </span>
+                    </div>
+                    <div class="col-md-2">
+                        <strong>Kilometraje:</strong><br>
+                        {{ vehicle.mileage|default:"—" }} km
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Historial de Cambios -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-list-task"></i> Historial de Cambios de Estado</h5>
+            </div>
+            <div class="card-body">
+                {% if history %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                    <th>Cambiado por</th>
+                                    <th>Razón</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in history %}
+                                <tr>
+                                    <td>
+                                        <i class="bi bi-calendar-event"></i>
+                                        {{ log.change_date|date:"d/m/Y H:i" }}
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if log.vehicle_status.name == 'Disponible' %}bg-success
+                                            {% elif log.vehicle_status.name == 'En Mantención' %}bg-warning
+                                            {% else %}bg-danger
+                                            {% endif %}">
+                                            {{ log.vehicle_status.name }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if log.changed_by %}
+                                            <i class="bi bi-person"></i>
+                                            {{ log.changed_by.first_name }} {{ log.changed_by.last_name }}
+                                            <br>
+                                            <small class="text-muted">{{ log.changed_by.email }}</small>
+                                        {% else %}
+                                            <span class="text-muted">Sistema</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ log.reason|default:"—" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-clock-history display-1 text-muted"></i>
+                        <p class="text-muted mt-3">No hay cambios registrados para este vehículo</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+

@@ -1,0 +1,182 @@
+{% extends 'fire_station/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+.detail-card {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.info-row {
+    border-bottom: 1px solid #e9ecef;
+    padding: 0.75rem 0;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    color: #6c757d;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.info-value {
+    color: #212529;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-file-text"></i> Detalle de Solicitud #{{ request.id }}</h1>
+            <a href="{% url 'fire_station:requests_list' %}" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <!-- Información de la Solicitud -->
+        <div class="card detail-card border-0 shadow-sm mb-4">
+            <div class="card-header 
+                {% if request.request_status.name == 'Pendiente' %}bg-secondary
+                {% elif request.request_status.name == 'En Revisión' %}bg-info
+                {% elif request.request_status.name == 'Aprobada' %}bg-success
+                {% elif request.request_status.name == 'Rechazada' %}bg-danger
+                {% elif request.request_status.name == 'Cancelada' %}bg-warning
+                {% else %}bg-dark
+                {% endif %} text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Información de la Solicitud</h5>
+            </div>
+            <div class="card-body">
+                <div class="info-row">
+                    <div class="info-label">ID de Solicitud</div>
+                    <div class="info-value">#{{ request.id }}</div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-label">Estado</div>
+                    <div class="info-value">
+                        <span class="badge 
+                            {% if request.request_status.name == 'Pendiente' %}bg-secondary
+                            {% elif request.request_status.name == 'En Revisión' %}bg-info
+                            {% elif request.request_status.name == 'Aprobada' %}bg-success
+                            {% elif request.request_status.name == 'Rechazada' %}bg-danger
+                            {% elif request.request_status.name == 'Cancelada' %}bg-warning
+                            {% else %}bg-dark
+                            {% endif %}">
+                            {{ request.request_status.name }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-label">Tipo de Solicitud</div>
+                    <div class="info-value">{{ request.request_type.name|default:"—" }}</div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-label">Fecha de Solicitud</div>
+                    <div class="info-value">
+                        <i class="bi bi-calendar-event"></i>
+                        {{ request.created_at|date:"d/m/Y H:i" }}
+                    </div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-label">Solicitado por</div>
+                    <div class="info-value">
+                        {% if request.requested_by %}
+                            <i class="bi bi-person"></i>
+                            {{ request.requested_by.first_name }} {{ request.requested_by.last_name }}
+                            <br>
+                            <small class="text-muted">{{ request.requested_by.email }}</small>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-label">Descripción</div>
+                    <div class="info-value">
+                        {{ request.description|linebreaksbr }}
+                    </div>
+                </div>
+                
+                {% if request.workshop %}
+                <div class="info-row">
+                    <div class="info-label">Taller Asignado</div>
+                    <div class="info-value">
+                        <i class="bi bi-shop"></i>
+                        {{ request.workshop.name }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Información del Vehículo -->
+        <div class="card detail-card border-0 shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-truck-front"></i> Vehículo</h5>
+            </div>
+            <div class="card-body">
+                <div class="info-row">
+                    <div class="info-label">Patente</div>
+                    <div class="info-value"><strong>{{ request.vehicle.license_plate }}</strong></div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-label">Marca/Modelo</div>
+                    <div class="info-value">{{ request.vehicle.brand }} {{ request.vehicle.model }}</div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-label">Año</div>
+                    <div class="info-value">{{ request.vehicle.year }}</div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-label">Tipo</div>
+                    <div class="info-value">{{ request.vehicle.vehicle_type.name|default:"—" }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Acciones -->
+        {% if request.request_status.name == 'Pendiente' or request.request_status.name == 'En Revisión' %}
+        <div class="card detail-card border-0 shadow-sm">
+            <div class="card-body">
+                <form method="post" action="{% url 'fire_station:request_cancel' request.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning w-100" 
+                            onclick="return confirm('¿Estás seguro de cancelar esta solicitud?')">
+                        <i class="bi bi-x-circle"></i> Cancelar Solicitud
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+

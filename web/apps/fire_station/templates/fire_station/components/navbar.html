@@ -1,16 +1,18 @@
 <nav class="navbar navbar-expand-lg navbar-dark shadow-sm sticky-top
             {% if request.resolver_match.url_name == 'dashboard' %}
                 bg-danger
-            {% elif request.resolver_match.url_name == 'vehicles_list' %}
+            {% elif request.resolver_match.url_name == 'vehicles_list' or request.resolver_match.url_name == 'vehicle_history' %}
                 bg-primary
             {% elif request.resolver_match.url_name == 'users_list' %}
                 bg-dark
+            {% elif request.resolver_match.url_name == 'requests_list' or request.resolver_match.url_name == 'request_create' %}
+                bg-warning
             {% else %}
                 bg-danger
             {% endif %}">
     <div class="container-fluid">
         <a class="navbar-brand" href="{% url 'fire_station:dashboard' %}">
-            <i class="bi bi-fire"></i> {{ fire_station_name|default:"Cuartel" }}
+            <i class="bi bi-fire"></i> {{ request.session.fire_station_name|default:"Cuartel" }}
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
@@ -26,9 +28,15 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {% if request.resolver_match.url_name == 'vehicles_list' %}active{% endif %}" 
+                    <a class="nav-link {% if 'vehicles' in request.resolver_match.url_name or 'vehicle' in request.resolver_match.url_name %}active{% endif %}" 
                        href="{% url 'fire_station:vehicles_list' %}">
-                        <i class="bi bi-{% if request.resolver_match.url_name == 'vehicles_list' %}truck-front-fill{% else %}truck-front{% endif %}"></i> Vehículos
+                        <i class="bi bi-{% if 'vehicles' in request.resolver_match.url_name or 'vehicle' in request.resolver_match.url_name %}truck-front-fill{% else %}truck-front{% endif %}"></i> Vehículos
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'request' in request.resolver_match.url_name %}active{% endif %}" 
+                       href="{% url 'fire_station:requests_list' %}">
+                        <i class="bi bi-{% if 'request' in request.resolver_match.url_name %}wrench-adjustable-circle-fill{% else %}wrench-adjustable-circle{% endif %}"></i> Solicitudes
                     </a>
                 </li>
                 
@@ -51,7 +59,9 @@
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><h6 class="dropdown-header">{{ request.session.sb_user_email }}</h6></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                        <li><a class="dropdown-item" href="{% url 'logout' %}">
+                            <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                        </a></li>
                     </ul>
                 </li>
             </ul>
