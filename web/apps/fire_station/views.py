@@ -10,7 +10,7 @@ from .services.dashboard_service import DashboardService
 from .services.vehicle_service import VehicleService
 from .services.user_service import UserService
 from .services.request_service import RequestService
-from .forms import VehicleCreateForm, VehicleEditForm, UserProfileForm
+from .forms import VehicleCreateForm, VehicleEditForm, UserProfileForm, UserCreateForm
 
 logger = logging.getLogger('apps.fire_station')
 
@@ -263,6 +263,89 @@ def users_list(request):
 @require_supabase_login
 @require_fire_station_user
 @require_jefe_cuartel
+def user_create(request):
+    """Crea un nuevo usuario del cuartel."""
+    fire_station_id = request.fire_station_id
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    roles = UserService.get_fire_station_roles()
+    role_choices = [(str(role['id']), role['name']) for role in roles]
+    
+    form = UserCreateForm(request.POST, role_choices=role_choices)
+    
+    if form.is_valid():
+        cleaned_data = form.cleaned_data
+        
+        # Validar que el rol es válido para cuartel
+        role_id = cleaned_data['role_id']
+        role_ids = [role['id'] for role in roles]
+        
+        if role_id not in role_ids:
+            error_msg = 'Rol no válido. Solo se pueden crear usuarios con roles de cuartel.'
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'errors': {'role_id': [error_msg]}
+                }, status=400)
+            messages.error(request, f'❌ {error_msg}')
+            return redirect('fire_station:users_list')
+        
+        # Crear el usuario
+        result = UserService.create_user(
+            email=cleaned_data['email'],
+            password=cleaned_data['password'],
+            first_name=cleaned_data['first_name'],
+            last_name=cleaned_data['last_name'],
+            role_id=role_id,
+            fire_station_id=fire_station_id,
+            rut=cleaned_data.get('rut'),
+            phone=cleaned_data.get('phone')
+        )
+        
+        if result['success']:
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Usuario creado correctamente.',
+                    'reload_page': True
+                })
+            messages.success(request, '✅ Usuario creado correctamente.')
+            return redirect('fire_station:users_list')
+        
+        error_msg = result.get('error', 'Error al crear el usuario.')
+        if is_ajax:
+            return JsonResponse({
+                'success': False,
+                'errors': {'general': [error_msg]}
+            }, status=400)
+        messages.error(request, f'❌ {error_msg}')
+        return redirect('fire_station:users_list')
+    
+    # Formulario inválido
+    logger.warning(f"⚠️ Formulario inválido al crear usuario. Errores: {form.errors}")
+    logger.warning(f"⚠️ Datos recibidos: {request.POST.dict()}")
+    
+    if is_ajax:
+        # Formatear errores para que sean más legibles
+        formatted_errors = {}
+        for field, errors in form.errors.items():
+            if isinstance(errors, list):
+                formatted_errors[field] = errors
+            else:
+                formatted_errors[field] = [str(errors)]
+        
+        return JsonResponse({
+            'success': False,
+            'errors': formatted_errors
+        }, status=400)
+    messages.error(request, '❌ Datos inválidos. Verifica los campos del formulario.')
+    return redirect('fire_station:users_list')
+
+
+@require_http_methods(["POST"])
+@require_supabase_login
+@require_fire_station_user
+@require_jefe_cuartel
 def user_edit(request, user_id):
     """Edita un usuario del cuartel."""
     fire_station_id = request.fire_station_id
@@ -305,6 +388,9 @@ def user_edit(request, user_id):
                 return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el usuario.']}})
             messages.error(request, '❌ Error al actualizar el usuario.')
     else:
+        logger.warning(f"⚠️ Formulario inválido al editar usuario. Errores: {form.errors}")
+        logger.warning(f"⚠️ Datos recibidos: {request.POST.dict()}")
+        
         response = handle_form_errors(
             request,
             form,
@@ -398,6 +484,11 @@ def api_get_user(request, user_id):
     user = UserService.get_user(user_id, fire_station_id)
     
     if user:
+        # Asegurar que role_id esté presente (puede venir en role.id)
+        if 'role_id' not in user and 'role' in user:
+            if isinstance(user['role'], dict) and 'id' in user['role']:
+                user['role_id'] = user['role']['id']
+        
         return JsonResponse({
             'success': True,
             'user': user

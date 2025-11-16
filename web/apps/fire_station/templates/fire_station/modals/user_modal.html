@@ -40,10 +40,40 @@
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="id_email" class="form-label">Email</label>
-                        <input type="email" class="form-control" name="email" id="id_email" readonly>
-                        <small class="text-muted">El email no puede ser editado</small>
+                    <!-- Campos de Email y Contraseña (solo para crear) -->
+                    <div id="passwordFieldsGroup" style="display: none;">
+                        <h6><i class="bi bi-shield-lock"></i> Credenciales de Acceso</h6>
+                        
+                        <div class="mb-3">
+                            <label for="id_email" class="form-label">Correo Electrónico <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" name="email" id="id_email" placeholder="usuario@ejemplo.cl" required>
+                            <div class="invalid-feedback">Por favor ingresa un correo electrónico válido.</div>
+                            <small class="form-text text-muted">
+                                El usuario usará este correo para iniciar sesión en el sistema.
+                            </small>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_password" class="form-label">Contraseña <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" name="password" id="id_password" minlength="6" required>
+                                <div class="invalid-feedback">La contraseña debe tener al menos 6 caracteres.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_password_confirm" class="form-label">Confirmar Contraseña <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" name="password_confirm" id="id_password_confirm" minlength="6" required>
+                                <div class="invalid-feedback">Las contraseñas deben coincidir.</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Email en modo view/edit (solo lectura) -->
+                    <div id="emailViewGroup" style="display: none;">
+                        <div class="mb-3">
+                            <label for="id_email_view" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="id_email_view" readonly disabled>
+                            <small class="text-muted">El email no puede ser editado</small>
+                        </div>
                     </div>
                     
                     <div class="row">

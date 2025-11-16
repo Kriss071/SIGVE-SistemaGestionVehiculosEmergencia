@@ -240,6 +240,78 @@ class VehicleEditForm(forms.Form):
     )
 
 
+class UserCreateForm(forms.Form):
+    """Formulario para crear un nuevo usuario del cuartel."""
+    email = forms.EmailField(
+        label="Correo Electrónico",
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'usuario@ejemplo.cl'
+        })
+    )
+    password = forms.CharField(
+        label="Contraseña",
+        min_length=6,
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+    password_confirm = forms.CharField(
+        label="Confirmar Contraseña",
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+    first_name = forms.CharField(
+        max_length=255,
+        label="Nombre",
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    last_name = forms.CharField(
+        max_length=255,
+        label="Apellido",
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    rut = forms.CharField(
+        max_length=20,
+        label="RUT",
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '12345678-9'
+        })
+    )
+    phone = forms.CharField(
+        max_length=20,
+        label="Teléfono",
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '+56912345678'
+        })
+    )
+    role_id = forms.TypedChoiceField(
+        label="Rol",
+        coerce=int,
+        empty_value=None,
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+    def __init__(self, *args, role_choices=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['role_id'].choices = role_choices or []
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get('password')
+        password_confirm = cleaned_data.get('password_confirm')
+        
+        if password and password_confirm:
+            if password != password_confirm:
+                raise forms.ValidationError({
+                    'password_confirm': 'Las contraseñas no coinciden.'
+                })
+        
+        return cleaned_data
+
+
 class UserProfileForm(forms.Form):
     """Formulario para editar perfil de usuario del cuartel."""
     first_name = forms.CharField(

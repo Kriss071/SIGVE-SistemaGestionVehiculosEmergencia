@@ -182,4 +182,100 @@ class UserService(FireStationBaseService):
         # Excluir roles de Admin SIGVE, Admin Taller y Mecánico
         excluded_roles = ['Admin SIGVE', 'Admin Taller', 'Mecánico']
         return [role for role in all_roles if role.get('name') not in excluded_roles]
+    
+    @classmethod
+    def create_user(
+        cls,
+        *,
+        email: str,
+        password: str,
+        first_name: str,
+        last_name: str,
+        role_id: int,
+        fire_station_id: int,
+        rut: Optional[str] = None,
+        phone: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Crea un nuevo usuario del cuartel.
+        
+        Args:
+            email: Correo electrónico del usuario
+            password: Contraseña del usuario
+            first_name: Nombre del usuario
+            last_name: Apellido del usuario
+            role_id: ID del rol (debe ser un rol válido para cuartel)
+            fire_station_id: ID del cuartel
+            rut: RUT del usuario (opcional)
+            phone: Teléfono del usuario (opcional)
+            
+        Returns:
+            Dict con success, user_id, y error (si aplica)
+        """
+        admin_client = get_supabase_admin()
+        
+        try:
+            # Paso 1: Crear usuario en auth.users
+            response = admin_client.auth.admin.create_user({
+                "email": email,
+                "password": password,
+                "email_confirm": True,
+                "user_metadata": {
+                    "first_name": first_name,
+                    "last_name": last_name
+                }
+            })
+            
+            auth_user = getattr(response, "user", None)
+            if not auth_user:
+                logger.error("❌ Supabase no retornó usuario en la respuesta.")
+                return {"success": False, "user_id": None, "error": "No se pudo crear el usuario."}
+            
+            user_id = getattr(auth_user, "id", None)
+            if not user_id:
+                logger.error("❌ No se obtuvo el ID del usuario creado.")
+                return {"success": False, "user_id": None, "error": "No se obtuvo el ID del usuario."}
+            
+        except Exception as auth_error:
+            logger.error(f"❌ Error creando usuario en auth: {auth_error}", exc_info=True)
+            error_msg = str(auth_error)
+            if "already registered" in error_msg.lower() or "duplicate" in error_msg.lower():
+                return {"success": False, "user_id": None, "error": "El correo electrónico ya está registrado."}
+            return {"success": False, "user_id": None, "error": "Error creando el usuario."}
+        
+        # Paso 2: Crear perfil en user_profile
+        try:
+            client = cls.get_client()
+            profile_data = {
+                "id": user_id,
+                "first_name": first_name,
+                "last_name": last_name,
+                "rut": rut,
+                "phone": phone,
+                "role_id": role_id,
+                "fire_station_id": fire_station_id,
+                "is_active": True
+            }
+            
+            result = client.table("user_profile") \
+                .insert(profile_data) \
+                .execute()
+            
+            if not result.data:
+                raise Exception("No se pudo crear el perfil del usuario.")
+            
+            logger.info(f"✅ Usuario {email} creado correctamente con ID {user_id}")
+            return {"success": True, "user_id": user_id, "error": None}
+            
+        except Exception as profile_error:
+            logger.error(f"❌ Error creando perfil del usuario: {profile_error}", exc_info=True)
+            
+            # Revertir: eliminar usuario de auth
+            try:
+                admin_client.auth.admin.delete_user(user_id)
+                logger.info(f"♻️ Usuario {user_id} eliminado de auth tras error en perfil.")
+            except Exception as cleanup_error:
+                logger.error(f"⚠️ Error al revertir usuario en auth: {cleanup_error}", exc_info=True)
+            
+            return {"success": False, "user_id": user_id, "error": "Error creando el perfil del usuario."}
 
