@@ -346,6 +346,23 @@ class VehicleService(FireStationBaseService):
         )
         history = cls._execute_query(query, 'get_vehicle_status_history')
         
+        # Convertir fechas ISO string a objetos datetime para el template
+        if history:
+            for log_entry in history:
+                if log_entry.get('change_date'):
+                    try:
+                        # Parsear fecha ISO string a datetime
+                        if isinstance(log_entry['change_date'], str):
+                            date_str = log_entry['change_date']
+                            # Normalizar formato: reemplazar Z por +00:00 si existe
+                            if date_str.endswith('Z'):
+                                date_str = date_str[:-1] + '+00:00'
+                            # fromisoformat maneja formato ISO con o sin microsegundos y timezone
+                            log_entry['change_date'] = datetime.fromisoformat(date_str)
+                    except (ValueError, AttributeError) as e:
+                        logger.warning(f"⚠️ No se pudo parsear fecha {log_entry.get('change_date')}: {e}")
+                        # Mantener el valor original si falla el parseo
+        
         # Logs de resultado
         try:
             total = len(history) if isinstance(history, list) else 0
