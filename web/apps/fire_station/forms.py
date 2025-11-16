@@ -51,6 +51,8 @@ class VehicleForm(forms.Form):
     )
     year = forms.IntegerField(
         label="Año",
+        min_value=1900,
+        max_value=2100,
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: 2020',
@@ -127,6 +129,14 @@ class VehicleForm(forms.Form):
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+
+    def clean_license_plate(self):
+        value = (self.cleaned_data.get('license_plate') or '').strip().upper()
+        # Permitir letras, números y guiones, largo razonable
+        import re
+        if not re.fullmatch(r'[A-Z0-9\-]{4,10}', value):
+            raise forms.ValidationError('La patente debe contener 4 a 10 caracteres alfanuméricos o guiones.')
+        return value
 
 
 class VehicleCreateForm(VehicleForm):

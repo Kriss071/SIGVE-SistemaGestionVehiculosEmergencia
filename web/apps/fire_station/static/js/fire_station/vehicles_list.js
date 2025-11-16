@@ -8,6 +8,39 @@
 (function() {
     'use strict';
 
+    // Helpers locales (evitar dependencia de otros módulos/app)
+    const FS = (function() {
+        function showButtonLoading(button, loadingText) {
+            if (!button) return;
+            button.disabled = true;
+            if (!button.dataset.originalHtml) {
+                button.dataset.originalHtml = button.innerHTML;
+            }
+            const text = loadingText || 'Cargando...';
+            button.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>${text}`;
+        }
+
+        function hideButtonLoading(button) {
+            if (!button) return;
+            button.disabled = false;
+            if (button.dataset.originalHtml) {
+                button.innerHTML = button.dataset.originalHtml;
+                delete button.dataset.originalHtml;
+            }
+        }
+
+        function showNotification(message, type) {
+            // Usar sistema global si existe (messages.js), si no, fallback a alert
+            if (window.SIGVE && typeof window.SIGVE.showNotification === 'function') {
+                window.SIGVE.showNotification(message, type || 'info');
+            } else {
+                alert(message);
+            }
+        }
+
+        return { showButtonLoading, hideButtonLoading, showNotification };
+    })();
+
     /**
      * Sistema de gestión del modal de vehículo
      * Maneja tres modos: crear, ver, editar
@@ -102,7 +135,7 @@
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    window.SIGVE.showNotification('Error al cargar los datos del vehículo', 'error');
+                    FS.showNotification('Error al cargar los datos del vehículo', 'error');
                     modalInstance.hide();
                 });
         }
@@ -261,7 +294,13 @@
             const submitBtn = document.getElementById('vehicleSubmitBtn');
             if (!submitBtn) return;
             
-            window.SIGVE.showButtonLoading(submitBtn);
+            // Normalizar patente (UX)
+            const licensePlateInput = document.getElementById('id_license_plate');
+            if (licensePlateInput && typeof licensePlateInput.value === 'string') {
+                licensePlateInput.value = (licensePlateInput.value || '').trim().toUpperCase();
+            }
+
+            FS.showButtonLoading(submitBtn, 'Guardando...');
             
             const formData = new FormData(form);
             
@@ -282,21 +321,21 @@
             .then(data => {
                 if (data) {
                     if (data.success) {
-                        window.SIGVE.hideButtonLoading(submitBtn);
+                        FS.hideButtonLoading(submitBtn);
                         modalInstance.hide();
                         setTimeout(() => window.location.reload(), 150);
                         return;
                     } else if (data.errors) {
                         const firstError = Object.values(data.errors)[0][0];
-                        window.SIGVE.showNotification(firstError, 'error');
-                        window.SIGVE.hideButtonLoading(submitBtn);
+                        FS.showNotification(firstError, 'error');
+                        FS.hideButtonLoading(submitBtn);
                     }
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                window.SIGVE.showNotification('Error al guardar el vehículo', 'error');
-                window.SIGVE.hideButtonLoading(submitBtn);
+                FS.showNotification('Error al guardar el vehículo', 'error');
+                FS.hideButtonLoading(submitBtn);
             });
         }
         

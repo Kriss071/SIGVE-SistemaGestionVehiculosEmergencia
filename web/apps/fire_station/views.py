@@ -245,9 +245,8 @@ def vehicle_delete(request, vehicle_id):
 
 @require_supabase_login
 @require_fire_station_user
-@require_jefe_cuartel
 def users_list(request):
-    """Lista de usuarios del cuartel (solo Jefe de Cuartel)."""
+    """Lista de usuarios del cuartel (solo Jefe Cuartel)."""
     fire_station_id = request.fire_station_id
     
     context = {

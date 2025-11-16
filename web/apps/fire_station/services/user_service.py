@@ -174,7 +174,7 @@ class UserService(FireStationBaseService):
     def get_fire_station_roles(cls) -> List[Dict[str, Any]]:
         """
         Obtiene los roles específicos para usuarios de cuartel.
-        Típicamente: Jefe de Cuartel, Conductor, etc.
+        Típicamente: Jefe Cuartel, Conductor, etc.
         """
         client = cls.get_client()
         # Filtrar roles que son apropiados para cuarteles

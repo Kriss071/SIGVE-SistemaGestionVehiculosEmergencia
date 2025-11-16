@@ -1,6 +1,7 @@
 import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+from decimal import Decimal
 from .base_service import FireStationBaseService
 
 logger = logging.getLogger(__name__)
@@ -98,6 +99,12 @@ class VehicleService(FireStationBaseService):
                     'registration_date', 'next_revision_date']:
             if key not in data or data[key] == '':
                 data[key] = None
+
+        # Convertir Decimals a float/str para JSON (ej: oil_capacity_liters)
+        for key, value in list(data.items()):
+            if isinstance(value, Decimal):
+                # Para cantidades numéricas preferimos float
+                data[key] = float(value)
         
         vehicle = cls._execute_single(
             client.table('vehicle').insert(data),
@@ -137,6 +144,11 @@ class VehicleService(FireStationBaseService):
                     'registration_date', 'next_revision_date', 'mileage_last_updated']:
             if key in data and data[key] == '':
                 data[key] = None
+
+        # Convertir Decimals a float/str para JSON
+        for key, value in list(data.items()):
+            if isinstance(value, Decimal):
+                data[key] = float(value)
         
         # Los campos no editables no se incluyen en data (validado en el formulario)
         

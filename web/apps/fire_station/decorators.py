@@ -141,7 +141,7 @@ def require_jefe_cuartel(view_func):
             # Verificar que sea Jefe Cuartel (o Super Admin)
             if role_name not in ['Jefe Cuartel', 'Super Admin']:
                 logger.warning(f"⚠️ (require_jefe_cuartel) Usuario {user_id} con rol '{role_name}' intentó acceder a función de Jefe")
-                messages.error(request, "Acceso denegado. Solo el Jefe de Cuartel puede realizar esta acción.")
+                messages.error(request, "Acceso denegado. Solo el Jefe Cuartel puede realizar esta acción.")
                 return redirect('fire_station:dashboard')
             
             logger.info(f"✅ (require_jefe_cuartel) Acceso jefe concedido a {user_id}")

@@ -55,9 +55,18 @@ class FireStationBaseService:
             Los datos del registro o None en caso de error.
         """
         try:
-            response = query.maybe_single().execute()
-            logger.debug(f"📊 ({method_name}) Respuesta de Supabase: {response.data}")
-            return response.data
+            # Compatibilidad: algunos builders no exponen maybe_single()
+            if hasattr(query, 'maybe_single'):
+                response = query.maybe_single().execute()
+                data = response.data
+            else:
+                response = query.execute()
+                data = response.data
+                # Si data es lista, tomar el primer elemento (insert/update/select)
+                if isinstance(data, list):
+                    data = data[0] if data else None
+            logger.debug(f"📊 ({method_name}) Respuesta de Supabase: {data}")
+            return data
         except PostgrestAPIError as e:
             logger.error(f"❌ ({method_name}) Error de API: {e.message}", exc_info=True)
             return None
