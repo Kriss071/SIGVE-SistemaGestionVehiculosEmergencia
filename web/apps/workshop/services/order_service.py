@@ -3,6 +3,7 @@ from typing import Dict, List, Any, Optional, Set
 from datetime import datetime
 from decimal import Decimal
 from .base_service import WorkshopBaseService
+from shared.services.vehicle_status_service import VehicleStatusService
 
 logger = logging.getLogger(__name__)
 
@@ -171,13 +172,14 @@ class OrderService(WorkshopBaseService):
         return WorkshopBaseService._execute_single(query, "get_order")
     
     @staticmethod
-    def create_order(workshop_id: int, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def create_order(workshop_id: int, data: Dict[str, Any], user_id: str = None) -> Optional[Dict[str, Any]]:
         """
-        Crea una nueva orden de mantención.
+        Crea una nueva orden de mantención y actualiza el estado del vehículo a "En Mantención".
         
         Args:
             workshop_id: ID del taller.
             data: Datos de la orden (vehicle_id, mileage, maintenance_type_id, etc).
+            user_id: ID del usuario que crea la orden (para registrar el cambio de estado).
             
         Returns:
             Datos de la orden creada o None.
@@ -205,7 +207,27 @@ class OrderService(WorkshopBaseService):
             result = client.table("maintenance_order").insert(order_data).execute()
             
             if result.data:
-                logger.info(f"✅ Orden de mantención creada: {result.data[0]['id']}")
+                order_id = result.data[0]['id'] if isinstance(result.data, list) else result.data['id']
+                logger.info(f"✅ Orden de mantención creada: {order_id}")
+                
+                # Actualizar el estado del vehículo a "En Taller"
+                if user_id:
+                    vehicle_id = data['vehicle_id']
+                    status_updated = VehicleStatusService.update_vehicle_status_by_name(
+                        vehicle_id=vehicle_id,
+                        status_name='En Taller',
+                        user_id=user_id,
+                        reason=f'Orden de mantención #{order_id} creada',
+                        auto_generated=True
+                    )
+                    
+                    if status_updated:
+                        logger.info(f"✅ Estado del vehículo {vehicle_id} actualizado a 'En Taller'")
+                    else:
+                        logger.warning(f"⚠️ No se pudo actualizar el estado del vehículo {vehicle_id}")
+                else:
+                    logger.warning("⚠️ No se proporcionó user_id, no se actualizará el estado del vehículo")
+                
                 return result.data[0] if isinstance(result.data, list) else result.data
             return None
         except Exception as e:
@@ -270,14 +292,15 @@ class OrderService(WorkshopBaseService):
         return vehicle_id in active_map
     
     @staticmethod
-    def update_order(order_id: int, workshop_id: int, data: Dict[str, Any]) -> bool:
+    def update_order(order_id: int, workshop_id: int, data: Dict[str, Any], user_id: str = None) -> bool:
         """
-        Actualiza una orden de mantención.
+        Actualiza una orden de mantención y el estado del vehículo si corresponde.
         
         Args:
             order_id: ID de la orden.
             workshop_id: ID del taller.
             data: Datos a actualizar.
+            user_id: ID del usuario que actualiza (para registrar cambios de estado).
             
         Returns:
             True si se actualizó correctamente, False en caso contrario.
@@ -287,10 +310,19 @@ class OrderService(WorkshopBaseService):
         try:
             # Verificar que la orden no esté completada antes de actualizar
             order = OrderService.get_order(order_id, workshop_id)
-            if order and OrderService.is_order_completed(order):
+            if not order:
+                logger.error(f"❌ Orden {order_id} no encontrada")
+                return False
+                
+            if OrderService.is_order_completed(order):
                 logger.warning(f"⚠️ Intento de actualizar orden completada {order_id}")
                 return False
             
+            vehicle_id = order.get('vehicle_id')
+            old_status_id = order.get('order_status_id')
+            new_status_id = data.get('order_status_id')
+            
+            # Actualizar la orden
             result = client.table("maintenance_order") \
                 .update(data) \
                 .eq("id", order_id) \
@@ -298,6 +330,34 @@ class OrderService(WorkshopBaseService):
                 .execute()
             
             logger.info(f"✅ Orden {order_id} actualizada")
+            
+            # Si cambió el estado de la orden y tenemos user_id, actualizar estado del vehículo
+            if new_status_id and new_status_id != old_status_id and user_id and vehicle_id:
+                # Obtener el nombre del nuevo estado de orden
+                order_status = client.table("maintenance_order_status") \
+                    .select("name") \
+                    .eq("id", new_status_id) \
+                    .maybe_single() \
+                    .execute()
+                
+                if order_status.data:
+                    status_name = order_status.data.get('name', '')
+                    
+                    # Si la orden se marca como terminada/completada, poner vehículo "Disponible"
+                    if OrderService.is_completion_status(status_name):
+                        VehicleStatusService.update_vehicle_status_by_name(
+                            vehicle_id=vehicle_id,
+                            status_name='Disponible',
+                            user_id=user_id,
+                            reason=f'Orden de mantención #{order_id} finalizada',
+                            auto_generated=True
+                        )
+                        logger.info(f"✅ Vehículo {vehicle_id} marcado como 'Disponible' al finalizar orden")
+                    else:
+                        # Para otros cambios de estado, mantener el vehículo "En Taller"
+                        # pero registrar el cambio de estado de la orden en el log
+                        logger.debug(f"ℹ️ Estado de orden cambiado a '{status_name}', vehículo se mantiene 'En Taller'")
+            
             return True
         except Exception as e:
             logger.error(f"❌ Error actualizando orden {order_id}: {e}", exc_info=True)

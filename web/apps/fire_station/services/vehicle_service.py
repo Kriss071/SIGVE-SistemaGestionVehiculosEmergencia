@@ -329,7 +329,7 @@ class VehicleService(FireStationBaseService):
                 return []
         
         query = client.table('vehicle_status_log').select(
-            '*, vehicle_status(name), changed_by:user_profile!vehicle_status_log_changed_by_user_id_fkey(first_name, last_name, email)'
+            '*, vehicle_status(name), changed_by:user_profile!vehicle_status_log_changed_by_user_id_fkey(first_name, last_name)'
         ).eq('vehicle_id', vehicle_id).order('change_date', desc=True)
         
         history = cls._execute_query(query, 'get_vehicle_status_history')

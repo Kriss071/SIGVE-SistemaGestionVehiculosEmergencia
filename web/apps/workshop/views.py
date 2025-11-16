@@ -169,6 +169,7 @@ def vehicle_create_api(request):
 def order_create_api(request):
     """Crea una nueva orden de mantención desde el modal."""
     workshop_id = request.workshop_id
+    user_id = request.session.get('sb_user_id')
     form = MaintenanceOrderForm(request.POST)
     
     if not form.is_valid():
@@ -195,7 +196,7 @@ def order_create_api(request):
         'observations': cleaned.get('observations', '')
     }
     
-    order = OrderService.create_order(workshop_id, order_data)
+    order = OrderService.create_order(workshop_id, order_data, user_id)
     
     if not order:
         return JsonResponse({
@@ -311,6 +312,7 @@ def order_create(request):
         elif action == 'create_order':
             form = MaintenanceOrderForm(request.POST)
             if form.is_valid():
+                user_id = request.session.get('sb_user_id')
                 order_data = {
                     'vehicle_id': form.cleaned_data['vehicle_id'],
                     'mileage': form.cleaned_data['mileage'],
@@ -325,7 +327,7 @@ def order_create(request):
                     messages.error(request, '❌ El vehículo seleccionado ya cuenta con una orden activa en el taller.')
                     return redirect('workshop:order_create')
                 
-                order = OrderService.create_order(workshop_id, order_data)
+                order = OrderService.create_order(workshop_id, order_data, user_id)
                 
                 if order:
                     messages.success(request, f'✅ Orden de mantención #{order["id"]} creada correctamente.')
@@ -384,6 +386,7 @@ def order_detail(request, order_id):
 def order_update(request, order_id):
     """Actualiza información general de una orden."""
     workshop_id = request.workshop_id
+    user_id = request.session.get('sb_user_id')
     
     # Verificar que la orden existe y pertenece al taller
     order = OrderService.get_order(order_id, workshop_id)
@@ -408,7 +411,7 @@ def order_update(request, order_id):
     if request.POST.get('observations'):
         data['observations'] = request.POST.get('observations')
     
-    success = OrderService.update_order(order_id, workshop_id, data)
+    success = OrderService.update_order(order_id, workshop_id, data, user_id)
     
     if success:
         # Verificar si la orden fue marcada como terminada
@@ -417,7 +420,7 @@ def order_update(request, order_id):
             order_statuses = VehicleService.get_order_statuses()
             selected_status = next((s for s in order_statuses if s['id'] == new_status_id), None)
             if selected_status and OrderService.is_completion_status(selected_status.get('name', '')):
-                messages.success(request, '✅ Orden marcada como terminada. Ya no se podrá modificar.')
+                messages.success(request, '✅ Orden marcada como terminada. El vehículo ha sido marcado como Disponible.')
             else:
                 messages.success(request, '✅ Orden actualizada correctamente.')
         else:

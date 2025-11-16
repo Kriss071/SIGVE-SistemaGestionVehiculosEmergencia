@@ -87,7 +87,7 @@
                                     <td>
                                         <span class="badge 
                                             {% if log.vehicle_status.name == 'Disponible' %}bg-success
-                                            {% elif log.vehicle_status.name == 'En Mantención' %}bg-warning
+                                            {% elif log.vehicle_status.name == 'En Taller' %}bg-warning
                                             {% else %}bg-danger
                                             {% endif %}">
                                             {{ log.vehicle_status.name }}
@@ -97,8 +97,6 @@
                                         {% if log.changed_by %}
                                             <i class="bi bi-person"></i>
                                             {{ log.changed_by.first_name }} {{ log.changed_by.last_name }}
-                                            <br>
-                                            <small class="text-muted">{{ log.changed_by.email }}</small>
                                         {% else %}
                                             <span class="text-muted">Sistema</span>
                                         {% endif %}
