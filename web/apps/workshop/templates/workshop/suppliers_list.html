@@ -45,7 +45,8 @@
                         <td class="text-end">
                             {% if not supplier.is_global %}
                             <button type="button" class="btn btn-sm btn-outline-primary" 
-                                    onclick="openEditModal({{ supplier.id }}, '{{ supplier.name|escapejs }}', '{{ supplier.rut|default:''|escapejs }}', '{{ supplier.address|default:''|escapejs }}', '{{ supplier.phone|default:''|escapejs }}', '{{ supplier.email|default:''|escapejs }}')">
+                                    data-update-url="{% url 'workshop:supplier_update' supplier.id %}"
+                                    onclick="openEditModal({{ supplier.id }}, this.getAttribute('data-update-url'), '{{ supplier.name|escapejs }}', '{{ supplier.rut|default:''|escapejs }}', '{{ supplier.address|default:''|escapejs }}', '{{ supplier.phone|default:''|escapejs }}', '{{ supplier.email|default:''|escapejs }}')">
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <form method="post" action="{% url 'workshop:supplier_delete' supplier.id %}" 
@@ -160,10 +161,10 @@
 
 {% block extra_js %}
 <script>
-function openEditModal(id, name, rut, address, phone, email) {
+function openEditModal(id, updateUrl, name, rut, address, phone, email) {
     const modal = new bootstrap.Modal(document.getElementById('editSupplierModal'));
     const form = document.getElementById('editSupplierForm');
-    form.action = `/workshop/suppliers/${id}/update/`;
+    form.action = updateUrl;
     document.getElementById('editName').value = name;
     document.getElementById('editRut').value = rut;
     document.getElementById('editAddress').value = address;
