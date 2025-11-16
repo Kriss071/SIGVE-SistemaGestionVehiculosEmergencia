@@ -370,11 +370,104 @@
         // Conectar la búsqueda de la tabla
         if (window.SIGVE && window.SIGVE.setupTableSearch) {
             window.SIGVE.setupTableSearch('tableSearchInput', 'vehiclesTable');
+
+            // Agregar control de "sin resultados" junto a la búsqueda global
+            const searchInput = document.getElementById('tableSearchInput');
+            if (searchInput) {
+                const triggerUpdate = function() {
+                    // Dejar que SIGVE aplique su filtrado y luego evaluar
+                    window.requestAnimationFrame(() => {
+                        updateNoResultsRowByTable('vehiclesTable');
+                    });
+                };
+                searchInput.addEventListener('keyup', triggerUpdate);
+                // Inicial
+                triggerUpdate();
+            }
+        } else {
+            setupLocalTableSearch('tableSearchInput', 'vehiclesTable');
         }
         
         // Inicializar el filtrado automático
         initAutoFilter();
     });
+
+    /**
+     * Actualiza una fila de "sin resultados" según visibilidad de filas
+     * @param {HTMLTableSectionElement} tbody
+     * @param {number} colSpan
+     */
+    function updateNoResultsRow(tbody, colSpan) {
+        // Excluir fila previa de no resultados
+        const dataRows = Array.from(tbody.querySelectorAll('tr:not(.no-results-row)'));
+        const visibleRows = dataRows.filter(r => window.getComputedStyle(r).display !== 'none');
+        let noResultsRow = tbody.querySelector('tr.no-results-row');
+
+        if (visibleRows.length === 0) {
+            if (!noResultsRow) {
+                noResultsRow = document.createElement('tr');
+                noResultsRow.className = 'no-results-row';
+                const td = document.createElement('td');
+                td.colSpan = colSpan;
+                td.className = 'text-center text-muted';
+                td.textContent = 'No hay resultados en la tabla';
+                noResultsRow.appendChild(td);
+                tbody.appendChild(noResultsRow);
+            }
+        } else if (noResultsRow) {
+            noResultsRow.remove();
+        }
+    }
+
+    /**
+     * Actualiza "sin resultados" buscando por id de tabla
+     * @param {string} tableId
+     */
+    function updateNoResultsRowByTable(tableId) {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+        const tbody = (table.tBodies && table.tBodies[0]) ? table.tBodies[0] : table.querySelector('tbody');
+        if (!tbody) return;
+        const colSpan = (table.tHead && table.tHead.rows[0] ? table.tHead.rows[0].cells.length : (tbody.rows[0] ? tbody.rows[0].cells.length : 1)) || 1;
+        updateNoResultsRow(tbody, colSpan);
+    }
+
+    /**
+     * Búsqueda local de filas dentro de una tabla (fallback si no existe SIGVE.setupTableSearch)
+     * @param {string} inputId
+     * @param {string} tableId
+     */
+    function setupLocalTableSearch(inputId, tableId) {
+        const input = document.getElementById(inputId);
+        const table = document.getElementById(tableId);
+        if (!input || !table) return;
+
+        const tbody = (table.tBodies && table.tBodies[0]) ? table.tBodies[0] : table.querySelector('tbody');
+        if (!tbody) return;
+
+        const colSpan = (table.tHead && table.tHead.rows[0] ? table.tHead.rows[0].cells.length : (tbody.rows[0] ? tbody.rows[0].cells.length : 1)) || 1;
+
+        input.addEventListener('input', function() {
+            const query = (this.value || '').toLowerCase().trim();
+            const rows = Array.from(tbody.querySelectorAll('tr:not(.no-results-row)'));
+
+            if (!query) {
+                rows.forEach(row => { row.style.display = ''; });
+                updateNoResultsRow(tbody, colSpan);
+                return;
+            }
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+
+            updateNoResultsRow(tbody, colSpan);
+        });
+
+        // Inicial
+        updateNoResultsRow(tbody, colSpan);
+    }
 
     /**
      * Inicializa el filtrado automático de vehículos
