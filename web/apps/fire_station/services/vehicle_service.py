@@ -327,12 +327,40 @@ class VehicleService(FireStationBaseService):
             if not vehicle:
                 logger.warning(f"Vehículo {vehicle_id} no pertenece al cuartel {fire_station_id}")
                 return []
+            # Log de vehículo mínimo para contexto
+            try:
+                logger.debug(
+                    f"🔎 Vehículo validado para historial | id={vehicle.get('id')} "
+                    f"patente={vehicle.get('license_plate')} estado={vehicle.get('vehicle_status', {}).get('name')}"
+                )
+            except Exception:
+                logger.debug("🔎 Vehículo validado para historial (sin detalles por formato)")
         
         query = client.table('vehicle_status_log').select(
             '*, vehicle_status(name), changed_by:user_profile!vehicle_status_log_changed_by_user_id_fkey(first_name, last_name)'
         ).eq('vehicle_id', vehicle_id).order('change_date', desc=True)
         
+        logger.debug(
+            f"🧠 Ejecutando consulta de historial: tabla=vehicle_status_log, filtro vehicle_id={vehicle_id}, "
+            f"order=change_date desc, include=vehicle_status(name), changed_by(first_name,last_name)"
+        )
         history = cls._execute_query(query, 'get_vehicle_status_history')
+        
+        # Logs de resultado
+        try:
+            total = len(history) if isinstance(history, list) else 0
+            logger.info(f"📈 Historial obtenido: {total} cambio(s) para vehículo {vehicle_id}")
+            if total > 0:
+                sample = history[0]
+                logger.info(
+                    "🧾 Primer registro: "
+                    f"fecha={sample.get('change_date')}, "
+                    f"estado={sample.get('vehicle_status', {}).get('name')}, "
+                    f"por={((sample.get('changed_by') or {}).get('first_name','') + ' ' + (sample.get('changed_by') or {}).get('last_name','')).strip()}, "
+                    f"razón={sample.get('reason')}"
+                )
+        except Exception as e:
+            logger.debug(f"ℹ️ No se pudo formatear log de historial (detalle): {e}")
         
         return history
 
