@@ -100,42 +100,12 @@
      * Inicializa el modal de actualización de inventario
      */
     function initUpdateModal() {
-        // La función openUpdateModal se define globalmente para ser llamada desde el template
+        // Mantener compatibilidad con el código existente
         window.openUpdateModal = function(itemId, quantity, cost, supplierId, location, workshopSku) {
-            const modal = new bootstrap.Modal(document.getElementById('updateInventoryModal'));
-            const form = document.getElementById('updateInventoryForm');
-            
-            if (!form) {
-                console.error('Formulario de actualización no encontrado');
-                return;
+            // Usar el nuevo modal en modo edición
+            if (window.InventoryModal) {
+                window.InventoryModal.open('edit', itemId);
             }
-            
-            // Construir la URL de actualización
-            // La URL base es algo como '/taller/inventory/', necesitamos agregar '{id}/update/'
-            const baseUrl = form.getAttribute('data-update-url-base');
-            if (baseUrl) {
-                // La URL base termina en 'inventory/', agregamos el ID y '/update/'
-                form.action = `${baseUrl}${itemId}/update/`;
-            } else {
-                // Fallback: construir la URL manualmente
-                form.action = `/taller/inventory/${itemId}/update/`;
-            }
-            
-            // Llenar los campos del formulario
-            const quantityInput = document.getElementById('updateQuantity');
-            const costInput = document.getElementById('updateCost');
-            const supplierSelect = document.getElementById('updateSupplier');
-            const locationInput = document.getElementById('updateLocation');
-            const workshopSkuInput = document.getElementById('updateWorkshopSku');
-            
-            if (quantityInput) quantityInput.value = quantity || 0;
-            if (costInput) costInput.value = cost || 0;
-            if (supplierSelect) supplierSelect.value = supplierId || '';
-            if (locationInput) locationInput.value = location || '';
-            if (workshopSkuInput) workshopSkuInput.value = workshopSku || '';
-            
-            // Mostrar el modal
-            modal.show();
         };
         
         // Validación del formulario antes de enviar
@@ -275,6 +245,211 @@
     } else {
         init();
     }
+
+})();
+
+/**
+ * Workshop - Lógica de Inventory Modal (Ver/Editar)
+ */
+(function() {
+    'use strict';
+
+    window.InventoryModal = (function() {
+        const modal = document.getElementById('inventoryModal');
+        const form = document.getElementById('inventoryForm');
+        const loading = document.getElementById('inventoryModalLoading');
+        const footer = document.getElementById('inventoryModalFooter');
+        const titleSpan = document.getElementById('inventoryModalTitle');
+        
+        let currentMode = 'view';
+        let currentInventoryId = null;
+        let modalInstance = null;
+        
+        function init() {
+            if (!modal || !form) return;
+            modalInstance = new bootstrap.Modal(modal);
+            modal.addEventListener('hidden.bs.modal', resetModal);
+            form.addEventListener('submit', handleSubmit);
+        }
+        
+        function open(mode = 'view', inventoryId = null) {
+            currentMode = mode;
+            currentInventoryId = inventoryId;
+            
+            if (mode === 'view' || mode === 'edit') {
+                showLoading();
+                modalInstance.show();
+                loadInventoryData(inventoryId, mode);
+            }
+        }
+        
+        function loadInventoryData(inventoryId, mode) {
+            fetch(`/taller/api/inventory/${inventoryId}/`)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        populateForm(data.item);
+                        hideLoading();
+                        showForm();
+                        
+                        if (mode === 'view') {
+                            setupViewMode();
+                        } else if (mode === 'edit') {
+                            setupEditMode();
+                        }
+                    } else {
+                        throw new Error(data.error || 'Error al cargar el item');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al cargar los datos: ' + error.message);
+                    modalInstance.hide();
+                });
+        }
+        
+        function setupViewMode() {
+            titleSpan.textContent = 'Ver Repuesto del Inventario';
+            renderButtons('view');
+            setTimeout(() => setFieldsEnabled(false), 0);
+        }
+        
+        function setupEditMode() {
+            titleSpan.textContent = 'Editar Repuesto del Inventario';
+            const baseUrl = form.getAttribute('data-update-url-base');
+            form.action = `${baseUrl}${currentInventoryId}/update/`;
+            renderButtons('edit');
+            setTimeout(() => setFieldsEnabled(true), 0);
+        }
+        
+        function switchToEditMode() {
+            currentMode = 'edit';
+            setupEditMode();
+        }
+        
+        function populateForm(item) {
+            const sparePart = item.spare_part || {};
+            const supplier = item.supplier || {};
+            
+            // Información del repuesto (solo lectura)
+            document.getElementById('viewSku').textContent = sparePart.sku || '—';
+            document.getElementById('viewName').textContent = sparePart.name || '—';
+            document.getElementById('viewBrand').textContent = sparePart.brand || '—';
+            
+            // Campos editables
+            document.getElementById('id_quantity').value = item.quantity || 0;
+            document.getElementById('id_current_cost').value = item.current_cost || 0;
+            document.getElementById('id_supplier_id').value = supplier.id || '';
+            document.getElementById('id_location').value = item.location || '';
+            document.getElementById('id_workshop_sku').value = item.workshop_sku || '';
+        }
+        
+        function setFieldsEnabled(enabled) {
+            const fields = form.querySelectorAll('input, select');
+            fields.forEach(field => {
+                if (field.id.startsWith('id_')) {
+                    if (enabled) {
+                        field.removeAttribute('readonly');
+                        field.removeAttribute('disabled');
+                    } else {
+                        // Para inputs usar readonly, para selects usar disabled
+                        if (field.tagName === 'SELECT') {
+                            field.setAttribute('disabled', 'disabled');
+                        } else {
+                            field.setAttribute('readonly', 'readonly');
+                        }
+                    }
+                }
+            });
+        }
+        
+        function renderButtons(mode) {
+            footer.innerHTML = '';
+            
+            if (mode === 'view') {
+                footer.innerHTML = `
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i> Cerrar
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="InventoryModal.switchToEditMode()">
+                        <i class="bi bi-pencil"></i> Editar
+                    </button>
+                `;
+            } else if (mode === 'edit') {
+                footer.innerHTML = `
+                    <button type="button" class="btn btn-secondary" onclick="InventoryModal.cancelEdit()">
+                        <i class="bi bi-x-lg"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg"></i> Guardar Cambios
+                    </button>
+                `;
+            }
+        }
+        
+        function handleSubmit(e) {
+            e.preventDefault();
+            
+            const quantity = parseInt(document.getElementById('id_quantity').value);
+            const cost = parseFloat(document.getElementById('id_current_cost').value);
+            
+            if (quantity < 0) {
+                alert('La cantidad no puede ser negativa');
+                return;
+            }
+            
+            if (cost < 0) {
+                alert('El costo no puede ser negativo');
+                return;
+            }
+            
+            if (!form.checkValidity()) {
+                e.stopPropagation();
+                form.classList.add('was-validated');
+                return;
+            }
+            
+            form.submit();
+        }
+        
+        function showLoading() {
+            if (loading) loading.style.display = 'block';
+            if (form) form.style.display = 'none';
+        }
+        
+        function hideLoading() {
+            if (loading) loading.style.display = 'none';
+        }
+        
+        function showForm() {
+            if (form) form.style.display = 'block';
+        }
+        
+        function resetModal() {
+            form.classList.remove('was-validated');
+            currentMode = 'view';
+            currentInventoryId = null;
+        }
+        
+        function cancelEdit() {
+            if (modalInstance) modalInstance.hide();
+        }
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+        
+        return {
+            open: open,
+            switchToEditMode: switchToEditMode,
+            cancelEdit: cancelEdit
+        };
+    })();
 
 })();
 

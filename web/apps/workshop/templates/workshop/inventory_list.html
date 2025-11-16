@@ -25,7 +25,7 @@
             <input type="text" id="inventorySearch" class="form-control" placeholder="Buscar repuesto...">
         </div>
         <div class="table-responsive">
-            <table class="table table-hover" id="inventoryTable">
+            <table class="table table-hover inventory-table" id="inventoryTable">
                 <thead>
                     <tr>
                         <th>SKU SIGVE</th>
@@ -40,7 +40,9 @@
                 </thead>
                 <tbody>
                     {% for item in inventory %}
-                    <tr class="{% if item.quantity < 5 %}stock-critical{% elif item.quantity < 10 %}stock-low{% endif %}">
+                    <tr class="{% if item.quantity < 5 %}stock-critical{% elif item.quantity < 10 %}stock-low{% endif %}" 
+                        onclick="InventoryModal.open('view', {{ item.id }})" 
+                        style="cursor: pointer;">
                         <td><code>{{ item.spare_part.sku }}</code></td>
                         <td><strong>{{ item.spare_part.name }}</strong></td>
                         <td>{{ item.spare_part.brand|default:"—" }}</td>
@@ -52,16 +54,17 @@
                         <td>${{ item.current_cost|floatformat:0 }}</td>
                         <td>{{ item.supplier.name|default:"—" }}</td>
                         <td>{{ item.location|default:"—" }}</td>
-                        <td class="text-end">
+                        <td class="text-end inventory-actions" onclick="event.stopPropagation()">
                             <button type="button" class="btn btn-sm btn-outline-primary" 
-                                    onclick="openUpdateModal({{ item.id }}, {{ item.quantity }}, {{ item.current_cost }}, {{ item.supplier.id|default:'null' }}, '{{ item.location|default:""|escapejs }}', '{{ item.workshop_sku|default:""|escapejs }}')">
+                                    onclick="InventoryModal.open('edit', {{ item.id }})"
+                                    title="Editar">
                                 <i class="bi bi-pencil"></i> Editar
                             </button>
                             <form method="post" action="{% url 'workshop:inventory_delete' item.id %}" 
                                   style="display:inline;" 
                                   onsubmit="return confirm('¿Eliminar este repuesto del inventario? Esta acción no se puede deshacer.')">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
@@ -150,31 +153,59 @@
     </div>
 </div>
 
-<!-- Modal: Actualizar Inventario -->
-<div class="modal fade" id="updateInventoryModal" tabindex="-1">
+<!-- Modal: Ver/Editar Inventario -->
+<div class="modal fade" id="inventoryModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Actualizar Repuesto del Inventario</h5>
+                <h5 class="modal-title">
+                    <i class="bi bi-box-seam"></i> <span id="inventoryModalTitle">Repuesto del Inventario</span>
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="updateInventoryForm" method="post" data-update-url-base="{% url 'workshop:inventory_list' %}" action="">
+            
+            <!-- Indicador de carga -->
+            <div id="inventoryModalLoading" style="display: none;" class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="text-muted mt-3">Cargando datos del repuesto...</p>
+            </div>
+            
+            <!-- Formulario -->
+            <form id="inventoryForm" method="post" style="display: none;" data-update-url-base="{% url 'workshop:inventory_list' %}">
                 {% csrf_token %}
                 <div class="modal-body">
+                    <!-- Información del repuesto (solo lectura) -->
+                    <div class="mb-3 p-3 bg-info rounded">
+                        <h6 class="mb-2"><i class="bi bi-info-circle"></i> Información del Repuesto</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>SKU:</strong> <span id="viewSku" class="text-muted">—</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Nombre:</strong> <span id="viewName" class="text-muted">—</span>
+                            </div>
+                            <div class="col-md-6 mt-2">
+                                <strong>Marca:</strong> <span id="viewBrand" class="text-muted">—</span>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Cantidad <span class="text-danger">*</span></label>
-                            <input type="number" name="quantity" id="updateQuantity" class="form-control" min="0" required>
+                            <input type="number" name="quantity" id="id_quantity" class="form-control" min="0" required>
                             <div class="form-text">Cantidad actual en stock</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Costo Unitario (CLP) <span class="text-danger">*</span></label>
-                            <input type="number" name="current_cost" id="updateCost" class="form-control" min="0" step="0.01" required>
+                            <input type="number" name="current_cost" id="id_current_cost" class="form-control" min="0" step="0.01" required>
                             <div class="form-text">Costo de compra por unidad</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Proveedor</label>
-                            <select name="supplier_id" id="updateSupplier" class="form-select">
+                            <select name="supplier_id" id="id_supplier_id" class="form-select">
                                 <option value="">Sin proveedor</option>
                                 {% for supplier in suppliers %}
                                 <option value="{{ supplier.id }}">{{ supplier.name }}</option>
@@ -183,19 +214,16 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Ubicación en Bodega</label>
-                            <input type="text" name="location" id="updateLocation" class="form-control" placeholder="Ej: Estante A-3">
+                            <input type="text" name="location" id="id_location" class="form-control" placeholder="Ej: Estante A-3">
                         </div>
                         <div class="col-md-12">
                             <label class="form-label">SKU Interno del Taller</label>
-                            <input type="text" name="workshop_sku" id="updateWorkshopSku" class="form-control" placeholder="Código interno (opcional)">
+                            <input type="text" name="workshop_sku" id="id_workshop_sku" class="form-control" placeholder="Código interno (opcional)">
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-circle"></i> Actualizar
-                    </button>
+                <div class="modal-footer" id="inventoryModalFooter">
+                    <!-- Los botones se generan dinámicamente según el modo -->
                 </div>
             </form>
         </div>

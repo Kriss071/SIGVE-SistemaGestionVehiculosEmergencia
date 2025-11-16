@@ -30,12 +30,14 @@ urlpatterns = [
     # Gestión de Inventario
     path('inventory/', views.inventory_list, name='inventory_list'),
     path('inventory/add/', views.inventory_add, name='inventory_add'),
+    path('api/inventory/<int:inventory_id>/', views.inventory_detail_api, name='inventory_detail_api'),
     path('inventory/<int:inventory_id>/update/', views.inventory_update, name='inventory_update'),
     path('inventory/<int:inventory_id>/delete/', views.inventory_delete, name='inventory_delete'),
     
     # Gestión de Proveedores
     path('suppliers/', views.suppliers_list, name='suppliers_list'),
     path('suppliers/create/', views.supplier_create, name='supplier_create'),
+    path('api/suppliers/<int:supplier_id>/', views.supplier_detail_api, name='supplier_detail_api'),
     path('suppliers/<int:supplier_id>/update/', views.supplier_update, name='supplier_update'),
     path('suppliers/<int:supplier_id>/delete/', views.supplier_delete, name='supplier_delete'),
     

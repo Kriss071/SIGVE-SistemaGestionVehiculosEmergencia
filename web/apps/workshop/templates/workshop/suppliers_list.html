@@ -1,12 +1,16 @@
 {% extends 'workshop/base.html' %}
 {% load static %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/supplier.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1><i class="bi bi-truck"></i> Proveedores</h1>
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSupplierModal">
+            <button type="button" class="btn btn-primary" onclick="SupplierModal.open('create')">
                 <i class="bi bi-plus-circle"></i> Nuevo Proveedor Local
             </button>
         </div>
@@ -17,7 +21,7 @@
     <div class="card-body">
         {% if suppliers %}
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover suppliers-table">
                 <thead>
                     <tr>
                         <th>Nombre</th>
@@ -30,7 +34,7 @@
                 </thead>
                 <tbody>
                     {% for supplier in suppliers %}
-                    <tr>
+                    <tr onclick="SupplierModal.open('view', {{ supplier.id }})" style="cursor: pointer;">
                         <td><strong>{{ supplier.name }}</strong></td>
                         <td>{{ supplier.rut|default:"—" }}</td>
                         <td>{{ supplier.phone|default:"—" }}</td>
@@ -42,18 +46,19 @@
                                 <span class="badge bg-success">Local</span>
                             {% endif %}
                         </td>
-                        <td class="text-end">
+                        <td class="text-end supplier-actions" onclick="event.stopPropagation()">
                             {% if not supplier.is_global %}
                             <button type="button" class="btn btn-sm btn-outline-primary" 
                                     data-update-url="{% url 'workshop:supplier_update' supplier.id %}"
-                                    onclick="openEditModal({{ supplier.id }}, this.getAttribute('data-update-url'), '{{ supplier.name|escapejs }}', '{{ supplier.rut|default:''|escapejs }}', '{{ supplier.address|default:''|escapejs }}', '{{ supplier.phone|default:''|escapejs }}', '{{ supplier.email|default:''|escapejs }}')">
+                                    onclick="SupplierModal.open('edit', {{ supplier.id }})"
+                                    title="Editar">
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <form method="post" action="{% url 'workshop:supplier_delete' supplier.id %}" 
                                   style="display:inline;" 
                                   onsubmit="return confirm('¿Eliminar proveedor?')">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
@@ -75,82 +80,52 @@
     </div>
 </div>
 
-<!-- Modal: Agregar Proveedor -->
-<div class="modal fade" id="addSupplierModal" tabindex="-1">
+<!-- Modal: Ver/Editar/Crear Proveedor -->
+<div class="modal fade" id="supplierModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Nuevo Proveedor Local</h5>
+                <h5 class="modal-title">
+                    <i class="bi bi-truck"></i> <span id="supplierModalTitle">Proveedor</span>
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="post" action="{% url 'workshop:supplier_create' %}">
+            
+            <!-- Indicador de carga -->
+            <div id="supplierModalLoading" style="display: none;" class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="text-muted mt-3">Cargando datos del proveedor...</p>
+            </div>
+            
+            <!-- Formulario -->
+            <form id="supplierForm" method="post" style="display: none;">
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Nombre</label>
-                        <input type="text" name="name" class="form-control" required>
+                        <input type="text" name="name" id="id_name" class="form-control" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">RUT</label>
-                        <input type="text" name="rut" class="form-control" placeholder="12345678-9">
+                        <input type="text" name="rut" id="id_rut" class="form-control">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Dirección</label>
-                        <input type="text" name="address" class="form-control">
+                        <input type="text" name="address" id="id_address" class="form-control">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Teléfono</label>
-                        <input type="text" name="phone" class="form-control">
+                        <input type="text" name="phone" id="id_phone" class="form-control">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Email</label>
-                        <input type="email" name="email" class="form-control">
+                        <input type="email" name="email" id="id_email" class="form-control">
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Crear Proveedor</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Modal: Editar Proveedor -->
-<div class="modal fade" id="editSupplierModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Editar Proveedor</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="editSupplierForm" method="post">
-                {% csrf_token %}
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Nombre</label>
-                        <input type="text" name="name" id="editName" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">RUT</label>
-                        <input type="text" name="rut" id="editRut" class="form-control">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Dirección</label>
-                        <input type="text" name="address" id="editAddress" class="form-control">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Teléfono</label>
-                        <input type="text" name="phone" id="editPhone" class="form-control">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <input type="email" name="email" id="editEmail" class="form-control">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                <div class="modal-footer" id="supplierModalFooter">
+                    <!-- Los botones se generan dinámicamente según el modo -->
                 </div>
             </form>
         </div>
@@ -160,19 +135,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-function openEditModal(id, updateUrl, name, rut, address, phone, email) {
-    const modal = new bootstrap.Modal(document.getElementById('editSupplierModal'));
-    const form = document.getElementById('editSupplierForm');
-    form.action = updateUrl;
-    document.getElementById('editName').value = name;
-    document.getElementById('editRut').value = rut;
-    document.getElementById('editAddress').value = address;
-    document.getElementById('editPhone').value = phone;
-    document.getElementById('editEmail').value = email;
-    modal.show();
-}
-</script>
+<script src="{% static 'js/workshop_supplier.js' %}"></script>
 {% endblock %}
 
 

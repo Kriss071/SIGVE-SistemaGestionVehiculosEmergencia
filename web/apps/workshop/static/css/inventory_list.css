@@ -4,11 +4,21 @@
 
 /* Tabla de inventario */
 .inventory-table tbody tr {
-    cursor: default;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
 }
 
 .inventory-table tbody tr:hover {
     background-color: #f8f9fa;
+}
+
+/* Prevenir que los botones activen el click de la fila */
+.inventory-actions {
+    cursor: default;
+}
+
+.inventory-actions:hover {
+    background-color: transparent;
 }
 
 /* Badges de stock */
@@ -33,9 +43,82 @@
     max-width: 400px;
 }
 
-/* Modal de actualización */
-#updateInventoryModal .form-label {
+/* Estilos del Modal de Inventario */
+#inventoryModal .modal-content {
+    border-radius: 0.5rem;
+}
+
+#inventoryModal .modal-header {
+    border-bottom: 1px solid #dee2e6;
+}
+
+#inventoryModal .modal-footer {
+    border-top: 1px solid #dee2e6;
+}
+
+/* Indicador de carga */
+#inventoryModalLoading {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+#inventoryModalLoading .spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Estilos para campos del formulario en modo lectura (disabled/readonly) */
+#inventoryForm input[readonly],
+#inventoryForm input:disabled,
+#inventoryForm textarea[readonly],
+#inventoryForm textarea:disabled,
+#inventoryForm select:disabled {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+    opacity: 0.7;
+    border-color: #ced4da;
+}
+
+#inventoryForm input[readonly]:focus,
+#inventoryForm input:disabled:focus,
+#inventoryForm textarea[readonly]:focus,
+#inventoryForm textarea:disabled:focus {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+    box-shadow: none;
+    outline: none;
+}
+
+#inventoryForm select:disabled {
+    background-color: #e9ecef;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    cursor: not-allowed;
+}
+
+/* Estilos para campos del formulario en modo edición (habilitados) */
+#inventoryForm input:not([readonly]):not(:disabled),
+#inventoryForm textarea:not([readonly]):not(:disabled),
+#inventoryForm select:not(:disabled) {
+    background-color: #fff;
+    cursor: text;
+    opacity: 1;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+#inventoryForm input:not([readonly]):not(:disabled):focus,
+#inventoryForm textarea:not([readonly]):not(:disabled):focus,
+#inventoryForm select:not(:disabled):focus {
+    background-color: #fff;
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    outline: none;
+}
+
+/* Labels */
+#inventoryForm .form-label {
     font-weight: 500;
+    color: #212529;
+    margin-bottom: 0.5rem;
 }
 
 /* Mensaje de inventario vacío */
@@ -46,5 +129,10 @@
 .empty-inventory i {
     font-size: 4rem;
     opacity: 0.3;
+}
+
+/* Botones del footer */
+#inventoryModalFooter .btn {
+    min-width: 120px;
 }
 

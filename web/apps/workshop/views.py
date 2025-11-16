@@ -616,6 +616,26 @@ def inventory_add(request):
     return redirect('workshop:inventory_list')
 
 
+@require_http_methods(["GET"])
+@require_workshop_user
+def inventory_detail_api(request, inventory_id):
+    """API para obtener los datos de un item del inventario."""
+    workshop_id = request.workshop_id
+    
+    item = InventoryService.get_inventory_item(inventory_id, workshop_id)
+    
+    if not item:
+        return JsonResponse({
+            'success': False,
+            'error': 'Item de inventario no encontrado.'
+        }, status=404)
+    
+    return JsonResponse({
+        'success': True,
+        'item': item
+    })
+
+
 @require_http_methods(["POST"])
 @require_workshop_user
 def inventory_update(request, inventory_id):
@@ -705,6 +725,30 @@ def supplier_create(request):
         messages.error(request, '❌ Datos inválidos.')
     
     return redirect('workshop:suppliers_list')
+
+
+@require_http_methods(["GET"])
+@require_workshop_user
+def supplier_detail_api(request, supplier_id):
+    """API para obtener los datos de un proveedor."""
+    workshop_id = request.workshop_id
+    
+    supplier = SupplierService.get_supplier(supplier_id, workshop_id)
+    
+    if not supplier:
+        return JsonResponse({
+            'success': False,
+            'error': 'Proveedor no encontrado.'
+        }, status=404)
+    
+    # Agregar flag is_global si no está presente
+    if 'is_global' not in supplier:
+        supplier['is_global'] = supplier.get('workshop_id') is None
+    
+    return JsonResponse({
+        'success': True,
+        'supplier': supplier
+    })
 
 
 @require_http_methods(["POST"])

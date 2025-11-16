@@ -65,7 +65,6 @@
             titleSpan.textContent = 'Crear Proveedor';
             form.action = '/taller/suppliers/create/';
             form.reset();
-            document.getElementById('supplierId').value = '';
             setFieldsEnabled(true);
             renderButtons('create');
             hideLoading();
@@ -147,12 +146,17 @@
          * Llena el formulario con los datos del proveedor
          */
         function populateForm(supplier) {
-            document.getElementById('supplierId').value = supplier.id || '';
-            document.getElementById('id_name').value = supplier.name || '';
-            document.getElementById('id_rut').value = supplier.rut || '';
-            document.getElementById('id_address').value = supplier.address || '';
-            document.getElementById('id_phone').value = supplier.phone || '';
-            document.getElementById('id_email').value = supplier.email || '';
+            const nameField = document.getElementById('id_name');
+            const rutField = document.getElementById('id_rut');
+            const addressField = document.getElementById('id_address');
+            const phoneField = document.getElementById('id_phone');
+            const emailField = document.getElementById('id_email');
+            
+            if (nameField) nameField.value = supplier.name || '';
+            if (rutField) rutField.value = supplier.rut || '';
+            if (addressField) addressField.value = supplier.address || '';
+            if (phoneField) phoneField.value = supplier.phone || '';
+            if (emailField) emailField.value = supplier.email || '';
             
             // Guardar si es global para usarlo en renderButtons
             currentSupplierIsGlobal = supplier.is_global || false;
@@ -169,7 +173,12 @@
                         field.removeAttribute('readonly');
                         field.removeAttribute('disabled');
                     } else {
-                        field.setAttribute('readonly', 'readonly');
+                        // Para inputs y textareas usar readonly, para selects usar disabled
+                        if (field.tagName === 'SELECT') {
+                            field.setAttribute('disabled', 'disabled');
+                        } else {
+                            field.setAttribute('readonly', 'readonly');
+                        }
                     }
                 }
             });

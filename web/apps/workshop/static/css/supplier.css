@@ -13,11 +13,94 @@
 }
 
 /* Prevenir que los botones activen el click de la fila */
-.suppliers-table tbody tr td:last-child {
+.supplier-actions {
     cursor: default;
 }
 
-.suppliers-table tbody tr td:last-child:hover {
+.supplier-actions:hover {
     background-color: transparent;
+}
+
+/* Estilos del Modal de Proveedor */
+#supplierModal .modal-content {
+    border-radius: 0.5rem;
+}
+
+#supplierModal .modal-header {
+    border-bottom: 1px solid #dee2e6;
+}
+
+#supplierModal .modal-footer {
+    border-top: 1px solid #dee2e6;
+}
+
+/* Indicador de carga */
+#supplierModalLoading {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+#supplierModalLoading .spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Estilos para campos del formulario en modo lectura (disabled/readonly) */
+#supplierForm input[readonly],
+#supplierForm input:disabled,
+#supplierForm textarea[readonly],
+#supplierForm textarea:disabled,
+#supplierForm select:disabled {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+    opacity: 0.7;
+    border-color: #ced4da;
+}
+
+#supplierForm input[readonly]:focus,
+#supplierForm input:disabled:focus,
+#supplierForm textarea[readonly]:focus,
+#supplierForm textarea:disabled:focus {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+    box-shadow: none;
+    outline: none;
+}
+
+#supplierForm select:disabled {
+    background-color: #e9ecef;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    cursor: not-allowed;
+}
+
+/* Estilos para campos del formulario en modo edición (habilitados) */
+#supplierForm input:not([readonly]):not(:disabled),
+#supplierForm textarea:not([readonly]):not(:disabled),
+#supplierForm select:not(:disabled) {
+    background-color: #fff;
+    cursor: text;
+    opacity: 1;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+#supplierForm input:not([readonly]):not(:disabled):focus,
+#supplierForm textarea:not([readonly]):not(:disabled):focus,
+#supplierForm select:not(:disabled):focus {
+    background-color: #fff;
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    outline: none;
+}
+
+/* Labels */
+#supplierForm .form-label {
+    font-weight: 500;
+    color: #212529;
+    margin-bottom: 0.5rem;
+}
+
+/* Botones del footer */
+#supplierModalFooter .btn {
+    min-width: 120px;
 }
 

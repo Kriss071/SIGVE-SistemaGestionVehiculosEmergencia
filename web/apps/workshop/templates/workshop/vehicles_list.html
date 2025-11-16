@@ -71,7 +71,8 @@
                 </thead>
                 <tbody>
                     {% for vehicle in vehicles %}
-                    <tr>
+                    <tr onclick="openVehicleViewModal({{ vehicle.id }}, '{{ vehicle.license_plate|escapejs }}', '{{ vehicle.brand|escapejs }}', '{{ vehicle.model|escapejs }}', {{ vehicle.year|default:'null' }}, '{{ vehicle.fire_station.name|escapejs }}', '{{ vehicle.vehicle_type.name|escapejs }}', '{{ vehicle.vehicle_status.name|escapejs }}', {{ vehicle.mileage|default:'null' }}, '{{ vehicle.engine_number|default:''|escapejs }}', '{{ vehicle.vin|default:''|escapejs }}', '{{ vehicle.fuel_type.name|default:''|escapejs }}', '{{ vehicle.transmission_type.name|default:''|escapejs }}')" 
+                        style="cursor: pointer;">
                         <td><span class="badge bg-dark">{{ vehicle.license_plate|default:"N/A" }}</span></td>
                         <td><strong>{{ vehicle.brand|default:"—" }}</strong></td>
                         <td>{{ vehicle.model|default:"—" }}</td>
@@ -110,10 +111,99 @@
 <!-- Modal Crear Vehículo -->
 {% include 'workshop/modals/vehicle_modal.html' %}
 
+<!-- Modal Ver Vehículo -->
+<div class="modal fade" id="vehicleViewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-truck"></i> Información del Vehículo
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <strong>Patente:</strong>
+                        <p id="viewLicensePlate" class="text-muted">—</p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Marca:</strong>
+                        <p id="viewBrand" class="text-muted">—</p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Modelo:</strong>
+                        <p id="viewModel" class="text-muted">—</p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Año:</strong>
+                        <p id="viewYear" class="text-muted">—</p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Cuartel:</strong>
+                        <p id="viewFireStation" class="text-muted">—</p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Tipo de Vehículo:</strong>
+                        <p id="viewVehicleType" class="text-muted">—</p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Estado:</strong>
+                        <p id="viewStatus" class="text-muted">—</p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Kilometraje:</strong>
+                        <p id="viewMileage" class="text-muted">—</p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Número de Motor:</strong>
+                        <p id="viewEngineNumber" class="text-muted">—</p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>VIN / Chasis:</strong>
+                        <p id="viewVin" class="text-muted">—</p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Tipo de Combustible:</strong>
+                        <p id="viewFuelType" class="text-muted">—</p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Tipo de Transmisión:</strong>
+                        <p id="viewTransmissionType" class="text-muted">—</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'js/sigve.js' %}"></script>
 <script src="{% static 'js/vehicles_list.js' %}"></script>
+<script>
+function openVehicleViewModal(id, licensePlate, brand, model, year, fireStation, vehicleType, status, mileage, engineNumber, vin, fuelType, transmissionType) {
+    const modal = new bootstrap.Modal(document.getElementById('vehicleViewModal'));
+    
+    document.getElementById('viewLicensePlate').textContent = licensePlate || '—';
+    document.getElementById('viewBrand').textContent = brand || '—';
+    document.getElementById('viewModel').textContent = model || '—';
+    document.getElementById('viewYear').textContent = year ? year.toString() : '—';
+    document.getElementById('viewFireStation').textContent = fireStation || '—';
+    document.getElementById('viewVehicleType').textContent = vehicleType || '—';
+    document.getElementById('viewStatus').textContent = status || '—';
+    document.getElementById('viewMileage').textContent = mileage ? mileage.toString() + ' km' : '—';
+    document.getElementById('viewEngineNumber').textContent = engineNumber || '—';
+    document.getElementById('viewVin').textContent = vin || '—';
+    document.getElementById('viewFuelType').textContent = fuelType || '—';
+    document.getElementById('viewTransmissionType').textContent = transmissionType || '—';
+    
+    modal.show();
+}
+</script>
 {% endblock %}
 
