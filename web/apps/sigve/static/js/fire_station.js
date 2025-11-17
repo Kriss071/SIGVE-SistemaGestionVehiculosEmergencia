@@ -77,6 +77,9 @@
             hideLoading();
             showForm();
             modalInstance.show();
+            
+            // Inicializar geocodificación
+            setupGeocoding();
         }
         
         /**
@@ -129,7 +132,10 @@
             titleSpan.textContent = 'Editar Cuartel';
             form.action = `/sigve/fire-stations/${currentFireStationId}/edit/`; // Ajusta esta URL
             renderButtons('edit');
-            setTimeout(() => setFieldsEnabled(true), 0);
+            setTimeout(() => {
+                setFieldsEnabled(true);
+                setupGeocoding();
+            }, 0);
         }
         
         /**
@@ -156,8 +162,24 @@
         function populateForm(station) {
             document.getElementById('fireStationId').value = station.id || '';
             document.getElementById('id_name').value = station.name || '';
-            document.getElementById('id_address').value = station.address || '';
+            
+            // Buscar campo de dirección por diferentes IDs posibles
+            const addressField = document.getElementById('fire-station-address') || document.getElementById('id_address');
+            if (addressField) {
+                addressField.value = station.address || '';
+            }
+            
             document.getElementById('id_commune').value = station.commune_id || '';
+            
+            // Poblar coordenadas si existen
+            const latInput = document.getElementById('fire-station-latitude');
+            const lonInput = document.getElementById('fire-station-longitude');
+            if (latInput && station.latitude) {
+                latInput.value = station.latitude;
+            }
+            if (lonInput && station.longitude) {
+                lonInput.value = station.longitude;
+            }
         }
         
         /**
@@ -297,6 +319,21 @@
         
         function showForm() {
             form.style.display = 'block';
+        }
+        
+        /**
+         * Configura la geocodificación para el campo de dirección
+         */
+        function setupGeocoding() {
+            if (window.Geocoding) {
+                setTimeout(() => {
+                    window.Geocoding.setupAddressGeocoding(
+                        'fire-station-address',
+                        'fire-station-latitude',
+                        'fire-station-longitude'
+                    );
+                }, 100);
+            }
         }
         
         /**

@@ -151,7 +151,9 @@ def workshop_create(request):
                 'name': form.cleaned_data['name'],
                 'address': form.cleaned_data.get('address'),
                 'phone': form.cleaned_data.get('phone'),
-                'email': form.cleaned_data.get('email')
+                'email': form.cleaned_data.get('email'),
+                'latitude': float(form.cleaned_data['latitude']) if form.cleaned_data.get('latitude') else None,
+                'longitude': float(form.cleaned_data['longitude']) if form.cleaned_data.get('longitude') else None
             }
             
             logger.debug("Datos limpios del formulario: %s", data)
@@ -224,7 +226,9 @@ def workshop_edit(request, workshop_id):
                 'name': form.cleaned_data['name'],
                 'address': form.cleaned_data.get('address'),
                 'phone': form.cleaned_data.get('phone'),
-                'email': form.cleaned_data.get('email')
+                'email': form.cleaned_data.get('email'),
+                'latitude': float(form.cleaned_data['latitude']) if form.cleaned_data.get('latitude') else None,
+                'longitude': float(form.cleaned_data['longitude']) if form.cleaned_data.get('longitude') else None
             }
             
             success = WorkshopService.update_workshop(workshop_id, data)
@@ -314,7 +318,9 @@ def fire_station_create(request):
             data = {
                 'name': form.cleaned_data['name'],
                 'address': form.cleaned_data['address'],
-                'commune_id': form.cleaned_data['commune_id']
+                'commune_id': form.cleaned_data['commune_id'],
+                'latitude': float(form.cleaned_data['latitude']) if form.cleaned_data.get('latitude') else None,
+                'longitude': float(form.cleaned_data['longitude']) if form.cleaned_data.get('longitude') else None
             }
             
             fire_station = FireStationService.create_fire_station(data)
@@ -378,7 +384,9 @@ def fire_station_edit(request, fire_station_id):
             data = {
                 'name': form.cleaned_data['name'],
                 'address': form.cleaned_data['address'],
-                'commune_id': form.cleaned_data['commune_id']
+                'commune_id': form.cleaned_data['commune_id'],
+                'latitude': float(form.cleaned_data['latitude']) if form.cleaned_data.get('latitude') else None,
+                'longitude': float(form.cleaned_data['longitude']) if form.cleaned_data.get('longitude') else None
             }
             
             success = FireStationService.update_fire_station(fire_station_id, data)
@@ -1517,3 +1525,59 @@ def api_get_request_type(request, request_type_id):
             'success': False,
             'error': 'Tipo de solicitud no encontrado'
         }, status=404)
+
+
+@require_supabase_login
+@require_role("Admin SIGVE")
+def api_get_map_locations(request):
+    """
+    API endpoint para obtener las ubicaciones de todos los talleres y cuarteles para el mapa.
+    """
+    try:
+        workshops = WorkshopService.get_all_workshops()
+        fire_stations = FireStationService.get_all_fire_stations()
+        
+        # Formatear datos para el mapa
+        locations = {
+            'workshops': [],
+            'fire_stations': []
+        }
+        
+        # Procesar talleres
+        for workshop in workshops:
+            if workshop.get('latitude') and workshop.get('longitude'):
+                locations['workshops'].append({
+                    'id': workshop['id'],
+                    'name': workshop['name'],
+                    'address': workshop.get('address', ''),
+                    'latitude': float(workshop['latitude']),
+                    'longitude': float(workshop['longitude']),
+                    'phone': workshop.get('phone', ''),
+                    'email': workshop.get('email', '')
+                })
+        
+        # Procesar cuarteles
+        for station in fire_stations:
+            if station.get('latitude') and station.get('longitude'):
+                commune_info = station.get('commune', {})
+                commune_name = commune_info.get('name', '') if isinstance(commune_info, dict) else ''
+                
+                locations['fire_stations'].append({
+                    'id': station['id'],
+                    'name': station['name'],
+                    'address': station.get('address', ''),
+                    'latitude': float(station['latitude']),
+                    'longitude': float(station['longitude']),
+                    'commune': commune_name
+                })
+        
+        return JsonResponse({
+            'success': True,
+            'locations': locations
+        })
+    except Exception as e:
+        logger.error(f"❌ Error obteniendo ubicaciones para el mapa: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': 'Error al obtener las ubicaciones'
+        }, status=500)

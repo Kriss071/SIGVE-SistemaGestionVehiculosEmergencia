@@ -65,6 +65,7 @@ urlpatterns = [
     path('api/users/<str:user_id>/', views.api_get_user, name='api_get_user'),
     path('api/catalogs/<str:catalog_name>/<int:item_id>/', views.api_get_catalog_item, name='api_get_catalog_item'),
     path('api/request-types/<int:request_type_id>/', views.api_get_request_type, name='api_get_request_type'),
+    path('api/map-locations/', views.api_get_map_locations, name='api_get_map_locations'),
 ]
 
 

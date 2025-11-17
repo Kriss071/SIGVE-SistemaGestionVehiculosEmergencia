@@ -11,7 +11,23 @@ class WorkshopForm(forms.Form):
     address = forms.CharField(
         max_length=255,
         label="Dirección",
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Av. Principal 123'})
+        widget=forms.TextInput(attrs={
+            'class': 'form-control', 
+            'placeholder': 'Ej: Av. Libertador Bernardo O\'Higgins 1234, Santiago, Chile',
+            'id': 'workshop-address'
+        })
+    )
+    latitude = forms.DecimalField(
+        max_digits=10,
+        decimal_places=8,
+        required=False,
+        widget=forms.HiddenInput(attrs={'id': 'workshop-latitude'})
+    )
+    longitude = forms.DecimalField(
+        max_digits=11,
+        decimal_places=8,
+        required=False,
+        widget=forms.HiddenInput(attrs={'id': 'workshop-longitude'})
     )
     phone = forms.CharField(
         max_length=20,
@@ -36,7 +52,23 @@ class FireStationForm(forms.Form):
     address = forms.CharField(
         max_length=255,
         label="Dirección",
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Calle Bomberos 456'})
+        widget=forms.TextInput(attrs={
+            'class': 'form-control', 
+            'placeholder': 'Ej: Calle Bomberos 456, Santiago, Chile',
+            'id': 'fire-station-address'
+        })
+    )
+    latitude = forms.DecimalField(
+        max_digits=10,
+        decimal_places=8,
+        required=False,
+        widget=forms.HiddenInput(attrs={'id': 'fire-station-latitude'})
+    )
+    longitude = forms.DecimalField(
+        max_digits=11,
+        decimal_places=8,
+        required=False,
+        widget=forms.HiddenInput(attrs={'id': 'fire-station-longitude'})
     )
     commune_id = forms.IntegerField(
         label="Comuna",

@@ -41,13 +41,16 @@
                         <input type="text" 
                                class="form-control" 
                                name="address" 
-                               id="id_address" 
-                               placeholder="Ej: Av. Principal 123"
+                               id="workshop-address" 
+                               placeholder="Ej: Av. Libertador Bernardo O'Higgins 1234, Santiago, Chile"
                                required>
-                        <small class="text-muted">Dirección física del taller</small>
+                        <small class="text-muted">Dirección completa del taller (incluye comuna y ciudad para mejor precisión)</small>
                         <div class="invalid-feedback">
                             Por favor, ingresa una dirección.
                         </div>
+                        <!-- Campos ocultos para coordenadas -->
+                        <input type="hidden" name="latitude" id="workshop-latitude">
+                        <input type="hidden" name="longitude" id="workshop-longitude">
                     </div>
                     
                     <div class="row">

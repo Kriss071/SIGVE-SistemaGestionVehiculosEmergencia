@@ -3,6 +3,10 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""/>
 {% endblock %}
 
 {% block content %}
@@ -168,18 +172,33 @@
     </div>
 </div>
 
-<!-- Mapa (Placeholder para implementación futura) -->
+<!-- Mapa de Ubicaciones -->
 <div class="row mt-4">
     <div class="col-12">
         <div class="card">
-            <div class="card-header bg-white">
-                <h5 class="card-title mb-0"><i class="bi bi-geo-alt"></i> Mapa (Próximamente)</h5>
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"><i class="bi bi-geo-alt"></i> Mapa de Ubicaciones</h5>
+                <div class="btn-group btn-group-sm" role="group">
+                    <input type="checkbox" class="btn-check" id="toggle-workshops" checked autocomplete="off">
+                    <label class="btn btn-outline-primary" for="toggle-workshops">
+                        <i class="bi bi-wrench"></i> Talleres
+                    </label>
+                    <input type="checkbox" class="btn-check" id="toggle-fire-stations" checked autocomplete="off">
+                    <label class="btn btn-outline-danger" for="toggle-fire-stations">
+                        <i class="bi bi-fire"></i> Cuarteles
+                    </label>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="bg-light border rounded d-flex align-items-center justify-content-center map-placeholder-wrapper">
-                    <div class="text-center text-muted">
-                        <i class="bi bi-map display-1"></i>
-                        <p class="mt-2">Mapa interactivo en desarrollo</p>
+            <div class="card-body p-0 position-relative">
+                <div id="map" style="height: 500px; width: 100%;"></div>
+                
+                <!-- Loader del mapa -->
+                <div id="mapLoader" class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white" style="z-index: 1000; transition: opacity 0.3s ease;">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="text-muted mb-0">Cargando ubicaciones...</p>
                     </div>
                 </div>
             </div>
@@ -201,6 +220,11 @@
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+<script src="{% static 'js/geocoding.js' %}"></script>
 <script src="{% static 'js/modal.js' %}"></script>
 <script src="{% static 'js/workshop.js' %}"></script>
 <script src="{% static 'js/fire_station.js' %}"></script>

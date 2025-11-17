@@ -78,6 +78,9 @@
             hideLoading();
             showForm();
             modalInstance.show();
+            
+            // Inicializar geocodificación
+            setupGeocoding();
         }
         
         /**
@@ -133,7 +136,10 @@
             form.action = `/sigve/workshops/${currentWorkshopId}/edit/`;
             renderButtons('edit');
             // Usar setTimeout para asegurar que el DOM esté listo
-            setTimeout(() => setFieldsEnabled(true), 0);
+            setTimeout(() => {
+                setFieldsEnabled(true);
+                setupGeocoding();
+            }, 0);
         }
         
         /**
@@ -159,9 +165,25 @@
         function populateForm(workshop) {
             document.getElementById('workshopId').value = workshop.id || '';
             document.getElementById('id_name').value = workshop.name || '';
-            document.getElementById('id_address').value = workshop.address || '';
+            
+            // Buscar campo de dirección por diferentes IDs posibles
+            const addressField = document.getElementById('workshop-address') || document.getElementById('id_address');
+            if (addressField) {
+                addressField.value = workshop.address || '';
+            }
+            
             document.getElementById('id_phone').value = workshop.phone || '';
             document.getElementById('id_email').value = workshop.email || '';
+            
+            // Poblar coordenadas si existen
+            const latInput = document.getElementById('workshop-latitude');
+            const lonInput = document.getElementById('workshop-longitude');
+            if (latInput && workshop.latitude) {
+                latInput.value = workshop.latitude;
+            }
+            if (lonInput && workshop.longitude) {
+                lonInput.value = workshop.longitude;
+            }
         }
         
         /**
@@ -311,6 +333,21 @@
          */
         function showForm() {
             form.style.display = 'block';
+        }
+        
+        /**
+         * Configura la geocodificación para el campo de dirección
+         */
+        function setupGeocoding() {
+            if (window.Geocoding) {
+                setTimeout(() => {
+                    window.Geocoding.setupAddressGeocoding(
+                        'workshop-address',
+                        'workshop-latitude',
+                        'workshop-longitude'
+                    );
+                }, 100);
+            }
         }
         
         /**
