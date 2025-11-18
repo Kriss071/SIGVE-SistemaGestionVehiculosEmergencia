@@ -1,6 +1,7 @@
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
+from supabase import PostgrestAPIError
 from .base_service import FireStationBaseService
 from accounts.client.supabase_client import get_supabase_admin
 
@@ -97,8 +98,52 @@ class UserService(FireStationBaseService):
             logger.error(f"❌ Error al obtener datos de auth para usuario {user_id}: {e}")
             return None
     
+    @staticmethod
+    def _parse_duplicate_error(error: Exception) -> Optional[Dict[str, str]]:
+        """
+        Parsea un error de Supabase para identificar qué campo está duplicado en user_profile.
+        
+        Args:
+            error: La excepción capturada.
+            
+        Returns:
+            Diccionario con el campo duplicado y mensaje, o None si no es un error de duplicación.
+        """
+        error_msg = str(error).lower()
+        error_details = getattr(error, 'message', '') or error_msg
+        
+        # Mapeo de campos y sus mensajes de error
+        field_mapping = {
+            'rut': {
+                'keywords': ['rut'],
+                'message': 'Este RUT ya está registrado en otro usuario.'
+            },
+            'phone': {
+                'keywords': ['phone', 'teléfono', 'telefono'],
+                'message': 'Este número de teléfono ya está registrado en otro usuario.'
+            }
+        }
+        
+        # Buscar el campo duplicado en el mensaje de error
+        for field, info in field_mapping.items():
+            for keyword in info['keywords']:
+                if keyword in error_details.lower():
+                    return {
+                        'field': field,
+                        'message': info['message']
+                    }
+        
+        # Si no se identifica un campo específico, verificar si es un error de constraint único
+        if 'unique constraint' in error_details or 'duplicate key' in error_details or '23505' in error_details:
+            return {
+                'field': 'general',
+                'message': 'Ya existe un registro con estos datos. Verifica que los datos sean únicos.'
+            }
+        
+        return None
+    
     @classmethod
-    def update_user(cls, user_id: str, fire_station_id: int, data: Dict[str, Any]) -> bool:
+    def update_user(cls, user_id: str, fire_station_id: int, data: Dict[str, Any]) -> Tuple[bool, Optional[Dict[str, str]]]:
         """
         Actualiza un usuario del cuartel.
         
@@ -108,7 +153,7 @@ class UserService(FireStationBaseService):
             data: Datos a actualizar.
             
         Returns:
-            True si se actualizó correctamente, False en caso contrario.
+            Tupla (éxito, errores). Si hay errores, el primer elemento es False.
         """
         logger.info(f"✏️ Actualizando usuario {user_id}")
         
@@ -117,21 +162,43 @@ class UserService(FireStationBaseService):
         # Agregar timestamp de actualización
         data['updated_at'] = datetime.utcnow().isoformat()
         
-        # Actualizar perfil
-        result = cls._execute_single(
-            client.table('user_profile')
-                .update(data)
-                .eq('id', user_id)
-                .eq('fire_station_id', fire_station_id),
-            'update_user'
-        )
+        # Convertir cadenas vacías a None para campos opcionales
+        for key in ['rut', 'phone']:
+            if key in data and data[key] == '':
+                data[key] = None
         
-        if result:
-            logger.info(f"✅ Usuario {user_id} actualizado correctamente")
-            return True
-        else:
-            logger.error(f"❌ Error al actualizar usuario {user_id}")
-            return False
+        try:
+            # Ejecutar directamente para capturar excepciones de duplicado
+            response = client.table('user_profile') \
+                .update(data) \
+                .eq('id', user_id) \
+                .eq('fire_station_id', fire_station_id) \
+                .execute()
+            
+            if response.data and len(response.data) > 0:
+                logger.info(f"✅ Usuario {user_id} actualizado correctamente")
+                return True, None
+            else:
+                logger.error(f"❌ Error al actualizar usuario {user_id}: respuesta vacía")
+                return False, {'general': ['Error al actualizar el usuario. Por favor, intenta nuevamente.']}
+        except PostgrestAPIError as e:
+            logger.error(f"❌ Error de API actualizando usuario {user_id}: {e.message}", exc_info=True)
+            
+            # Intentar parsear error de duplicación
+            duplicate_error = cls._parse_duplicate_error(e)
+            if duplicate_error:
+                return False, {duplicate_error['field']: [duplicate_error['message']]}
+            
+            return False, {'general': ['Error al actualizar el usuario. Por favor, intenta nuevamente.']}
+        except Exception as e:
+            logger.error(f"❌ Error inesperado actualizando usuario {user_id}: {e}", exc_info=True)
+            
+            # Intentar parsear error de duplicación
+            duplicate_error = cls._parse_duplicate_error(e)
+            if duplicate_error:
+                return False, {duplicate_error['field']: [duplicate_error['message']]}
+            
+            return False, {'general': ['Error al actualizar el usuario. Por favor, intenta nuevamente.']}
     
     @classmethod
     def deactivate_user(cls, user_id: str, fire_station_id: int) -> bool:
@@ -160,6 +227,56 @@ class UserService(FireStationBaseService):
             True si se activó correctamente, False en caso contrario.
         """
         return cls.update_user(user_id, fire_station_id, {'is_active': True})
+    
+    @classmethod
+    def delete_user(cls, user_id: str, fire_station_id: int) -> bool:
+        """
+        Elimina un usuario del cuartel (tanto de auth.users como de user_profile).
+        
+        Args:
+            user_id: ID del usuario.
+            fire_station_id: ID del cuartel (para validación).
+            
+        Returns:
+            True si se eliminó correctamente, False en caso contrario.
+        """
+        logger.info(f"🗑️ Eliminando usuario {user_id}")
+        
+        client = cls.get_client()
+        admin_client = get_supabase_admin()
+        
+        try:
+            # Paso 1: Verificar que el usuario existe y pertenece al cuartel
+            user = cls.get_user(user_id, fire_station_id)
+            if not user:
+                logger.warning(f"⚠️ Usuario {user_id} no encontrado o no pertenece al cuartel {fire_station_id}")
+                return False
+            
+            # Paso 2: Eliminar perfil de user_profile
+            result = client.table('user_profile') \
+                .delete() \
+                .eq('id', user_id) \
+                .eq('fire_station_id', fire_station_id) \
+                .execute()
+            
+            if not result.data:
+                logger.warning(f"⚠️ No se pudo eliminar el perfil del usuario {user_id}")
+                return False
+            
+            # Paso 3: Eliminar usuario de auth.users
+            try:
+                admin_client.auth.admin.delete_user(user_id)
+                logger.info(f"✅ Usuario {user_id} eliminado de auth")
+            except Exception as auth_error:
+                logger.error(f"⚠️ Error eliminando usuario {user_id} de auth: {auth_error}", exc_info=True)
+                # Continuar aunque falle la eliminación de auth, el perfil ya se eliminó
+            
+            logger.info(f"✅ Usuario {user_id} eliminado correctamente")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Error eliminando usuario {user_id}: {e}", exc_info=True)
+            return False
     
     @classmethod
     def get_all_roles(cls) -> List[Dict[str, Any]]:
@@ -238,10 +355,10 @@ class UserService(FireStationBaseService):
             
         except Exception as auth_error:
             logger.error(f"❌ Error creando usuario en auth: {auth_error}", exc_info=True)
-            error_msg = str(auth_error)
-            if "already registered" in error_msg.lower() or "duplicate" in error_msg.lower():
-                return {"success": False, "user_id": None, "error": "El correo electrónico ya está registrado."}
-            return {"success": False, "user_id": None, "error": "Error creando el usuario."}
+            error_msg = str(auth_error).lower()
+            if "already registered" in error_msg or "duplicate" in error_msg or "email" in error_msg:
+                return {"success": False, "user_id": None, "error": "El correo electrónico ya está registrado.", "error_field": "email"}
+            return {"success": False, "user_id": None, "error": "Error creando el usuario.", "error_field": None}
         
         # Paso 2: Crear perfil en user_profile
         try:
@@ -265,10 +382,18 @@ class UserService(FireStationBaseService):
                 raise Exception("No se pudo crear el perfil del usuario.")
             
             logger.info(f"✅ Usuario {email} creado correctamente con ID {user_id}")
-            return {"success": True, "user_id": user_id, "error": None}
+            return {"success": True, "user_id": user_id, "error": None, "error_field": None}
             
         except Exception as profile_error:
             logger.error(f"❌ Error creando perfil del usuario: {profile_error}", exc_info=True)
+            
+            # Intentar parsear error de duplicación
+            duplicate_error = cls._parse_duplicate_error(profile_error)
+            error_message = "Error creando el perfil del usuario."
+            error_field = None
+            if duplicate_error:
+                error_message = duplicate_error['message']
+                error_field = duplicate_error['field']
             
             # Revertir: eliminar usuario de auth
             try:
@@ -277,5 +402,5 @@ class UserService(FireStationBaseService):
             except Exception as cleanup_error:
                 logger.error(f"⚠️ Error al revertir usuario en auth: {cleanup_error}", exc_info=True)
             
-            return {"success": False, "user_id": user_id, "error": "Error creando el perfil del usuario."}
+            return {"success": False, "user_id": user_id, "error": error_message, "error_field": error_field}
 

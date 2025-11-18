@@ -47,7 +47,7 @@
                         <div class="mb-3">
                             <label for="id_email" class="form-label">Correo Electrónico <span class="text-danger">*</span></label>
                             <input type="email" class="form-control" name="email" id="id_email" placeholder="usuario@ejemplo.cl" required>
-                            <div class="invalid-feedback">Por favor ingresa un correo electrónico válido.</div>
+                            <div class="invalid-feedback" data-field-error="email">Por favor ingresa un correo electrónico válido.</div>
                             <small class="form-text text-muted">
                                 El usuario usará este correo para iniciar sesión en el sistema.
                             </small>
@@ -82,6 +82,7 @@
                                 <label for="id_rut" class="form-label">RUT</label>
                                 <input type="text" class="form-control" name="rut" id="id_rut" 
                                        placeholder="12345678-9">
+                                <div class="invalid-feedback" data-field-error="rut"></div>
                             </div>
                         </div>
                         
@@ -90,6 +91,7 @@
                                 <label for="id_phone" class="form-label">Teléfono</label>
                                 <input type="text" class="form-control" name="phone" id="id_phone" 
                                        placeholder="+56912345678">
+                                <div class="invalid-feedback" data-field-error="phone"></div>
                             </div>
                         </div>
                     </div>

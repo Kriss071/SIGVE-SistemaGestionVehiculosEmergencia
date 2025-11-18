@@ -284,20 +284,33 @@ def user_create(request):
     fire_station_id = request.fire_station_id
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     
-    roles = UserService.get_fire_station_roles()
-    role_choices = [(str(role['id']), role['name']) for role in roles]
+    # Solo permitir crear usuarios con rol "Jefe Cuartel"
+    all_roles = UserService.get_fire_station_roles()
+    jefe_cuartel_roles = [role for role in all_roles if role.get('name') == 'Jefe Cuartel']
+    
+    if not jefe_cuartel_roles:
+        error_msg = 'No se encontró el rol "Jefe Cuartel". Contacta al administrador.'
+        if is_ajax:
+            return JsonResponse({
+                'success': False,
+                'errors': {'general': [error_msg]}
+            }, status=400)
+        messages.error(request, f'❌ {error_msg}')
+        return redirect('fire_station:users_list')
+    
+    role_choices = [(str(role['id']), role['name']) for role in jefe_cuartel_roles]
     
     form = UserCreateForm(request.POST, role_choices=role_choices)
     
     if form.is_valid():
         cleaned_data = form.cleaned_data
         
-        # Validar que el rol es válido para cuartel
+        # Validar que el rol es "Jefe Cuartel"
         role_id = cleaned_data['role_id']
-        role_ids = [role['id'] for role in roles]
+        jefe_cuartel_role_ids = [role['id'] for role in jefe_cuartel_roles]
         
-        if role_id not in role_ids:
-            error_msg = 'Rol no válido. Solo se pueden crear usuarios con roles de cuartel.'
+        if role_id not in jefe_cuartel_role_ids:
+            error_msg = 'Solo se pueden crear usuarios con el rol "Jefe Cuartel".'
             if is_ajax:
                 return JsonResponse({
                     'success': False,
@@ -329,11 +342,19 @@ def user_create(request):
             return redirect('fire_station:users_list')
         
         error_msg = result.get('error', 'Error al crear el usuario.')
+        error_field = result.get('error_field')
+        
         if is_ajax:
-            return JsonResponse({
-                'success': False,
-                'errors': {'general': [error_msg]}
-            }, status=400)
+            if error_field and error_field != 'general':
+                return JsonResponse({
+                    'success': False,
+                    'errors': {error_field: [error_msg]}
+                }, status=400)
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'errors': {'general': [error_msg]}
+                }, status=400)
         messages.error(request, f'❌ {error_msg}')
         return redirect('fire_station:users_list')
     
@@ -375,8 +396,21 @@ def user_edit(request, user_id):
         messages.error(request, '❌ Usuario no encontrado.')
         return redirect('fire_station:users_list')
     
-    roles = UserService.get_fire_station_roles()
-    role_choices = [(str(role['id']), role['name']) for role in roles]
+    # Solo permitir editar usuarios con rol "Jefe Cuartel"
+    all_roles = UserService.get_fire_station_roles()
+    jefe_cuartel_roles = [role for role in all_roles if role.get('name') == 'Jefe Cuartel']
+    
+    if not jefe_cuartel_roles:
+        error_msg = 'No se encontró el rol "Jefe Cuartel". Contacta al administrador.'
+        if is_ajax:
+            return JsonResponse({
+                'success': False,
+                'errors': {'general': [error_msg]}
+            }, status=400)
+        messages.error(request, f'❌ {error_msg}')
+        return redirect('fire_station:users_list')
+    
+    role_choices = [(str(role['id']), role['name']) for role in jefe_cuartel_roles]
     
     form = UserProfileForm(request.POST, role_choices=role_choices)
     
@@ -390,7 +424,21 @@ def user_edit(request, user_id):
             'is_active': form.cleaned_data.get('is_active', True),
         }
         
-        success = UserService.update_user(user_id, fire_station_id, data)
+        # Validar que el rol es "Jefe Cuartel"
+        role_id = form.cleaned_data['role_id']
+        jefe_cuartel_role_ids = [role['id'] for role in jefe_cuartel_roles]
+        
+        if role_id not in jefe_cuartel_role_ids:
+            error_msg = 'Solo se pueden editar usuarios con el rol "Jefe Cuartel".'
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'errors': {'role_id': [error_msg]}
+                }, status=400)
+            messages.error(request, f'❌ {error_msg}')
+            return redirect('fire_station:users_list')
+        
+        success, errors = UserService.update_user(user_id, fire_station_id, data)
         
         if success:
             message = '✅ Usuario actualizado correctamente.'
@@ -401,8 +449,10 @@ def user_edit(request, user_id):
             return redirect('fire_station:users_list')
         else:
             if is_ajax:
-                return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el usuario.']}})
-            messages.error(request, '❌ Error al actualizar el usuario.')
+                return JsonResponse({'success': False, 'errors': errors or {'general': ['Error al actualizar el usuario.']}})
+            # Para no-AJAX, mostrar el primer error
+            first_error = list(errors.values())[0][0] if errors else 'Error al actualizar el usuario.'
+            messages.error(request, f'❌ {first_error}')
     else:
         logger.warning(f"⚠️ Formulario inválido al editar usuario. Errores: {form.errors}")
         logger.warning(f"⚠️ Datos recibidos: {request.POST.dict()}")
@@ -456,6 +506,29 @@ def user_activate(request, user_id):
         messages.success(request, '✅ Usuario activado correctamente.')
     else:
         messages.error(request, '❌ Error al activar el usuario.')
+    
+    return redirect('fire_station:users_list')
+
+
+@require_http_methods(["POST"])
+@require_supabase_login
+@require_fire_station_user
+@require_jefe_cuartel
+def user_delete(request, user_id):
+    """Elimina un usuario del cuartel."""
+    fire_station_id = request.fire_station_id
+    
+    # Evitar que el jefe se elimine a sí mismo
+    if request.session.get('sb_user_id') == user_id:
+        messages.error(request, '❌ No puedes eliminar tu propia cuenta.')
+        return redirect('fire_station:users_list')
+    
+    success = UserService.delete_user(user_id, fire_station_id)
+    
+    if success:
+        messages.success(request, '🗑️ Usuario eliminado correctamente.')
+    else:
+        messages.error(request, '❌ Error al eliminar el usuario.')
     
     return redirect('fire_station:users_list')
 

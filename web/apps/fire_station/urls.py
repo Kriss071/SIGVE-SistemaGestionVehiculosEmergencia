@@ -20,6 +20,7 @@ urlpatterns = [
     path('users/<str:user_id>/edit/', views.user_edit, name='user_edit'),
     path('users/<str:user_id>/deactivate/', views.user_deactivate, name='user_deactivate'),
     path('users/<str:user_id>/activate/', views.user_activate, name='user_activate'),
+    path('users/<str:user_id>/delete/', views.user_delete, name='user_delete'),
     
     # Solicitudes de Mantenimiento
     path('requests/', views.requests_list, name='requests_list'),

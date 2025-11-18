@@ -71,6 +71,28 @@
             
             // Evento al enviar el formulario
             form.addEventListener('submit', handleSubmit);
+            
+            // Limpiar errores cuando el usuario empiece a escribir
+            setupFieldErrorClearing();
+        }
+        
+        /**
+         * Configura la limpieza automática de errores cuando el usuario escribe
+         */
+        function setupFieldErrorClearing() {
+            const fields = form.querySelectorAll('input, select');
+            fields.forEach(field => {
+                field.addEventListener('input', function() {
+                    if (this.classList.contains('is-invalid')) {
+                        this.classList.remove('is-invalid');
+                        // Limpiar el mensaje de error
+                        const feedbackElement = form.querySelector(`[data-field-error="${this.name}"]`);
+                        if (feedbackElement) {
+                            feedbackElement.textContent = '';
+                        }
+                    }
+                });
+            });
         }
         
         /**
@@ -133,11 +155,36 @@
             form.reset();
             form.classList.remove('was-validated');
             
-            // Limpiar clases de validación
+            // Limpiar clases de validación y mensajes de error
             const invalidFields = form.querySelectorAll('.is-invalid');
             invalidFields.forEach(field => field.classList.remove('is-invalid'));
             
+            // Limpiar mensajes de error en los elementos de feedback
+            const feedbackElements = form.querySelectorAll('[data-field-error]');
+            feedbackElements.forEach(element => {
+                element.textContent = '';
+            });
+            
             document.getElementById('userId').value = '';
+            
+            // Filtrar roles para mostrar solo "Jefe Cuartel" en modo creación
+            const roleSelect = document.getElementById('id_role_id');
+            if (roleSelect) {
+                const allOptions = Array.from(roleSelect.options);
+                // Ocultar todas las opciones excepto la primera (placeholder) y "Jefe Cuartel"
+                allOptions.forEach(option => {
+                    if (option.value === '') {
+                        // Mantener el placeholder
+                        option.style.display = '';
+                    } else if (option.textContent.trim() === 'Jefe Cuartel') {
+                        // Mostrar solo "Jefe Cuartel"
+                        option.style.display = '';
+                    } else {
+                        // Ocultar otros roles
+                        option.style.display = 'none';
+                    }
+                });
+            }
             
             // Mostrar campos de credenciales, ocultar email de solo lectura
             document.getElementById('passwordFieldsGroup').style.display = 'block';
@@ -223,6 +270,25 @@
         function setupEditMode() {
             titleSpan.textContent = 'Editar Usuario';
             form.action = `/fire-station/users/${currentUserId}/edit/`;
+            
+            // Filtrar roles para mostrar solo "Jefe Cuartel" en modo edición
+            const roleSelect = document.getElementById('id_role_id');
+            if (roleSelect) {
+                const allOptions = Array.from(roleSelect.options);
+                // Ocultar todas las opciones excepto la primera (placeholder) y "Jefe Cuartel"
+                allOptions.forEach(option => {
+                    if (option.value === '') {
+                        // Mantener el placeholder
+                        option.style.display = '';
+                    } else if (option.textContent.trim() === 'Jefe Cuartel') {
+                        // Mostrar solo "Jefe Cuartel"
+                        option.style.display = '';
+                    } else {
+                        // Ocultar otros roles
+                        option.style.display = 'none';
+                    }
+                });
+            }
             
             // Ocultar campos de credenciales, mostrar email de solo lectura
             document.getElementById('passwordFieldsGroup').style.display = 'none';
@@ -526,33 +592,42 @@
                         setTimeout(() => window.location.reload(), 150);
                         return;
                     } else if (data.errors) {
-                        // Mostrar todos los errores de validación
-                        let errorMessages = [];
+                        // Limpiar errores previos
+                        const invalidFields = form.querySelectorAll('.is-invalid');
+                        invalidFields.forEach(field => field.classList.remove('is-invalid'));
+                        
+                        // Mostrar errores en los campos correspondientes
+                        let hasFieldErrors = false;
                         for (const [field, errors] of Object.entries(data.errors)) {
-                            if (Array.isArray(errors)) {
-                                errors.forEach(error => {
-                                    errorMessages.push(`${field}: ${error}`);
-                                });
+                            const errorText = Array.isArray(errors) ? errors[0] : errors;
+                            
+                            if (field === 'general') {
+                                // Error general, mostrar como notificación
+                                FS.showNotification(errorText, 'error');
                             } else {
-                                errorMessages.push(`${field}: ${errors}`);
+                                // Error de campo específico
+                                hasFieldErrors = true;
+                                const fieldElement = document.getElementById(`id_${field}`);
+                                if (fieldElement) {
+                                    fieldElement.classList.add('is-invalid');
+                                    // Buscar el elemento de feedback
+                                    const feedbackElement = form.querySelector(`[data-field-error="${field}"]`);
+                                    if (feedbackElement) {
+                                        feedbackElement.textContent = errorText;
+                                    } else {
+                                        // Fallback: buscar el siguiente elemento sibling
+                                        const nextSibling = fieldElement.nextElementSibling;
+                                        if (nextSibling && nextSibling.classList.contains('invalid-feedback')) {
+                                            nextSibling.textContent = errorText;
+                                        }
+                                    }
+                                }
                             }
                         }
                         
-                        // Mostrar el primer error como notificación
-                        const firstError = errorMessages[0] || 'Error al guardar el usuario';
-                        FS.showNotification(firstError, 'error');
-                        
-                        // También mostrar errores en los campos correspondientes
-                        for (const [field, errors] of Object.entries(data.errors)) {
-                            const fieldElement = document.getElementById(`id_${field}`);
-                            if (fieldElement) {
-                                fieldElement.classList.add('is-invalid');
-                                const errorText = Array.isArray(errors) ? errors[0] : errors;
-                                const feedbackElement = fieldElement.nextElementSibling;
-                                if (feedbackElement && feedbackElement.classList.contains('invalid-feedback')) {
-                                    feedbackElement.textContent = errorText;
-                                }
-                            }
+                        // Si hay errores de campo, mostrar notificación general
+                        if (hasFieldErrors) {
+                            FS.showNotification('Por favor, corrige los errores en el formulario.', 'error');
                         }
                         
                         FS.hideButtonLoading(submitBtn);
@@ -591,9 +666,15 @@
             form.reset();
             form.classList.remove('was-validated');
             
-            // Limpiar clases de validación
+            // Limpiar clases de validación y mensajes de error
             const invalidFields = form.querySelectorAll('.is-invalid');
             invalidFields.forEach(field => field.classList.remove('is-invalid'));
+            
+            // Limpiar mensajes de error en los elementos de feedback
+            const feedbackElements = form.querySelectorAll('[data-field-error]');
+            feedbackElements.forEach(element => {
+                element.textContent = '';
+            });
             
             // Ocultar campos de credenciales y email view
             document.getElementById('passwordFieldsGroup').style.display = 'none';
@@ -621,12 +702,53 @@
     })();
 
     /**
+     * Búsqueda local de filas dentro de una tabla (fallback si no existe SIGVE.setupTableSearch)
+     * @param {string} inputId
+     * @param {string} tableId
+     */
+    function setupLocalTableSearch(inputId, tableId) {
+        const input = document.getElementById(inputId);
+        const table = document.getElementById(tableId);
+        if (!input || !table) return;
+
+        const tbody = table.querySelector('tbody');
+        if (!tbody) return;
+
+        input.addEventListener('input', function() {
+            const query = (this.value || '').toLowerCase().trim();
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+
+            if (!query) {
+                rows.forEach(row => { row.style.display = ''; });
+                return;
+            }
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        });
+
+        // Limpiar búsqueda con Escape
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                this.value = '';
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                rows.forEach(row => { row.style.display = ''; });
+            }
+        });
+    }
+
+    /**
      * Inicialización de la página de lista de Usuarios
      */
     document.addEventListener('DOMContentLoaded', function() {
         // Conectar la búsqueda de la tabla
         if (window.SIGVE && window.SIGVE.setupTableSearch) {
             window.SIGVE.setupTableSearch('tableSearchInput', 'usersTable');
+        } else {
+            // Fallback: búsqueda local
+            setupLocalTableSearch('tableSearchInput', 'usersTable');
         }
     });
 
