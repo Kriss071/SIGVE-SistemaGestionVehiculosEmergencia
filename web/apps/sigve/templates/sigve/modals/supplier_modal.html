@@ -31,7 +31,7 @@
                                    id="id_name" 
                                    placeholder="Ej: Distribuidora ABC"
                                    required>
-                            <div class="invalid-feedback">
+                            <div class="invalid-feedback" data-field-error="name">
                                 Por favor, ingresa un nombre para el proveedor.
                             </div>
                         </div>
@@ -42,6 +42,9 @@
                                    name="rut" 
                                    id="id_rut" 
                                    placeholder="Ej: 12345678-9">
+                            <div class="invalid-feedback" data-field-error="rut">
+                                <!-- Los errores se mostrarán aquí dinámicamente -->
+                            </div>
                         </div>
                     </div>
                     
@@ -52,6 +55,9 @@
                                name="address" 
                                id="id_address" 
                                placeholder="Ej: Av. Principal 123">
+                        <div class="invalid-feedback" data-field-error="address">
+                            <!-- Los errores se mostrarán aquí dinámicamente -->
+                        </div>
                     </div>
                     
                     <div class="row">
@@ -62,6 +68,9 @@
                                    name="phone" 
                                    id="id_phone" 
                                    placeholder="Ej: +56912345678">
+                            <div class="invalid-feedback" data-field-error="phone">
+                                <!-- Los errores se mostrarán aquí dinámicamente -->
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="id_email" class="form-label">Email</label>
@@ -70,6 +79,9 @@
                                    name="email" 
                                    id="id_email" 
                                    placeholder="Ej: contacto@proveedor.cl">
+                            <div class="invalid-feedback" data-field-error="email">
+                                <!-- Los errores se mostrarán aquí dinámicamente -->
+                            </div>
                         </div>
                     </div>
 

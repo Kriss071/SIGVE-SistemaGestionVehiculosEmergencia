@@ -184,29 +184,46 @@ class SupplierForm(forms.Form):
     name = forms.CharField(
         max_length=255,
         label="Nombre del Proveedor",
+        error_messages={
+            'required': 'Por favor, ingresa un nombre para el proveedor.',
+            'max_length': 'El nombre del proveedor no puede exceder 255 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Distribuidora ABC'})
     )
     rut = forms.CharField(
         max_length=20,
         label="RUT",
         required=False,
+        error_messages={
+            'max_length': 'El RUT no puede exceder 20 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 12345678-9'})
     )
     address = forms.CharField(
         max_length=255,
         label="Dirección",
         required=False,
+        error_messages={
+            'max_length': 'La dirección no puede exceder 255 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Dirección'})
     )
     phone = forms.CharField(
         max_length=20,
         label="Teléfono",
         required=False,
+        error_messages={
+            'max_length': 'El teléfono no puede exceder 20 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Teléfono'})
     )
     email = forms.EmailField(
         label="Email",
         required=False,
+        error_messages={
+            'invalid': 'Por favor, ingresa un correo electrónico válido.',
+            'max_length': 'El correo electrónico no puede exceder 254 caracteres.'
+        },
         widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email'})
     )
 

@@ -236,30 +236,208 @@ class CatalogService(SigveBaseService):
             return None
     
     @staticmethod
-    def create_supplier(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Crea un nuevo proveedor."""
+    def _parse_duplicate_error_supplier(error: Exception) -> Optional[Dict[str, str]]:
+        """
+        Parsea un error de Supabase para identificar qué campo está duplicado en proveedores.
+        
+        Args:
+            error: La excepción capturada.
+            
+        Returns:
+            Diccionario con el campo duplicado y mensaje, o None si no es un error de duplicación.
+        """
+        error_msg = str(error).lower()
+        error_details = getattr(error, 'message', '') or error_msg
+        
+        # Mapeo de campos y sus mensajes de error
+        field_mapping = {
+            'name': {
+                'keywords': ['name', 'nombre'],
+                'message': 'Este nombre de proveedor ya está registrado.'
+            },
+            'rut': {
+                'keywords': ['rut'],
+                'message': 'Este RUT ya está registrado en otro proveedor.'
+            },
+            'phone': {
+                'keywords': ['phone', 'teléfono', 'telefono'],
+                'message': 'Este número de teléfono ya está registrado en otro proveedor.'
+            },
+            'email': {
+                'keywords': ['email', 'correo', 'e-mail'],
+                'message': 'Este correo electrónico ya está registrado en otro proveedor.'
+            }
+        }
+        
+        # Buscar el campo duplicado en el mensaje de error
+        for field, info in field_mapping.items():
+            for keyword in info['keywords']:
+                if keyword in error_details.lower():
+                    return {
+                        'field': field,
+                        'message': info['message']
+                    }
+        
+        # Si no se identifica un campo específico, verificar si es un error de constraint único
+        if 'unique constraint' in error_details or 'duplicate key' in error_details or '23505' in error_details:
+            # Intentar extraer el nombre del constraint del mensaje
+            import re
+            constraint_match = re.search(r'unique constraint[^"]*"([^"]+)"', error_details, re.IGNORECASE)
+            if constraint_match:
+                constraint_name = constraint_match.group(1).lower()
+                # Mapear nombres de constraints comunes
+                if 'name' in constraint_name:
+                    return {'field': 'name', 'message': field_mapping['name']['message']}
+                elif 'rut' in constraint_name:
+                    return {'field': 'rut', 'message': field_mapping['rut']['message']}
+                elif 'phone' in constraint_name:
+                    return {'field': 'phone', 'message': field_mapping['phone']['message']}
+                elif 'email' in constraint_name:
+                    return {'field': 'email', 'message': field_mapping['email']['message']}
+            
+            # Si no se puede identificar, retornar un error genérico
+            return {
+                'field': 'general',
+                'message': 'Ya existe un proveedor con estos datos. Verifica que el nombre, RUT, teléfono y correo sean únicos.'
+            }
+        
+        return None
+    
+    @staticmethod
+    def check_duplicates_supplier(data: Dict[str, Any], exclude_id: Optional[int] = None) -> Dict[str, str]:
+        """
+        Verifica si hay duplicados antes de crear/actualizar un proveedor.
+        
+        Args:
+            data: Datos del proveedor a verificar.
+            exclude_id: ID del proveedor a excluir de la verificación (para edición).
+            
+        Returns:
+            Diccionario con errores por campo si hay duplicados, vacío si no hay.
+        """
         client = SigveBaseService.get_client()
+        errors = {}
+        
+        # Verificar nombre duplicado
+        if data.get('name'):
+            query = client.table("supplier").select("id, name").eq("name", data['name'])
+            if exclude_id:
+                query = query.neq("id", exclude_id)
+            existing = query.execute()
+            if existing.data and len(existing.data) > 0:
+                errors['name'] = 'Este nombre de proveedor ya está registrado.'
+        
+        # Verificar RUT duplicado (solo si se proporciona)
+        if data.get('rut'):
+            query = client.table("supplier").select("id, name").eq("rut", data['rut'])
+            if exclude_id:
+                query = query.neq("id", exclude_id)
+            existing = query.execute()
+            if existing.data and len(existing.data) > 0:
+                errors['rut'] = 'Este RUT ya está registrado en otro proveedor.'
+        
+        # Verificar teléfono duplicado (solo si se proporciona)
+        if data.get('phone'):
+            query = client.table("supplier").select("id, name").eq("phone", data['phone'])
+            if exclude_id:
+                query = query.neq("id", exclude_id)
+            existing = query.execute()
+            if existing.data and len(existing.data) > 0:
+                errors['phone'] = 'Este número de teléfono ya está registrado en otro proveedor.'
+        
+        # Verificar email duplicado (solo si se proporciona)
+        if data.get('email'):
+            query = client.table("supplier").select("id, name").eq("email", data['email'])
+            if exclude_id:
+                query = query.neq("id", exclude_id)
+            existing = query.execute()
+            if existing.data and len(existing.data) > 0:
+                errors['email'] = 'Este correo electrónico ya está registrado en otro proveedor.'
+        
+        return errors
+    
+    @staticmethod
+    def create_supplier(data: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, str]]]:
+        """
+        Crea un nuevo proveedor.
+        
+        Args:
+            data: Datos del proveedor (name, rut, address, phone, email).
+            
+        Returns:
+            Tupla (proveedor_creado, errores):
+            - proveedor_creado: Datos del proveedor creado o None si hubo error.
+            - errores: Diccionario con errores por campo si hay duplicados, None si no hay errores.
+        """
+        client = SigveBaseService.get_client()
+        
+        # Verificar duplicados antes de intentar crear
+        duplicate_errors = CatalogService.check_duplicates_supplier(data)
+        if duplicate_errors:
+            logger.warning(f"⚠️ Intento de crear proveedor con datos duplicados: {duplicate_errors}")
+            return None, duplicate_errors
+        
         try:
             result = client.table("supplier").insert(data).execute()
             if result.data:
                 logger.info(f"✅ Proveedor creado: {data.get('name')}")
-                return result.data[0] if isinstance(result.data, list) else result.data
-            return None
+                return (result.data[0] if isinstance(result.data, list) else result.data, None)
+            return None, None
+        except PostgrestAPIError as e:
+            logger.error(f"❌ Error de API creando proveedor: {e.message}", exc_info=True)
+            # Intentar parsear el error de duplicación
+            duplicate_error = CatalogService._parse_duplicate_error_supplier(e)
+            if duplicate_error:
+                return None, {duplicate_error['field']: duplicate_error['message']}
+            return None, {'general': ['Error al crear el proveedor. Por favor, intenta nuevamente.']}
         except Exception as e:
             logger.error(f"❌ Error creando proveedor: {e}", exc_info=True)
-            return None
+            # Intentar parsear el error de duplicación
+            duplicate_error = CatalogService._parse_duplicate_error_supplier(e)
+            if duplicate_error:
+                return None, {duplicate_error['field']: duplicate_error['message']}
+            return None, {'general': ['Error al crear el proveedor. Por favor, intenta nuevamente.']}
     
     @staticmethod
-    def update_supplier(supplier_id: int, data: Dict[str, Any]) -> bool:
-        """Actualiza un proveedor existente."""
+    def update_supplier(supplier_id: int, data: Dict[str, Any]) -> Tuple[bool, Optional[Dict[str, str]]]:
+        """
+        Actualiza un proveedor existente.
+        
+        Args:
+            supplier_id: ID del proveedor.
+            data: Datos a actualizar.
+            
+        Returns:
+            Tupla (éxito, errores):
+            - éxito: True si se actualizó correctamente, False en caso contrario.
+            - errores: Diccionario con errores por campo si hay duplicados, None si no hay errores.
+        """
         client = SigveBaseService.get_client()
+        
+        # Verificar duplicados antes de intentar actualizar
+        duplicate_errors = CatalogService.check_duplicates_supplier(data, exclude_id=supplier_id)
+        if duplicate_errors:
+            logger.warning(f"⚠️ Intento de actualizar proveedor {supplier_id} con datos duplicados: {duplicate_errors}")
+            return False, duplicate_errors
+        
         try:
             client.table("supplier").update(data).eq("id", supplier_id).execute()
             logger.info(f"✅ Proveedor {supplier_id} actualizado")
-            return True
+            return True, None
+        except PostgrestAPIError as e:
+            logger.error(f"❌ Error de API actualizando proveedor {supplier_id}: {e.message}", exc_info=True)
+            # Intentar parsear el error de duplicación
+            duplicate_error = CatalogService._parse_duplicate_error_supplier(e)
+            if duplicate_error:
+                return False, {duplicate_error['field']: duplicate_error['message']}
+            return False, {'general': ['Error al actualizar el proveedor. Por favor, intenta nuevamente.']}
         except Exception as e:
             logger.error(f"❌ Error actualizando proveedor {supplier_id}: {e}", exc_info=True)
-            return False
+            # Intentar parsear el error de duplicación
+            duplicate_error = CatalogService._parse_duplicate_error_supplier(e)
+            if duplicate_error:
+                return False, {duplicate_error['field']: duplicate_error['message']}
+            return False, {'general': ['Error al actualizar el proveedor. Por favor, intenta nuevamente.']}
     
     @staticmethod
     def delete_supplier(supplier_id: int) -> bool:

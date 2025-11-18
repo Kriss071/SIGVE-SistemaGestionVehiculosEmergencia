@@ -764,12 +764,19 @@ def suppliers_list(request):
 @require_role("Admin SIGVE")
 def supplier_create(request):
     """Crear un nuevo proveedor global."""
+    logger.info("📥 Ingreso a la vista supplier_create - método: %s", request.method)
+    
     if request.method == 'POST':
         form = SupplierForm(request.POST)
         source = request.POST.get('source', 'list')
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         
+        logger.debug("Datos POST recibidos: %s", request.POST)
+        logger.debug("Origen (source): %s | Es AJAX: %s", source, is_ajax)
+        
         if form.is_valid():
+            logger.info("✅ Formulario válido, preparando datos para creación de proveedor.")
+            
             data = {
                 'name': form.cleaned_data['name'],
                 'rut': form.cleaned_data.get('rut'),
@@ -779,21 +786,48 @@ def supplier_create(request):
                 'workshop_id': None  # Proveedor global
             }
             
-            supplier = CatalogService.create_supplier(data)
+            logger.debug("Datos limpios del formulario: %s", data)
+            
+            supplier, duplicate_errors = CatalogService.create_supplier(data)
+            logger.info("Resultado de CatalogService.create_supplier: supplier=%s, errors=%s", supplier, duplicate_errors)
             
             if supplier:
                 message = f'✅ Proveedor "{data["name"]}" creado correctamente.'
                 if is_ajax:
+                    logger.debug("Petición AJAX — devolviendo JsonResponse de éxito.")
                     messages.success(request, message)
                     return JsonResponse({'success': True, 'reload_page': True})
                 
+                logger.info("Petición normal — redirigiendo a lista de proveedores.")
                 messages.success(request, message)
                 return redirect('sigve:suppliers_list')
             else:
-                if is_ajax:
-                    return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el proveedor.']}})
-                messages.error(request, '❌ Error al crear el proveedor.')
+                logger.error("❌ Error al crear proveedor en CatalogService.")
+                # Si hay errores de duplicación, agregarlos al formulario
+                if duplicate_errors:
+                    for field, error_msg in duplicate_errors.items():
+                        if field == 'general':
+                            # Si es un error general, agregarlo como error no asociado a un campo
+                            form.add_error(None, error_msg if isinstance(error_msg, str) else error_msg[0])
+                        else:
+                            form.add_error(field, error_msg if isinstance(error_msg, str) else error_msg[0])
+                    
+                    # Manejar errores del formulario
+                    response = handle_form_errors(
+                        request,
+                        form,
+                        is_ajax,
+                        message='⚠️ Corrige los errores del formulario para crear el proveedor.'
+                    )
+                    if response:
+                        return response
+                else:
+                    # Error genérico
+                    if is_ajax:
+                        return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el proveedor.']}})
+                    messages.error(request, '❌ Error al crear el proveedor.')
         else:
+            logger.warning("⚠️ Formulario inválido: %s", form.errors)
             response = handle_form_errors(
                 request,
                 form,
@@ -803,6 +837,7 @@ def supplier_create(request):
             if response:
                 return response
     else:
+        logger.info("📝 Petición GET — mostrando formulario vacío.")
         form = SupplierForm()
     
     context = {
@@ -811,6 +846,7 @@ def supplier_create(request):
         'form': form
     }
     
+    logger.debug("Renderizando plantilla 'sigve/supplier_form.html' con contexto: %s", context.keys())
     # Esta vista (supplier_form.html) se mantiene como fallback
     return render(request, 'sigve/supplier_form.html', context)
 
@@ -829,6 +865,7 @@ def supplier_edit(request, supplier_id):
     
     if request.method == 'POST':
         form = SupplierForm(request.POST)
+        source = request.POST.get('source', 'list')
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         
         if form.is_valid():
@@ -840,20 +877,41 @@ def supplier_edit(request, supplier_id):
                 'email': form.cleaned_data.get('email')
             }
             
-            success = CatalogService.update_supplier(supplier_id, data)
+            success, duplicate_errors = CatalogService.update_supplier(supplier_id, data)
             
             if success:
-                message = '✅ Proveedor actualizado correctamente.'
+                # Si viene del dashboard y es AJAX, devolver JSON (sin redirección)
                 if is_ajax:
-                    messages.success(request, message)
+                    messages.success(request, '✅ Proveedor actualizado correctamente.')
                     return JsonResponse({'success': True, 'reload_page': True})
                 
-                messages.success(request, message)
+                # Si viene de la lista o no es AJAX, redirigir normalmente
+                messages.success(request, '✅ Proveedor actualizado correctamente.')
                 return redirect('sigve:suppliers_list')
             else:
-                if is_ajax:
-                    return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el proveedor.']}})
-                messages.error(request, '❌ Error al actualizar el proveedor.')
+                # Si hay errores de duplicación, agregarlos al formulario
+                if duplicate_errors:
+                    for field, error_msg in duplicate_errors.items():
+                        if field == 'general':
+                            # Si es un error general, agregarlo como error no asociado a un campo
+                            form.add_error(None, error_msg if isinstance(error_msg, str) else error_msg[0])
+                        else:
+                            form.add_error(field, error_msg if isinstance(error_msg, str) else error_msg[0])
+                    
+                    # Manejar errores del formulario
+                    response = handle_form_errors(
+                        request,
+                        form,
+                        is_ajax,
+                        message='⚠️ Corrige los errores del formulario para actualizar el proveedor.'
+                    )
+                    if response:
+                        return response
+                else:
+                    # Error genérico
+                    if is_ajax:
+                        return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el proveedor.']}})
+                    messages.error(request, '❌ Error al actualizar el proveedor.')
         else:
             response = handle_form_errors(
                 request,
