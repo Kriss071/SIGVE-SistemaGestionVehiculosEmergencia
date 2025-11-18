@@ -83,7 +83,8 @@
                         {% if current_status == 'pendiente' %}
                         <td class="text-end">
                             <button type="button" class="btn btn-sm btn-success" 
-                                    onclick="approveRequest({{ request.id }})">
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#approveModal{{ request.id }}">
                                 <i class="bi bi-check-lg"></i> Aprobar
                             </button>
                             <button type="button" class="btn btn-sm btn-danger" 
@@ -100,36 +101,105 @@
                         {% endif %}
                     </tr>
                     
-                    <!-- Modal de Rechazo -->
+                    <!-- Modal de Aprobación -->
                     {% if current_status == 'pendiente' %}
+                    <div class="modal fade" id="approveModal{{ request.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-success text-white">
+                                    <h5 class="modal-title">
+                                        <i class="bi bi-check-circle"></i> Aprobar Solicitud #{{ request.id }}
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="post" action="{% url 'sigve:approve_request' request.id %}" id="approveForm{{ request.id }}">
+                                    {% csrf_token %}
+                                    <div class="modal-body">
+                                        <!-- Campos editables basados en el schema -->
+                                        <div class="mb-3" id="editableFields{{ request.id }}">
+                                            <label class="form-label fw-bold">Datos del Registro</label>
+                                            <small class="text-muted d-block mb-2">Puedes editar los valores antes de crear el registro:</small>
+                                            <div class="border rounded p-3 bg-light" id="fieldsContainer{{ request.id }}">
+                                                <!-- Los campos se renderizarán dinámicamente con JavaScript -->
+                                                <div class="text-center text-muted">
+                                                    <i class="bi bi-hourglass-split"></i> Cargando campos...
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <input type="hidden" id="edited_data{{ request.id }}" name="edited_data" value="">
+                                        
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" 
+                                                       type="checkbox" 
+                                                       id="disable_auto_create{{ request.id }}" 
+                                                       name="disable_auto_create"
+                                                       value="1">
+                                                <label class="form-check-label" for="disable_auto_create{{ request.id }}">
+                                                    Deshabilitar creación automática
+                                                </label>
+                                                <small class="form-text text-muted d-block">
+                                                    Si activas esta opción, la solicitud se marcará como aprobada pero no se creará el registro automáticamente. Podrás crearlo manualmente más tarde.
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="approve_admin_notes{{ request.id }}" class="form-label">
+                                                Notas del Administrador <small class="text-muted">(Opcional)</small>
+                                            </label>
+                                            <textarea class="form-control" 
+                                                      id="approve_admin_notes{{ request.id }}" 
+                                                      name="admin_notes" 
+                                                      rows="4" 
+                                                      placeholder="Agrega notas adicionales sobre esta aprobación..."></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                            <i class="bi bi-x-lg"></i> Cancelar
+                                        </button>
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="bi bi-check-lg"></i> Aprobar Solicitud
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modal de Rechazo -->
                     <div class="modal fade" id="rejectModal{{ request.id }}" tabindex="-1">
                         <div class="modal-dialog">
                             <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title">Rechazar Solicitud #{{ request.id }}</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title">
+                                        <i class="bi bi-x-circle"></i> Rechazar Solicitud #{{ request.id }}
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
                                 <form method="post" action="{% url 'sigve:reject_request' request.id %}">
                                     {% csrf_token %}
                                     <div class="modal-body">
                                         <div class="mb-3">
-                                            <label for="admin_notes{{ request.id }}" class="form-label">
-                                                Motivo del Rechazo
+                                            <label for="reject_admin_notes{{ request.id }}" class="form-label">
+                                                Motivo del Rechazo <span class="text-danger">*</span>
                                             </label>
                                             <textarea class="form-control" 
-                                                      id="admin_notes{{ request.id }}" 
+                                                      id="reject_admin_notes{{ request.id }}" 
                                                       name="admin_notes" 
                                                       rows="4" 
                                                       required
                                                       placeholder="Explica por qué se rechaza esta solicitud..."></textarea>
+                                            <small class="text-muted">Este campo es obligatorio para rechazar una solicitud.</small>
                                         </div>
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                            Cancelar
+                                            <i class="bi bi-x-lg"></i> Cancelar
                                         </button>
                                         <button type="submit" class="btn btn-danger">
-                                            <i class="bi bi-x-lg"></i> Rechazar
+                                            <i class="bi bi-x-lg"></i> Rechazar Solicitud
                                         </button>
                                     </div>
                                 </form>
@@ -153,25 +223,129 @@
 
 {% block extra_js %}
 <script>
-    function approveRequest(requestId) {
-        if (confirm('¿Estás seguro de aprobar esta solicitud? Esto creará el registro en la tabla correspondiente.')) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/sigve/requests/${requestId}/approve/`;
-            
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-            if (csrfToken) {
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = 'csrfmiddlewaretoken';
-                csrfInput.value = csrfToken.value;
-                form.appendChild(csrfInput);
-            }
-            
-            document.body.appendChild(form);
-            form.submit();
-        }
-    }
+    // Renderizar campos editables dinámicamente cuando se abre el modal
+    document.addEventListener('DOMContentLoaded', function() {
+        {% for request in requests %}
+            {% if current_status == 'pendiente' %}
+                (function() {
+                    const requestId = {{ request.id }};
+                    const modalEl = document.getElementById('approveModal' + requestId);
+                    const fieldsContainer = document.getElementById('fieldsContainer' + requestId);
+                    const editedDataInput = document.getElementById('edited_data' + requestId);
+                    
+                    if (!modalEl || !fieldsContainer || !editedDataInput) return;
+                    
+                    // Datos del request
+                    const formSchemaStr = {{ request.request_type.form_schema|default:"null"|safe }};
+                    const originalDataStr = {{ request.requested_data|safe }};
+                    
+                    let formSchema = null;
+                    let originalData = {};
+                    
+                    try {
+                        if (formSchemaStr) {
+                            formSchema = typeof formSchemaStr === 'string' ? JSON.parse(formSchemaStr) : formSchemaStr;
+                        }
+                        originalData = typeof originalDataStr === 'string' ? JSON.parse(originalDataStr) : originalDataStr;
+                    } catch (e) {
+                        console.error('Error parseando datos:', e);
+                        fieldsContainer.innerHTML = '<div class="alert alert-warning">Error al cargar los campos editables.</div>';
+                        return;
+                    }
+                    
+                    // Renderizar campos cuando se abre el modal
+                    modalEl.addEventListener('show.bs.modal', function() {
+                        if (!formSchema || !formSchema.fields) {
+                            // Fallback: mostrar como JSON editable
+                            fieldsContainer.innerHTML = `
+                                <label class="form-label">Datos (JSON)</label>
+                                <textarea class="form-control font-monospace editable-field" 
+                                          id="raw_json_${requestId}" 
+                                          rows="8"
+                                          data-field-name="_raw_json">${JSON.stringify(originalData, null, 2)}</textarea>
+                                <small class="text-muted">Edita el JSON con los datos a crear</small>
+                            `;
+                            return;
+                        }
+                        
+                        // Limpiar contenedor
+                        fieldsContainer.innerHTML = '';
+                        
+                        // Renderizar campos basados en el schema
+                        formSchema.fields.forEach(function(field) {
+                            const fieldDiv = document.createElement('div');
+                            fieldDiv.className = 'mb-3';
+                            
+                            const label = document.createElement('label');
+                            label.className = 'form-label';
+                            label.setAttribute('for', 'field_' + field.name + '_' + requestId);
+                            label.innerHTML = field.label + (field.required ? ' <span class="text-danger">*</span>' : '');
+                            
+                            let input;
+                            if (field.type === 'textarea') {
+                                input = document.createElement('textarea');
+                                input.className = 'form-control editable-field';
+                                input.rows = 3;
+                            } else {
+                                input = document.createElement('input');
+                                input.type = field.type === 'number' ? 'number' : 
+                                            field.type === 'email' ? 'email' : 
+                                            field.type === 'password' ? 'password' : 'text';
+                                input.className = 'form-control editable-field';
+                            }
+                            
+                            input.id = 'field_' + field.name + '_' + requestId;
+                            input.setAttribute('data-field-name', field.name);
+                            input.value = originalData[field.name] || '';
+                            if (field.required) {
+                                input.required = true;
+                            }
+                            
+                            fieldDiv.appendChild(label);
+                            fieldDiv.appendChild(input);
+                            fieldsContainer.appendChild(fieldDiv);
+                        });
+                    });
+                    
+                    // Función para actualizar edited_data antes de enviar
+                    const form = document.getElementById('approveForm' + requestId);
+                    if (form) {
+                        form.addEventListener('submit', function(e) {
+                            const editedData = {};
+                            
+                            // Verificar si es el modo JSON raw
+                            const rawJsonInput = fieldsContainer.querySelector('#raw_json_' + requestId);
+                            if (rawJsonInput) {
+                                try {
+                                    const parsed = JSON.parse(rawJsonInput.value);
+                                    Object.assign(editedData, parsed);
+                                } catch (err) {
+                                    alert('Error: El JSON no es válido. Por favor, corrígelo antes de continuar.');
+                                    e.preventDefault();
+                                    return;
+                                }
+                            } else {
+                                // Modo campos individuales
+                                fieldsContainer.querySelectorAll('.editable-field').forEach(function(input) {
+                                    const fieldName = input.getAttribute('data-field-name');
+                                    if (fieldName && fieldName !== '_raw_json') {
+                                        // Convertir números si es necesario
+                                        if (input.type === 'number') {
+                                            editedData[fieldName] = input.value ? parseFloat(input.value) : null;
+                                        } else {
+                                            editedData[fieldName] = input.value;
+                                        }
+                                    }
+                                });
+                            }
+                            
+                            editedDataInput.value = JSON.stringify(editedData);
+                        });
+                    }
+                })();
+            {% endif %}
+        {% endfor %}
+    });
 </script>
 {% endblock %}
 

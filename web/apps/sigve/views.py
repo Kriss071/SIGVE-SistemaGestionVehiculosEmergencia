@@ -120,6 +120,15 @@ def requests_center(request):
                             logger.warning(f"No se pudo parsear la fecha: {date_str}")
                 except Exception as e:
                     logger.warning(f"Error procesando fecha {date_str}: {e}")
+        
+        # Asegurar que form_schema y requested_data están en formato JSON string para el template
+        if req.get('request_type') and req['request_type'].get('form_schema'):
+            if not isinstance(req['request_type']['form_schema'], str):
+                req['request_type']['form_schema'] = json.dumps(req['request_type']['form_schema'])
+        
+        if req.get('requested_data'):
+            if not isinstance(req['requested_data'], str):
+                req['requested_data'] = json.dumps(req['requested_data'])
     
     context = {
         'page_title': 'Centro de Solicitudes',
@@ -136,14 +145,40 @@ def requests_center(request):
 @require_role("Admin SIGVE")
 def approve_request(request, request_id):
     """Aprueba una solicitud."""
-    admin_notes = request.POST.get('admin_notes', '')
+    import json
     
-    success = RequestService.approve_request(request_id, admin_notes)
-    
-    if success:
-        messages.success(request, '✅ Solicitud aprobada correctamente.')
-    else:
-        messages.error(request, '❌ Error al aprobar la solicitud.')
+    try:
+        admin_notes = request.POST.get('admin_notes', '')
+        disable_auto_create = request.POST.get('disable_auto_create') == '1'
+        
+        # Obtener datos editados si existen
+        edited_data = None
+        edited_data_json = request.POST.get('edited_data')
+        if edited_data_json:
+            try:
+                edited_data = json.loads(edited_data_json)
+            except json.JSONDecodeError:
+                logger.warning(f"⚠️ Error al parsear edited_data JSON para solicitud {request_id}")
+        
+        result = RequestService.approve_request(
+            request_id, 
+            admin_notes, 
+            auto_create=not disable_auto_create,
+            edited_data=edited_data
+        )
+        
+        if result.get('success'):
+            if disable_auto_create:
+                messages.success(request, '✅ Solicitud aprobada. La creación automática fue deshabilitada.')
+            else:
+                messages.success(request, '✅ Solicitud aprobada correctamente y registro creado.')
+        else:
+            error_message = result.get('error', 'Error desconocido al aprobar la solicitud.')
+            messages.error(request, f'❌ {error_message}')
+            logger.error(f"Error al aprobar solicitud {request_id}: {error_message}")
+    except Exception as e:
+        logger.error(f"❌ Excepción al aprobar solicitud {request_id}: {e}", exc_info=True)
+        messages.error(request, f'❌ Error al aprobar la solicitud: {str(e)}')
     
     return redirect('sigve:requests_center')
 
@@ -153,18 +188,27 @@ def approve_request(request, request_id):
 @require_role("Admin SIGVE")
 def reject_request(request, request_id):
     """Rechaza una solicitud."""
-    form = RejectRequestForm(request.POST)
-    
-    if form.is_valid():
-        admin_notes = form.cleaned_data['admin_notes']
-        success = RequestService.reject_request(request_id, admin_notes)
+    try:
+        form = RejectRequestForm(request.POST)
         
-        if success:
-            messages.success(request, '🚫 Solicitud rechazada.')
+        if form.is_valid():
+            admin_notes = form.cleaned_data['admin_notes']
+            success = RequestService.reject_request(request_id, admin_notes)
+            
+            if success:
+                messages.success(request, '🚫 Solicitud rechazada.')
+            else:
+                messages.error(request, '❌ Error al rechazar la solicitud. Por favor, verifica los logs del servidor para más detalles.')
+                logger.error(f"Error al rechazar solicitud {request_id}: El servicio devolvió False")
         else:
-            messages.error(request, '❌ Error al rechazar la solicitud.')
-    else:
-        messages.error(request, '❌ Datos inválidos.')
+            error_messages = []
+            for field, errors in form.errors.items():
+                for error in errors:
+                    error_messages.append(f"{field}: {error}")
+            messages.error(request, f'❌ Datos inválidos: {", ".join(error_messages)}')
+    except Exception as e:
+        logger.error(f"❌ Excepción al rechazar solicitud {request_id}: {e}", exc_info=True)
+        messages.error(request, f'❌ Error al rechazar la solicitud: {str(e)}')
     
     return redirect('sigve:requests_center')
 
