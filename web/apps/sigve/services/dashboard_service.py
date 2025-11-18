@@ -1,5 +1,6 @@
 import logging
 from typing import Dict, List, Any
+from datetime import datetime
 from .base_service import SigveBaseService
 
 logger = logging.getLogger(__name__)
@@ -92,10 +93,33 @@ class DashboardService(SigveBaseService):
                 for order in maintenance_orders.data:
                     vehicle_info = order.get('vehicle', {})
                     workshop_info = order.get('workshop', {})
+                    
+                    # Convertir fecha de string ISO a datetime
+                    date_str = order.get('created_at') or order.get('entry_date')
+                    date_obj = None
+                    if date_str:
+                        if isinstance(date_str, str):
+                            try:
+                                # Normalizar formato: reemplazar Z por +00:00 para timezone
+                                if date_str.endswith('Z'):
+                                    date_str = date_str[:-1] + '+00:00'
+                                # Intentar parsear con fromisoformat (Python 3.7+)
+                                try:
+                                    date_obj = datetime.fromisoformat(date_str)
+                                except ValueError:
+                                    # Fallback: intentar parsear sin timezone
+                                    date_str_clean = date_str.split('+')[0].split('.')[0]
+                                    date_obj = datetime.strptime(date_str_clean, '%Y-%m-%dT%H:%M:%S')
+                            except (ValueError, AttributeError) as e:
+                                logger.warning(f"⚠️ Error parseando fecha {date_str}: {e}")
+                                date_obj = None
+                        elif isinstance(date_str, datetime):
+                            date_obj = date_str
+                    
                     activities.append({
                         'type': 'maintenance_order',
                         'description': f"Nueva orden de mantención para {vehicle_info.get('brand', '')} {vehicle_info.get('model', '')} ({vehicle_info.get('license_plate', '')}) en {workshop_info.get('name', 'Taller')}",
-                        'date': order.get('created_at', order.get('entry_date'))
+                        'date': date_obj
                     })
             
             logger.info(f"📋 Actividad reciente obtenida: {len(activities)} registros")

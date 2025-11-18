@@ -159,7 +159,13 @@
                     <div class="list-group-item">
                         <div class="d-flex w-100 justify-content-between">
                             <p class="mb-1">{{ activity.description }}</p>
-                            <small class="text-muted">{{ activity.date|date:"d/m/Y H:i" }}</small>
+                            <small class="text-muted">
+                                {% if activity.date %}
+                                    {{ activity.date|date:"d/m/Y H:i" }}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </small>
                         </div>
                     </div>
                     {% endfor %}
