@@ -660,6 +660,7 @@ def inventory_add(request):
     """Agrega un repuesto al inventario del taller."""
     workshop_id = request.workshop_id
     user_id = request.session.get('sb_user_id')
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     
     form = InventoryAddForm(request.POST)
     if form.is_valid():
@@ -672,25 +673,38 @@ def inventory_add(request):
             'workshop_sku': form.cleaned_data.get('workshop_sku') or None
         }
         
-        # Validar que la cantidad sea positiva
-        if data['quantity'] <= 0:
-            messages.error(request, '❌ La cantidad debe ser mayor a cero.')
-            return redirect('workshop:inventory_list')
-        
-        # Validar que el costo sea positivo
-        if data['current_cost'] <= 0:
-            messages.error(request, '❌ El costo debe ser mayor a cero.')
-            return redirect('workshop:inventory_list')
-        
-        item = InventoryService.add_to_inventory(workshop_id, user_id, data)
+        item, duplicate_errors = InventoryService.add_to_inventory(workshop_id, user_id, data)
         
         if item:
             messages.success(request, '✅ Repuesto agregado al inventario correctamente.')
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'reload_page': True
+                })
+            return redirect('workshop:inventory_list')
         else:
-            # Verificar si hay un error específico de secuencia desincronizada
-            # (esto se loguea en el servicio, pero podemos dar un mensaje más amigable)
-            messages.error(request, '❌ Error al agregar el repuesto. Si el error persiste, puede ser un problema de sincronización de la base de datos. Contacta al administrador.')
+            # Si hay errores de duplicación, agregarlos al formulario
+            if duplicate_errors:
+                for field, error_msg in duplicate_errors.items():
+                    if field == 'general':
+                        form.add_error(None, error_msg if isinstance(error_msg, str) else error_msg[0])
+                    else:
+                        form.add_error(field, error_msg if isinstance(error_msg, str) else error_msg[0])
+                
+                # Manejar errores del formulario
+                if is_ajax:
+                    return JsonResponse({'success': False, 'errors': form.errors})
+                messages.error(request, '⚠️ Corrige los errores del formulario para agregar el repuesto.')
+                logger.warning(f"Errores de duplicación al agregar inventario: {duplicate_errors}")
+            else:
+                # Error genérico
+                if is_ajax:
+                    return JsonResponse({'success': False, 'errors': {'general': ['Error al agregar el repuesto.']}})
+                messages.error(request, '❌ Error al agregar el repuesto.')
     else:
+        if is_ajax:
+            return JsonResponse({'success': False, 'errors': form.errors})
         messages.error(request, '❌ Datos inválidos. Verifica los campos del formulario.')
         logger.warning(f"Errores en formulario de agregar inventario: {form.errors}")
     
@@ -723,6 +737,7 @@ def inventory_update(request, inventory_id):
     """Actualiza stock, costo y otros datos de un repuesto."""
     workshop_id = request.workshop_id
     user_id = request.session.get('sb_user_id')
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     
     form = InventoryUpdateForm(request.POST)
     if form.is_valid():
@@ -734,15 +749,39 @@ def inventory_update(request, inventory_id):
             'workshop_sku': form.cleaned_data.get('workshop_sku') or None
         }
         
-        success = InventoryService.update_inventory(inventory_id, workshop_id, user_id, data)
+        success, duplicate_errors = InventoryService.update_inventory(inventory_id, workshop_id, user_id, data)
         
         if success:
             messages.success(request, '✅ Inventario actualizado correctamente.')
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'reload_page': True
+                })
+            return redirect('workshop:inventory_list')
         else:
-            messages.error(request, '❌ Error al actualizar el inventario.')
+            # Si hay errores de duplicación, agregarlos al formulario
+            if duplicate_errors:
+                for field, error_msg in duplicate_errors.items():
+                    if field == 'general':
+                        form.add_error(None, error_msg if isinstance(error_msg, str) else error_msg[0])
+                    else:
+                        form.add_error(field, error_msg if isinstance(error_msg, str) else error_msg[0])
+                
+                # Manejar errores del formulario
+                if is_ajax:
+                    return JsonResponse({'success': False, 'errors': form.errors})
+                messages.error(request, '⚠️ Corrige los errores del formulario para actualizar el inventario.')
+                logger.warning(f"Errores de duplicación al actualizar inventario: {duplicate_errors}")
+            else:
+                # Error genérico
+                if is_ajax:
+                    return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el inventario.']}})
+                messages.error(request, '❌ Error al actualizar el inventario.')
     else:
+        if is_ajax:
+            return JsonResponse({'success': False, 'errors': form.errors})
         messages.error(request, '❌ Datos inválidos. Verifica los campos del formulario.')
-        # Log de errores para debugging
         logger.warning(f"Errores en formulario de actualización de inventario: {form.errors}")
     
     return redirect('workshop:inventory_list')

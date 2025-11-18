@@ -344,10 +344,19 @@ class InventoryAddForm(forms.Form):
     """Formulario para agregar un repuesto al inventario del taller."""
     spare_part_id = forms.IntegerField(
         label="Repuesto del Catálogo",
+        error_messages={
+            'required': 'Por favor, selecciona un repuesto del catálogo.',
+            'invalid': 'Por favor, selecciona un repuesto válido.'
+        },
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     quantity = forms.IntegerField(
         label="Cantidad",
+        error_messages={
+            'required': 'Por favor, ingresa una cantidad.',
+            'invalid': 'Por favor, ingresa una cantidad válida (mínimo 1).',
+            'min_value': 'La cantidad debe ser mayor o igual a 1.'
+        },
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'placeholder': '1',
@@ -358,6 +367,12 @@ class InventoryAddForm(forms.Form):
         label="Costo de Compra (CLP)",
         max_digits=10,
         decimal_places=2,
+        error_messages={
+            'required': 'Por favor, ingresa un costo de compra.',
+            'invalid': 'Por favor, ingresa un costo válido (mínimo 0).',
+            'max_digits': 'El costo no puede exceder 10 dígitos.',
+            'max_decimal_places': 'El costo no puede tener más de 2 decimales.'
+        },
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'placeholder': '0',
@@ -374,6 +389,9 @@ class InventoryAddForm(forms.Form):
         max_length=100,
         label="Ubicación en Bodega",
         required=False,
+        error_messages={
+            'max_length': 'La ubicación no puede exceder 100 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: Estante A-3'
@@ -383,17 +401,46 @@ class InventoryAddForm(forms.Form):
         max_length=100,
         label="SKU Interno del Taller",
         required=False,
+        error_messages={
+            'max_length': 'El SKU interno no puede exceder 100 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Código interno (opcional)'
         })
     )
+    
+    def clean_quantity(self):
+        """Valida que la cantidad sea positiva."""
+        quantity = self.cleaned_data.get('quantity')
+        if quantity is not None and quantity <= 0:
+            raise forms.ValidationError('La cantidad debe ser mayor a cero.')
+        return quantity
+    
+    def clean_current_cost(self):
+        """Valida que el costo sea positivo."""
+        current_cost = self.cleaned_data.get('current_cost')
+        if current_cost is not None and current_cost < 0:
+            raise forms.ValidationError('El costo debe ser mayor o igual a cero.')
+        return current_cost
+    
+    def clean_workshop_sku(self):
+        """Normaliza el SKU interno."""
+        workshop_sku = self.cleaned_data.get('workshop_sku')
+        if workshop_sku:
+            return workshop_sku.strip()
+        return workshop_sku
 
 
 class InventoryUpdateForm(forms.Form):
     """Formulario para actualizar stock, costo y otros datos de un repuesto."""
     quantity = forms.IntegerField(
         label="Cantidad",
+        error_messages={
+            'required': 'Por favor, ingresa una cantidad.',
+            'invalid': 'Por favor, ingresa una cantidad válida (mínimo 0).',
+            'min_value': 'La cantidad no puede ser negativa.'
+        },
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'min': 0
@@ -403,6 +450,12 @@ class InventoryUpdateForm(forms.Form):
         label="Costo Actual (CLP)",
         max_digits=10,
         decimal_places=2,
+        error_messages={
+            'required': 'Por favor, ingresa un costo actual.',
+            'invalid': 'Por favor, ingresa un costo válido (mínimo 0).',
+            'max_digits': 'El costo no puede exceder 10 dígitos.',
+            'max_decimal_places': 'El costo no puede tener más de 2 decimales.'
+        },
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'min': 0,
@@ -418,14 +471,41 @@ class InventoryUpdateForm(forms.Form):
         max_length=100,
         label="Ubicación",
         required=False,
+        error_messages={
+            'max_length': 'La ubicación no puede exceder 100 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     workshop_sku = forms.CharField(
         max_length=100,
         label="SKU Interno del Taller",
         required=False,
+        error_messages={
+            'max_length': 'El SKU interno no puede exceder 100 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
+    
+    def clean_quantity(self):
+        """Valida que la cantidad no sea negativa."""
+        quantity = self.cleaned_data.get('quantity')
+        if quantity is not None and quantity < 0:
+            raise forms.ValidationError('La cantidad no puede ser negativa.')
+        return quantity
+    
+    def clean_current_cost(self):
+        """Valida que el costo no sea negativa."""
+        current_cost = self.cleaned_data.get('current_cost')
+        if current_cost is not None and current_cost < 0:
+            raise forms.ValidationError('El costo no puede ser negativo.')
+        return current_cost
+    
+    def clean_workshop_sku(self):
+        """Normaliza el SKU interno."""
+        workshop_sku = self.cleaned_data.get('workshop_sku')
+        if workshop_sku:
+            return workshop_sku.strip()
+        return workshop_sku
 
 
 class SupplierForm(forms.Form):

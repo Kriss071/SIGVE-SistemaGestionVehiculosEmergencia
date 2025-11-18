@@ -94,7 +94,7 @@
                 <h5 class="modal-title">Agregar Repuesto al Inventario</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="post" action="{% url 'workshop:inventory_add' %}">
+            <form method="post" action="{% url 'workshop:inventory_add' %}" novalidate>
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="row g-3">
@@ -113,17 +113,26 @@
                                     <i class="bi bi-envelope-plus"></i> Solicitar Repuesto
                                 </button>
                             </div>
+                            <div class="invalid-feedback" data-field-error="spare_part_id">
+                                Por favor, selecciona un repuesto del catálogo.
+                            </div>
                             <div class="form-text">
                                 <i class="bi bi-info-circle"></i> Busca por SKU, nombre o marca. Si no encuentras el repuesto, puedes solicitar que se agregue al catálogo maestro.
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Cantidad</label>
+                            <label class="form-label">Cantidad <span class="text-danger">*</span></label>
                             <input type="number" name="quantity" class="form-control" min="1" value="1" required>
+                            <div class="invalid-feedback" data-field-error="quantity">
+                                Por favor, ingresa una cantidad válida.
+                            </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Costo de Compra (CLP)</label>
+                            <label class="form-label">Costo de Compra (CLP) <span class="text-danger">*</span></label>
                             <input type="number" name="current_cost" class="form-control" min="0" step="0.01" required>
+                            <div class="invalid-feedback" data-field-error="current_cost">
+                                Por favor, ingresa un costo válido.
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Proveedor</label>
@@ -136,11 +145,17 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Ubicación en Bodega</label>
-                            <input type="text" name="location" class="form-control" placeholder="Ej: Estante A-3">
+                            <input type="text" name="location" class="form-control" placeholder="Ej: Estante A-3" maxlength="100">
+                            <div class="invalid-feedback" data-field-error="location">
+                                La ubicación no puede exceder 100 caracteres.
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">SKU Interno (opcional)</label>
-                            <input type="text" name="workshop_sku" class="form-control" placeholder="Código interno">
+                            <input type="text" name="workshop_sku" class="form-control" placeholder="Código interno" maxlength="100">
+                            <div class="invalid-feedback" data-field-error="workshop_sku">
+                                Este SKU interno ya está registrado en otro repuesto del inventario.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -173,7 +188,7 @@
             </div>
             
             <!-- Formulario -->
-            <form id="inventoryForm" method="post" style="display: none;" data-update-url-base="{% url 'workshop:inventory_list' %}">
+            <form id="inventoryForm" method="post" style="display: none;" data-update-url-base="{% url 'workshop:inventory_list' %}" novalidate>
                 {% csrf_token %}
                 <div class="modal-body">
                     <!-- Información del repuesto (solo lectura) -->
@@ -196,11 +211,17 @@
                         <div class="col-md-6">
                             <label class="form-label">Cantidad <span class="text-danger">*</span></label>
                             <input type="number" name="quantity" id="id_quantity" class="form-control" min="0" required>
+                            <div class="invalid-feedback" data-field-error="quantity">
+                                Por favor, ingresa una cantidad válida.
+                            </div>
                             <div class="form-text">Cantidad actual en stock</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Costo Unitario (CLP) <span class="text-danger">*</span></label>
                             <input type="number" name="current_cost" id="id_current_cost" class="form-control" min="0" step="0.01" required>
+                            <div class="invalid-feedback" data-field-error="current_cost">
+                                Por favor, ingresa un costo válido.
+                            </div>
                             <div class="form-text">Costo de compra por unidad</div>
                         </div>
                         <div class="col-md-6">
@@ -214,11 +235,17 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Ubicación en Bodega</label>
-                            <input type="text" name="location" id="id_location" class="form-control" placeholder="Ej: Estante A-3">
+                            <input type="text" name="location" id="id_location" class="form-control" placeholder="Ej: Estante A-3" maxlength="100">
+                            <div class="invalid-feedback" data-field-error="location">
+                                La ubicación no puede exceder 100 caracteres.
+                            </div>
                         </div>
                         <div class="col-md-12">
                             <label class="form-label">SKU Interno del Taller</label>
-                            <input type="text" name="workshop_sku" id="id_workshop_sku" class="form-control" placeholder="Código interno (opcional)">
+                            <input type="text" name="workshop_sku" id="id_workshop_sku" class="form-control" placeholder="Código interno (opcional)" maxlength="100">
+                            <div class="invalid-feedback" data-field-error="workshop_sku">
+                                Este SKU interno ya está registrado en otro repuesto del inventario.
+                            </div>
                         </div>
                     </div>
                 </div>

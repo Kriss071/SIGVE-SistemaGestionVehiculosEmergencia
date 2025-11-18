@@ -393,6 +393,8 @@
                     if (feedback) {
                         feedback.textContent = '';
                     }
+                    // Verificar si todos los errores se han limpiado para restaurar alineación
+                    checkAndRestoreButtonAlignment(form);
                 }
             });
             
@@ -403,9 +405,35 @@
                     if (feedback) {
                         feedback.textContent = '';
                     }
+                    // Verificar si todos los errores se han limpiado para restaurar alineación
+                    checkAndRestoreButtonAlignment(form);
                 }
             });
         });
+    }
+
+    /**
+     * Verifica si hay errores en el formulario y ajusta la alineación del botón
+     * @param {HTMLElement} form - El formulario a verificar
+     */
+    function checkAndRestoreButtonAlignment(form) {
+        if (!form || form.id !== 'addPartToTaskForm') return;
+        
+        // Verificar si aún hay campos con errores
+        const hasErrors = form.querySelectorAll('.is-invalid').length > 0;
+        const buttonContainer = document.getElementById('addPartToTaskButtonContainer');
+        
+        if (buttonContainer) {
+            if (hasErrors) {
+                // Si aún hay errores, mantener centrado
+                buttonContainer.classList.remove('align-items-end');
+                buttonContainer.classList.add('align-items-center');
+            } else {
+                // Si no hay errores, restaurar alineación al final
+                buttonContainer.classList.remove('align-items-center');
+                buttonContainer.classList.add('align-items-end');
+            }
+        }
     }
 
     /**
@@ -490,6 +518,20 @@
             }
         }
         
+        // Ajustar alineación del botón según si hay errores
+        const buttonContainer = document.getElementById('addPartToTaskButtonContainer');
+        if (buttonContainer) {
+            if (!isValid) {
+                // Si hay errores, centrar verticalmente
+                buttonContainer.classList.remove('align-items-end');
+                buttonContainer.classList.add('align-items-center');
+            } else {
+                // Si no hay errores, alinear al final
+                buttonContainer.classList.remove('align-items-center');
+                buttonContainer.classList.add('align-items-end');
+            }
+        }
+        
         if (!isValid) {
             if (window.SIGVE && window.SIGVE.showNotification) {
                 window.SIGVE.showNotification('Por favor, completa todos los campos obligatorios.', 'error');
@@ -521,6 +563,15 @@
         
         // Remover clase was-validated si existe
         form.classList.remove('was-validated');
+        
+        // Restaurar alineación del botón del formulario de repuestos
+        if (form.id === 'addPartToTaskForm') {
+            const buttonContainer = document.getElementById('addPartToTaskButtonContainer');
+            if (buttonContainer) {
+                buttonContainer.classList.remove('align-items-center');
+                buttonContainer.classList.add('align-items-end');
+            }
+        }
     }
 
     /**

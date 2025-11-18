@@ -185,56 +185,371 @@
     };
 
     /**
+     * Limpia errores de un formulario específico
+     */
+    function clearFormErrorsForAdd(form) {
+        if (!form) return;
+        
+        form.querySelectorAll('.is-invalid').forEach(field => {
+            field.classList.remove('is-invalid');
+        });
+        
+        form.querySelectorAll('.invalid-feedback[data-field-error]').forEach(feedback => {
+            feedback.textContent = '';
+        });
+    }
+    
+    /**
+     * Muestra un error en un campo específico del formulario de agregar
+     */
+    function showFieldErrorForAdd(form, fieldName, errorMessage) {
+        if (!form) return;
+        
+        const field = form.querySelector(`[name="${fieldName}"]`);
+        
+        if (field) {
+            field.classList.add('is-invalid');
+            
+            let feedback = field.parentElement.querySelector(`.invalid-feedback[data-field-error="${fieldName}"]`);
+            if (!feedback) {
+                feedback = field.parentElement.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.setAttribute('data-field-error', fieldName);
+                } else {
+                    feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback';
+                    feedback.setAttribute('data-field-error', fieldName);
+                    field.parentElement.appendChild(feedback);
+                }
+            }
+            feedback.textContent = errorMessage;
+        } else {
+            console.warn(`Campo no encontrado para mostrar error: ${fieldName}`);
+            if (window.SIGVE && window.SIGVE.showNotification) {
+                window.SIGVE.showNotification(errorMessage, 'error');
+            }
+        }
+    }
+    
+    /**
+     * Valida el formulario de agregar repuesto
+     */
+    function validateAddForm(form) {
+        clearFormErrorsForAdd(form);
+        
+        let isValid = true;
+        const requiredFields = form.querySelectorAll('[required]');
+        
+        // Mensajes de error en español
+        const errorMessages = {
+            'spare_part_id': 'Por favor, selecciona un repuesto del catálogo.',
+            'quantity': 'Por favor, ingresa una cantidad.',
+            'current_cost': 'Por favor, ingresa un costo de compra.'
+        };
+        
+        requiredFields.forEach(field => {
+            const fieldName = field.name;
+            let fieldValue = field.value;
+            
+            // Para selects, verificar que tenga un valor seleccionado
+            if (field.tagName === 'SELECT') {
+                if (!fieldValue || fieldValue === '') {
+                    isValid = false;
+                    field.classList.add('is-invalid');
+                    const errorMsg = errorMessages[fieldName] || 'Este campo es obligatorio.';
+                    showFieldErrorForAdd(form, fieldName, errorMsg);
+                }
+            } else {
+                // Para inputs, usar trim
+                fieldValue = fieldValue ? fieldValue.trim() : '';
+                if (!fieldValue) {
+                    isValid = false;
+                    field.classList.add('is-invalid');
+                    const errorMsg = errorMessages[fieldName] || 'Este campo es obligatorio.';
+                    showFieldErrorForAdd(form, fieldName, errorMsg);
+                }
+            }
+        });
+        
+        // Validar cantidad
+        const quantityField = form.querySelector('[name="quantity"]');
+        if (quantityField) {
+            const quantity = parseInt(quantityField.value);
+            if (isNaN(quantity) || quantity <= 0) {
+                isValid = false;
+                quantityField.classList.add('is-invalid');
+                showFieldErrorForAdd(form, 'quantity', 'La cantidad debe ser mayor a cero.');
+            }
+        }
+        
+        // Validar costo
+        const costField = form.querySelector('[name="current_cost"]');
+        if (costField) {
+            const cost = parseFloat(costField.value);
+            if (isNaN(cost) || cost < 0) {
+                isValid = false;
+                costField.classList.add('is-invalid');
+                showFieldErrorForAdd(form, 'current_cost', 'El costo debe ser mayor o igual a cero.');
+            }
+        }
+        
+        if (!isValid) {
+            if (window.SIGVE && window.SIGVE.showNotification) {
+                window.SIGVE.showNotification('Por favor, completa todos los campos obligatorios correctamente.', 'error');
+            }
+        }
+        
+        return isValid;
+    }
+
+    /**
      * Inicializa el modal de agregar repuesto
      */
     function initAddModal() {
         const addModal = document.getElementById('addInventoryModal');
         const sparePartSelect = document.getElementById('sparePartSelect');
+        const addForm = addModal ? addModal.querySelector('form') : null;
         
         if (!addModal || !sparePartSelect) return;
         
         // Limpiar formulario cuando se cierra el modal
         addModal.addEventListener('hidden.bs.modal', function() {
-            const form = addModal.querySelector('form');
-            if (form) {
-                form.reset();
+            if (addForm) {
+                addForm.reset();
+                clearFormErrorsForAdd(addForm);
                 // Restablecer el select a su estado inicial
                 sparePartSelect.innerHTML = '<option value="">Selecciona un repuesto</option>' + 
                     Array.from(sparePartSelect.options).slice(1).map(opt => opt.outerHTML).join('');
             }
         });
         
+        // Prevenir validación HTML5 nativa del formulario de agregar
+        if (addForm) {
+            addForm.addEventListener('invalid', function(e) {
+                e.preventDefault();
+                // La validación se manejará en handleSubmit
+            }, true);
+        }
+        
+        // Manejar envío del formulario de agregar
+        if (addForm) {
+            addForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Validar formulario
+                if (!validateAddForm(addForm)) {
+                    return;
+                }
+                
+                const submitBtn = addForm.querySelector('button[type="submit"]');
+                if (submitBtn && window.SIGVE && window.SIGVE.showButtonLoading) {
+                    window.SIGVE.showButtonLoading(submitBtn);
+                }
+                
+                const formData = new FormData(addForm);
+                
+                fetch(addForm.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                        return null;
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data) {
+                        if (data.success) {
+                            if (submitBtn && window.SIGVE && window.SIGVE.hideButtonLoading) {
+                                window.SIGVE.hideButtonLoading(submitBtn);
+                            }
+                            const modalInstance = bootstrap.Modal.getInstance(addModal);
+                            if (modalInstance) {
+                                modalInstance.hide();
+                            }
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 150);
+                        } else if (data.errors) {
+                            // Errores de validación
+                            clearFormErrorsForAdd(addForm);
+                            
+                            // Mostrar errores por campo
+                            for (const [field, errors] of Object.entries(data.errors)) {
+                                if (Array.isArray(errors) && errors.length > 0) {
+                                    const errorMessage = errors[0];
+                                    
+                                    if (field === 'general' || field === '__all__') {
+                                        if (window.SIGVE && window.SIGVE.showNotification) {
+                                            window.SIGVE.showNotification(errorMessage, 'error');
+                                        } else {
+                                            alert(errorMessage);
+                                        }
+                                    } else {
+                                        showFieldErrorForAdd(addForm, field, errorMessage);
+                                    }
+                                }
+                            }
+                            
+                            if (submitBtn && window.SIGVE && window.SIGVE.hideButtonLoading) {
+                                window.SIGVE.hideButtonLoading(submitBtn);
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    if (window.SIGVE && window.SIGVE.showNotification) {
+                        window.SIGVE.showNotification('Error al agregar el repuesto', 'error');
+                    } else {
+                        alert('Error al agregar el repuesto');
+                    }
+                    if (submitBtn && window.SIGVE && window.SIGVE.hideButtonLoading) {
+                        window.SIGVE.hideButtonLoading(submitBtn);
+                    }
+                });
+            });
+        }
+        
         // Búsqueda mejorada en el select (filtrado de opciones)
         const originalOptions = Array.from(sparePartSelect.options);
         let searchInput = null;
+        let searchLoader = null;
+        let searchTimeout = null;
         
         // Crear campo de búsqueda si hay muchas opciones
         if (originalOptions.length > 10) {
             const searchContainer = document.createElement('div');
-            searchContainer.className = 'mb-2';
+            searchContainer.className = 'mb-2 position-relative';
             searchContainer.innerHTML = `
                 <input type="text" 
                        id="sparePartSearch" 
-                       class="form-control form-control-sm" 
+                       class="form-control" 
                        placeholder="Buscar repuesto...">
+                <div id="sparePartSearchLoader" class="spare-part-search-loader" style="display: none;">
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                </div>
             `;
             sparePartSelect.parentNode.insertBefore(searchContainer, sparePartSelect);
             searchInput = document.getElementById('sparePartSearch');
+            searchLoader = document.getElementById('sparePartSearchLoader');
             
             searchInput.addEventListener('input', function() {
                 const searchTerm = this.value.toLowerCase().trim();
-                const options = sparePartSelect.querySelectorAll('option');
                 
-                options.forEach(function(option) {
-                    if (option.value === '') {
-                        // Mantener la opción vacía siempre visible
-                        option.style.display = '';
-                        return;
+                // Mostrar loader
+                if (searchLoader) {
+                    searchLoader.style.display = 'block';
+                }
+                
+                // Limpiar timeout anterior si existe
+                if (searchTimeout) {
+                    clearTimeout(searchTimeout);
+                }
+                
+                // Ejecutar búsqueda con un pequeño delay para mejor rendimiento
+                searchTimeout = setTimeout(function() {
+                    const options = Array.from(sparePartSelect.options);
+                    let visibleOptions = [];
+                    
+                    // Filtrar opciones
+                    options.forEach(function(option) {
+                        if (option.value === '') {
+                            // Mantener la opción vacía siempre visible
+                            option.style.display = '';
+                            return;
+                        }
+                        
+                        const text = option.textContent.toLowerCase();
+                        const isVisible = text.includes(searchTerm);
+                        option.style.display = isVisible ? '' : 'none';
+                        
+                        if (isVisible) {
+                            visibleOptions.push(option);
+                        }
+                    });
+                    
+                    // Si hay al menos una opción visible (excluyendo la vacía), seleccionar la primera automáticamente
+                    if (visibleOptions.length > 0 && searchTerm.length > 0) {
+                        const selectedOption = visibleOptions[0];
+                        const selectedValue = selectedOption.value;
+                        
+                        // Buscar el índice de la opción
+                        let optionIndex = -1;
+                        for (let i = 0; i < sparePartSelect.options.length; i++) {
+                            if (sparePartSelect.options[i] === selectedOption) {
+                                optionIndex = i;
+                                break;
+                            }
+                        }
+                        
+                        if (optionIndex >= 0 && selectedValue) {
+                            // Establecer el valor usando múltiples métodos para asegurar que funcione
+                            sparePartSelect.selectedIndex = optionIndex;
+                            sparePartSelect.value = selectedValue;
+                            
+                            // Verificar y forzar si es necesario
+                            setTimeout(function() {
+                                if (sparePartSelect.value !== selectedValue) {
+                                    sparePartSelect.selectedIndex = optionIndex;
+                                    sparePartSelect.value = selectedValue;
+                                }
+                                
+                                // Disparar evento change
+                                sparePartSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                            }, 0);
+                        }
+                    } else if (visibleOptions.length === 0 && searchTerm.length > 0) {
+                        // Si no hay opciones visibles, resetear a la opción vacía
+                        sparePartSelect.selectedIndex = 0;
+                        sparePartSelect.value = '';
+                    } else if (searchTerm.length === 0) {
+                        // Si se limpia la búsqueda, resetear a la opción vacía
+                        sparePartSelect.selectedIndex = 0;
+                        sparePartSelect.value = '';
                     }
                     
-                    const text = option.textContent.toLowerCase();
-                    option.style.display = text.includes(searchTerm) ? '' : 'none';
-                });
+                    // Ocultar loader
+                    if (searchLoader) {
+                        searchLoader.style.display = 'none';
+                    }
+                }, 150);
+            });
+            
+            // Manejar tecla Escape para limpiar búsqueda
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    this.value = '';
+                    
+                    // Limpiar timeout si existe
+                    if (searchTimeout) {
+                        clearTimeout(searchTimeout);
+                    }
+                    
+                    // Ocultar loader
+                    if (searchLoader) {
+                        searchLoader.style.display = 'none';
+                    }
+                    
+                    // Mostrar todas las opciones
+                    const options = sparePartSelect.querySelectorAll('option');
+                    options.forEach(function(option) {
+                        option.style.display = '';
+                    });
+                    
+                    // Resetear el select
+                    sparePartSelect.value = '';
+                    sparePartSelect.selectedIndex = 0;
+                    
+                    // Disparar evento input para que se ejecute la lógica de limpieza
+                    this.dispatchEvent(new Event('input', { bubbles: true }));
+                }
             });
         }
     }
@@ -270,6 +585,12 @@
             modalInstance = new bootstrap.Modal(modal);
             modal.addEventListener('hidden.bs.modal', resetModal);
             form.addEventListener('submit', handleSubmit);
+            
+            // Prevenir validación HTML5 nativa del navegador
+            form.addEventListener('invalid', function(e) {
+                e.preventDefault();
+                // La validación se manejará en handleSubmit
+            }, true);
         }
         
         function open(mode = 'view', inventoryId = null) {
@@ -393,26 +714,211 @@
         function handleSubmit(e) {
             e.preventDefault();
             
-            const quantity = parseInt(document.getElementById('id_quantity').value);
-            const cost = parseFloat(document.getElementById('id_current_cost').value);
-            
-            if (quantity < 0) {
-                alert('La cantidad no puede ser negativa');
+            // Validar formulario manualmente
+            if (!validateForm()) {
                 return;
             }
             
-            if (cost < 0) {
-                alert('El costo no puede ser negativo');
-                return;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn && window.SIGVE && window.SIGVE.showButtonLoading) {
+                window.SIGVE.showButtonLoading(submitBtn);
             }
             
-            if (!form.checkValidity()) {
-                e.stopPropagation();
-                form.classList.add('was-validated');
-                return;
+            const formData = new FormData(form);
+            
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                    return null;
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data) {
+                    if (data.success) {
+                        if (submitBtn && window.SIGVE && window.SIGVE.hideButtonLoading) {
+                            window.SIGVE.hideButtonLoading(submitBtn);
+                        }
+                        modalInstance.hide();
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 150);
+                    } else if (data.errors) {
+                        // Errores de validación
+                        clearFormErrors();
+                        
+                        // Mostrar errores por campo
+                        for (const [field, errors] of Object.entries(data.errors)) {
+                            if (Array.isArray(errors) && errors.length > 0) {
+                                const errorMessage = errors[0];
+                                
+                                if (field === 'general' || field === '__all__') {
+                                    if (window.SIGVE && window.SIGVE.showNotification) {
+                                        window.SIGVE.showNotification(errorMessage, 'error');
+                                    } else {
+                                        alert(errorMessage);
+                                    }
+                                } else {
+                                    showFieldError(field, errorMessage);
+                                }
+                            }
+                        }
+                        
+                        if (submitBtn && window.SIGVE && window.SIGVE.hideButtonLoading) {
+                            window.SIGVE.hideButtonLoading(submitBtn);
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                if (window.SIGVE && window.SIGVE.showNotification) {
+                    window.SIGVE.showNotification('Error al guardar los cambios', 'error');
+                } else {
+                    alert('Error al guardar los cambios');
+                }
+                if (submitBtn && window.SIGVE && window.SIGVE.hideButtonLoading) {
+                    window.SIGVE.hideButtonLoading(submitBtn);
+                }
+            });
+        }
+        
+        /**
+         * Valida el formulario y muestra errores en español
+         * @returns {boolean} true si el formulario es válido, false en caso contrario
+         */
+        function validateForm() {
+            clearFormErrors();
+            
+            let isValid = true;
+            const requiredFields = form.querySelectorAll('[required]');
+            
+            // Mensajes de error en español para campos requeridos
+            const errorMessages = {
+                'quantity': 'Por favor, ingresa una cantidad.',
+                'current_cost': 'Por favor, ingresa un costo actual.'
+            };
+            
+            requiredFields.forEach(field => {
+                const fieldName = field.name;
+                let fieldValue = field.value;
+                
+                // Para selects, verificar que tenga un valor seleccionado
+                if (field.tagName === 'SELECT') {
+                    if (!fieldValue || fieldValue === '') {
+                        isValid = false;
+                        field.classList.add('is-invalid');
+                        const errorMsg = errorMessages[fieldName] || 'Este campo es obligatorio.';
+                        showFieldError(fieldName, errorMsg);
+                    }
+                } else {
+                    // Para inputs, usar trim
+                    fieldValue = fieldValue ? fieldValue.trim() : '';
+                    if (!fieldValue) {
+                        isValid = false;
+                        field.classList.add('is-invalid');
+                        const errorMsg = errorMessages[fieldName] || 'Este campo es obligatorio.';
+                        showFieldError(fieldName, errorMsg);
+                    }
+                }
+            });
+            
+            // Validar cantidad
+            const quantityField = document.getElementById('id_quantity');
+            if (quantityField) {
+                const quantity = parseInt(quantityField.value);
+                if (isNaN(quantity) || quantity < 0) {
+                    isValid = false;
+                    quantityField.classList.add('is-invalid');
+                    showFieldError('quantity', 'La cantidad no puede ser negativa.');
+                }
             }
             
-            form.submit();
+            // Validar costo
+            const costField = document.getElementById('id_current_cost');
+            if (costField) {
+                const cost = parseFloat(costField.value);
+                if (isNaN(cost) || cost < 0) {
+                    isValid = false;
+                    costField.classList.add('is-invalid');
+                    showFieldError('current_cost', 'El costo no puede ser negativo.');
+                }
+            }
+            
+            if (!isValid) {
+                if (window.SIGVE && window.SIGVE.showNotification) {
+                    window.SIGVE.showNotification('Por favor, completa todos los campos obligatorios correctamente.', 'error');
+                }
+            }
+            
+            return isValid;
+        }
+        
+        /**
+         * Limpia todos los errores del formulario
+         */
+        function clearFormErrors() {
+            if (!form) return;
+            
+            // Remover clases de error de Bootstrap
+            form.querySelectorAll('.is-invalid').forEach(field => {
+                field.classList.remove('is-invalid');
+            });
+            
+            // Limpiar mensajes de error dinámicos
+            form.querySelectorAll('.invalid-feedback[data-field-error]').forEach(feedback => {
+                feedback.textContent = '';
+            });
+        }
+        
+        /**
+         * Muestra un error en un campo específico del formulario
+         * @param {string} fieldName - Nombre del campo
+         * @param {string} errorMessage - Mensaje de error a mostrar
+         */
+        function showFieldError(fieldName, errorMessage) {
+            if (!form) return;
+            
+            const fieldIdMap = {
+                'quantity': 'id_quantity',
+                'current_cost': 'id_current_cost',
+                'supplier_id': 'id_supplier_id',
+                'location': 'id_location',
+                'workshop_sku': 'id_workshop_sku'
+            };
+            
+            const fieldId = fieldIdMap[fieldName] || `id_${fieldName}`;
+            const field = document.getElementById(fieldId);
+            
+            if (field) {
+                field.classList.add('is-invalid');
+                
+                let feedback = field.parentElement.querySelector(`.invalid-feedback[data-field-error="${fieldName}"]`);
+                if (!feedback) {
+                    feedback = field.parentElement.querySelector('.invalid-feedback');
+                    if (feedback) {
+                        feedback.setAttribute('data-field-error', fieldName);
+                    } else {
+                        feedback = document.createElement('div');
+                        feedback.className = 'invalid-feedback';
+                        feedback.setAttribute('data-field-error', fieldName);
+                        field.parentElement.appendChild(feedback);
+                    }
+                }
+                feedback.textContent = errorMessage;
+            } else {
+                console.warn(`Campo no encontrado para mostrar error: ${fieldName}`);
+                if (window.SIGVE && window.SIGVE.showNotification) {
+                    window.SIGVE.showNotification(errorMessage, 'error');
+                }
+            }
         }
         
         function showLoading() {
@@ -429,10 +935,13 @@
         }
         
         function resetModal() {
-            form.classList.remove('was-validated');
+            if (form) {
+                clearFormErrors();
+            }
             currentMode = 'view';
             currentInventoryId = null;
         }
+        
         
         function cancelEdit() {
             if (modalInstance) modalInstance.hide();
