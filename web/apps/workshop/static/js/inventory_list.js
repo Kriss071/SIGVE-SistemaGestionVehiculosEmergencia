@@ -13,6 +13,7 @@
         initSearch();
         initUpdateModal();
         initAddModal();
+        initDeleteButtons();
     }
 
     /**
@@ -552,6 +553,38 @@
                 }
             });
         }
+    }
+
+    /**
+     * Configura los botones de eliminación de inventario
+     */
+    function initDeleteButtons() {
+        // Botones de eliminar inventario
+        document.querySelectorAll('.delete-inventory-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const deleteUrl = this.getAttribute('data-delete-url');
+                const itemName = this.getAttribute('data-item-name');
+                const itemSku = this.getAttribute('data-item-sku');
+                
+                if (!window.ConfirmationModal) {
+                    console.error('ConfirmationModal no está disponible');
+                    return;
+                }
+                
+                if (!deleteUrl) {
+                    console.error('URL de eliminación no encontrada');
+                    return;
+                }
+                
+                window.ConfirmationModal.open({
+                    formAction: deleteUrl,
+                    warningText: `¿Eliminar el repuesto "${itemName}" (SKU: ${itemSku}) del inventario? Esta acción no se puede deshacer.`,
+                    title: 'Confirmar Eliminación de Inventario',
+                    btnClass: 'btn-danger',
+                    btnText: 'Sí, Eliminar'
+                });
+            });
+        });
     }
 
     // Inicializar cuando el DOM esté listo

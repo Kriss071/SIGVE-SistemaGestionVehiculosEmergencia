@@ -207,14 +207,13 @@
                                             ({{ part.quantity_used }} unid.)
                                             - ${{ part.cost_per_unit|floatformat:0 }}
                                             {% if not order.is_completed %}
-                                            <form method="post" action="{% url 'workshop:part_remove_from_task' order.id part.id %}" 
-                                                  style="display:inline;" 
-                                                  onsubmit="return confirm('¿Eliminar repuesto? Se devolverá al inventario.')">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-link btn-sm text-danger p-0">
-                                                    <i class="bi bi-x-circle"></i>
-                                                </button>
-                                            </form>
+                                            <button type="button" 
+                                                    class="btn btn-link btn-sm text-danger p-0 delete-part-btn" 
+                                                    data-delete-url="{% url 'workshop:part_remove_from_task' order.id part.id %}"
+                                                    data-part-name="{{ part.workshop_inventory.spare_part.name }}"
+                                                    data-quantity="{{ part.quantity_used }}">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
                                             {% endif %}
                                         </small>
                                     </li>
@@ -226,14 +225,12 @@
                         </td>
                         <td class="text-end">
                             {% if not order.is_completed %}
-                            <form method="post" action="{% url 'workshop:task_delete' order.id task.id %}" 
-                                  style="display:inline;" 
-                                  onsubmit="return confirm('¿Eliminar esta tarea?')">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </form>
+                            <button type="button" 
+                                    class="btn btn-sm btn-outline-danger delete-task-btn" 
+                                    data-delete-url="{% url 'workshop:task_delete' order.id task.id %}"
+                                    data-task-type="{{ task.task_type.name }}">
+                                <i class="bi bi-trash"></i>
+                            </button>
                             {% endif %}
                         </td>
                     </tr>
@@ -353,6 +350,9 @@
     </div>
 </div>
 
+<!-- Modal de Confirmación de Eliminación -->
+{% include 'workshop/modals/confirmation_modal.html' %}
+
 <!-- Modal de Confirmación para Estado Terminada -->
 <div class="modal fade" id="confirmCompletionModal" tabindex="-1" aria-labelledby="confirmCompletionModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -391,6 +391,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/modal.js' %}"></script>
 <script src="{% static 'js/order_detail.js' %}"></script>
 {% endblock %}
 

@@ -81,6 +81,9 @@
         // Configurar validación para el formulario de agregar repuesto a tarea
         setupPartToTaskFormValidation();
 
+        // Configurar botones de eliminación
+        setupDeleteButtons();
+
         console.log('OrderDetail: Controlador inicializado correctamente');
     }
 
@@ -633,6 +636,64 @@
                 alert(errorMessage);
             }
         }
+    }
+
+    /**
+     * Configura los botones de eliminación de tareas y repuestos
+     */
+    function setupDeleteButtons() {
+        // Botones de eliminar tarea
+        document.querySelectorAll('.delete-task-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const deleteUrl = this.getAttribute('data-delete-url');
+                const taskType = this.getAttribute('data-task-type');
+                
+                if (!window.ConfirmationModal) {
+                    console.error('ConfirmationModal no está disponible');
+                    return;
+                }
+                
+                if (!deleteUrl) {
+                    console.error('URL de eliminación no encontrada');
+                    return;
+                }
+                
+                window.ConfirmationModal.open({
+                    formAction: deleteUrl,
+                    warningText: `¿Estás seguro de eliminar la tarea "${taskType}"?`,
+                    title: 'Confirmar Eliminación de Tarea',
+                    btnClass: 'btn-danger',
+                    btnText: 'Sí, Eliminar'
+                });
+            });
+        });
+
+        // Botones de eliminar repuesto
+        document.querySelectorAll('.delete-part-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const deleteUrl = this.getAttribute('data-delete-url');
+                const partName = this.getAttribute('data-part-name');
+                const quantity = this.getAttribute('data-quantity');
+                
+                if (!window.ConfirmationModal) {
+                    console.error('ConfirmationModal no está disponible');
+                    return;
+                }
+                
+                if (!deleteUrl) {
+                    console.error('URL de eliminación no encontrada');
+                    return;
+                }
+                
+                window.ConfirmationModal.open({
+                    formAction: deleteUrl,
+                    warningText: `¿Eliminar el repuesto "${partName}" (${quantity} unid.)? Se devolverá al inventario.`,
+                    title: 'Confirmar Eliminación de Repuesto',
+                    btnClass: 'btn-danger',
+                    btnText: 'Sí, Eliminar'
+                });
+            });
+        });
     }
 
     /**

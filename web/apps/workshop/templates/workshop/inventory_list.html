@@ -60,14 +60,14 @@
                                     title="Editar">
                                 <i class="bi bi-pencil"></i> Editar
                             </button>
-                            <form method="post" action="{% url 'workshop:inventory_delete' item.id %}" 
-                                  style="display:inline;" 
-                                  onsubmit="return confirm('¿Eliminar este repuesto del inventario? Esta acción no se puede deshacer.')">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </form>
+                            <button type="button" 
+                                    class="btn btn-sm btn-outline-danger delete-inventory-btn" 
+                                    data-delete-url="{% url 'workshop:inventory_delete' item.id %}"
+                                    data-item-name="{{ item.spare_part.name }}"
+                                    data-item-sku="{{ item.spare_part.sku }}"
+                                    title="Eliminar">
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -260,9 +260,13 @@
 <!-- Modal para Crear Solicitud (para solicitar repuesto maestro) -->
 {% include 'workshop/modals/request_modal.html' %}
 
+<!-- Modal de Confirmación de Eliminación -->
+{% include 'workshop/modals/confirmation_modal.html' %}
+
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/modal.js' %}"></script>
 <script src="{% static 'js/requests_list.js' %}"></script>
 <script src="{% static 'js/inventory_list.js' %}"></script>
 {% endblock %}
