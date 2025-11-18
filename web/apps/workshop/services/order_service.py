@@ -161,7 +161,11 @@ class OrderService(WorkshopBaseService):
         query = client.table("maintenance_order") \
             .select("""
                 *,
-                vehicle:vehicle_id(*, vehicle_status:vehicle_status_id(id, name)),
+                vehicle:vehicle_id(
+                    *,
+                    vehicle_status:vehicle_status_id(id, name),
+                    fire_station:fire_station_id(id, name)
+                ),
                 order_status:order_status_id(*),
                 maintenance_type:maintenance_type_id(*),
                 assigned_mechanic:assigned_mechanic_id(id, first_name, last_name, rut)

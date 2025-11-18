@@ -11,6 +11,8 @@
     let confirmModal, confirmModalInstance, confirmBtn;
     let originalStatusValue;
     let completionKeywords = ['termin', 'final', 'complet', 'cerrad'];
+    let taskForm, taskFormSubmitBtn;
+    let isSubmittingTask = false;
 
     /**
      * Inicialización del controlador
@@ -47,6 +49,9 @@
         if (confirmBtn) {
             confirmBtn.addEventListener('click', handleConfirmCompletion);
         }
+
+        // Configurar protección contra doble envío para el formulario de tareas
+        setupTaskFormProtection();
 
         console.log('OrderDetail: Controlador inicializado correctamente');
     }
@@ -145,6 +150,74 @@
             button.innerHTML = originalHtml;
             button.removeAttribute('data-original-html');
         }
+    }
+
+    /**
+     * Configura protección contra doble envío para el formulario de tareas
+     */
+    function setupTaskFormProtection() {
+        // Buscar el formulario dentro del modal (puede no estar cargado aún)
+        const addTaskModal = document.getElementById('addTaskModal');
+        if (!addTaskModal) return;
+
+        // Usar evento de Bootstrap para cuando el modal se muestra
+        addTaskModal.addEventListener('shown.bs.modal', function() {
+            taskForm = addTaskModal.querySelector('form');
+            taskFormSubmitBtn = document.getElementById('addTaskSubmitBtn');
+
+            if (taskForm && taskFormSubmitBtn) {
+                // Remover listeners anteriores si existen (clonar el formulario para limpiar listeners)
+                const newTaskForm = taskForm.cloneNode(true);
+                taskForm.parentNode.replaceChild(newTaskForm, taskForm);
+                taskForm = newTaskForm;
+                taskFormSubmitBtn = document.getElementById('addTaskSubmitBtn');
+                
+                // Agregar listener para prevenir doble envío
+                taskForm.addEventListener('submit', handleTaskFormSubmit);
+                isSubmittingTask = false;
+            }
+        });
+
+        // Resetear el flag cuando el modal se oculta
+        addTaskModal.addEventListener('hidden.bs.modal', function() {
+            isSubmittingTask = false;
+            if (taskFormSubmitBtn) {
+                taskFormSubmitBtn.disabled = false;
+                const originalHtml = taskFormSubmitBtn.getAttribute('data-original-html');
+                if (originalHtml) {
+                    taskFormSubmitBtn.innerHTML = originalHtml;
+                    taskFormSubmitBtn.removeAttribute('data-original-html');
+                }
+            }
+            // Resetear el formulario
+            if (taskForm) {
+                taskForm.reset();
+            }
+        });
+    }
+
+    /**
+     * Maneja el envío del formulario de tareas con protección contra doble envío
+     */
+    function handleTaskFormSubmit(event) {
+        // Si ya se está enviando, prevenir el envío
+        if (isSubmittingTask) {
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        }
+
+        // Marcar como enviando
+        isSubmittingTask = true;
+
+        // Deshabilitar el botón y mostrar indicador de carga
+        if (taskFormSubmitBtn) {
+            showButtonLoading(taskFormSubmitBtn);
+        }
+
+        // Permitir que el formulario se envíe normalmente
+        // El flag isSubmittingTask prevendrá envíos adicionales
+        return true;
     }
 
     // Inicializar cuando el DOM esté listo
