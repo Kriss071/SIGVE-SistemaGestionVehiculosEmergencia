@@ -969,6 +969,7 @@ def employees_list(request):
 def employee_update(request, user_id):
     """Actualiza un empleado del taller (solo Admin Taller)."""
     workshop_id = request.workshop_id
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     
     form = EmployeeForm(request.POST)
     if form.is_valid():
@@ -981,13 +982,27 @@ def employee_update(request, user_id):
             'is_active': form.cleaned_data.get('is_active', True)
         }
         
-        success = EmployeeService.update_employee(user_id, workshop_id, data)
+        success, errors = EmployeeService.update_employee(user_id, workshop_id, data)
         
         if success:
+            if is_ajax:
+                return JsonResponse({'success': True})
             messages.success(request, '✅ Empleado actualizado.')
         else:
-            messages.error(request, '❌ Error al actualizar.')
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': errors or {'general': ['Error al actualizar el empleado.']}})
+            # Mostrar el primer error encontrado
+            if errors:
+                first_error = list(errors.values())[0]
+                if isinstance(first_error, list) and first_error:
+                    messages.error(request, f'❌ {first_error[0]}')
+                else:
+                    messages.error(request, '❌ Error al actualizar el empleado.')
+            else:
+                messages.error(request, '❌ Error al actualizar el empleado.')
     else:
+        if is_ajax:
+            return JsonResponse({'success': False, 'errors': form.errors})
         messages.error(request, '❌ Datos inválidos.')
     
     return redirect('workshop:employees_list')
@@ -1078,11 +1093,20 @@ def employee_create(request):
             return redirect('workshop:employees_list')
         
         error_msg = result.get('error', 'Error al crear el empleado.')
+        error_field = result.get('error_field')
+        
         if is_ajax:
-            return JsonResponse({
-                'success': False,
-                'errors': {'general': [error_msg]}
-            }, status=400)
+            # Si hay un campo específico, devolverlo en el formato correcto
+            if error_field and error_field != 'general':
+                return JsonResponse({
+                    'success': False,
+                    'errors': {error_field: [error_msg]}
+                }, status=400)
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'errors': {'general': [error_msg]}
+                }, status=400)
         messages.error(request, f'❌ {error_msg}')
         return redirect('workshop:employees_list')
     

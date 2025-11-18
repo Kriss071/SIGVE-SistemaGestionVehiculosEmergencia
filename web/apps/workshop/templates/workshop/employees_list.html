@@ -114,12 +114,16 @@
                         <div class="col-md-6 mb-3">
                             <label for="id_first_name" class="form-label">Nombre <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="id_first_name" name="first_name" required>
-                            <div class="invalid-feedback">Por favor ingresa el nombre.</div>
+                            <div class="invalid-feedback" data-field-error="first_name">
+                                Por favor ingresa el nombre.
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="id_last_name" class="form-label">Apellido <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="id_last_name" name="last_name" required>
-                            <div class="invalid-feedback">Por favor ingresa el apellido.</div>
+                            <div class="invalid-feedback" data-field-error="last_name">
+                                Por favor ingresa el apellido.
+                            </div>
                         </div>
                     </div>
                     
@@ -127,10 +131,16 @@
                         <div class="col-md-6 mb-3">
                             <label for="id_rut" class="form-label">RUT</label>
                             <input type="text" class="form-control" id="id_rut" name="rut" placeholder="12345678-9">
+                            <div class="invalid-feedback" data-field-error="rut">
+                                Este RUT ya está registrado en otro usuario.
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="id_phone" class="form-label">Teléfono</label>
                             <input type="text" class="form-control" id="id_phone" name="phone" placeholder="+56912345678">
+                            <div class="invalid-feedback" data-field-error="phone">
+                                Este número de teléfono ya está registrado en otro usuario.
+                            </div>
                         </div>
                     </div>
                     
@@ -143,7 +153,9 @@
                                 <option value="{{ role.id }}">{{ role.name }}</option>
                                 {% endfor %}
                             </select>
-                            <div class="invalid-feedback">Por favor selecciona un rol.</div>
+                            <div class="invalid-feedback" data-field-error="role_id">
+                                Por favor selecciona un rol.
+                            </div>
                         </div>
                     </div>
                     
@@ -154,7 +166,9 @@
                         <div class="mb-3">
                             <label for="id_email" class="form-label">Correo Electrónico <span class="text-danger">*</span></label>
                             <input type="email" class="form-control" id="id_email" name="email" placeholder="empleado@ejemplo.cl" required>
-                            <div class="invalid-feedback">Por favor ingresa un correo electrónico válido.</div>
+                            <div class="invalid-feedback" data-field-error="email">
+                                Por favor ingresa un correo electrónico válido.
+                            </div>
                             <small class="form-text text-muted">
                                 El empleado usará este correo para iniciar sesión en el sistema.
                             </small>
@@ -164,12 +178,16 @@
                             <div class="col-md-6 mb-3">
                                 <label for="id_password" class="form-label">Contraseña <span class="text-danger">*</span></label>
                                 <input type="password" class="form-control" id="id_password" name="password" minlength="6" required>
-                                <div class="invalid-feedback">La contraseña debe tener al menos 6 caracteres.</div>
+                                <div class="invalid-feedback" data-field-error="password">
+                                    La contraseña debe tener al menos 6 caracteres.
+                                </div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="id_password_confirm" class="form-label">Confirmar Contraseña <span class="text-danger">*</span></label>
                                 <input type="password" class="form-control" id="id_password_confirm" name="password_confirm" minlength="6" required>
-                                <div class="invalid-feedback">Las contraseñas deben coincidir.</div>
+                                <div class="invalid-feedback" data-field-error="password_confirm">
+                                    Las contraseñas deben coincidir.
+                                </div>
                             </div>
                         </div>
                     </div>
