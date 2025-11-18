@@ -147,21 +147,11 @@ def workshop_create(request):
         if form.is_valid():
             logger.info("✅ Formulario válido, preparando datos para creación de taller.")
             
-            # Obtener valores (el método clean() ya convierte cadenas vacías a None)
-            phone = form.cleaned_data.get('phone')
-            email = form.cleaned_data.get('email')
-            
-            # Asegurar que cadenas vacías se conviertan en None (capa adicional de seguridad)
-            if phone is not None and isinstance(phone, str) and not phone.strip():
-                phone = None
-            if email is not None and isinstance(email, str) and not email.strip():
-                email = None
-            
             data = {
                 'name': form.cleaned_data['name'],
                 'address': form.cleaned_data.get('address'),
-                'phone': phone,
-                'email': email,
+                'phone': form.cleaned_data.get('phone'),
+                'email': form.cleaned_data.get('email'),
                 'latitude': float(form.cleaned_data['latitude']) if form.cleaned_data.get('latitude') else None,
                 'longitude': float(form.cleaned_data['longitude']) if form.cleaned_data.get('longitude') else None
             }
@@ -251,21 +241,12 @@ def workshop_edit(request, workshop_id):
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         
         if form.is_valid():
-            # Obtener valores (el método clean() ya convierte cadenas vacías a None)
-            phone = form.cleaned_data.get('phone')
-            email = form.cleaned_data.get('email')
-            
-            # Asegurar que cadenas vacías se conviertan en None (capa adicional de seguridad)
-            if phone is not None and isinstance(phone, str) and not phone.strip():
-                phone = None
-            if email is not None and isinstance(email, str) and not email.strip():
-                email = None
-            
+            # El método clean() del formulario ya convierte cadenas vacías a None
             data = {
                 'name': form.cleaned_data['name'],
                 'address': form.cleaned_data.get('address'),
-                'phone': phone,
-                'email': email,
+                'phone': form.cleaned_data.get('phone'),
+                'email': form.cleaned_data.get('email'),
                 'latitude': float(form.cleaned_data['latitude']) if form.cleaned_data.get('latitude') else None,
                 'longitude': float(form.cleaned_data['longitude']) if form.cleaned_data.get('longitude') else None
             }

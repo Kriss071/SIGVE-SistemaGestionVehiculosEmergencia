@@ -295,25 +295,16 @@
                         clearFormErrors();
                         
                         // Mostrar errores por campo
-                        let hasErrors = false;
                         for (const [field, errors] of Object.entries(data.errors)) {
                             if (Array.isArray(errors) && errors.length > 0) {
-                                hasErrors = true;
-                                const errorMessage = errors[0]; // Tomar el primer error del campo
+                                const errorMessage = errors[0];
                                 
                                 if (field === 'general' || field === '__all__') {
-                                    // Error general, mostrar como notificación
                                     window.SIGVE.showNotification(errorMessage, 'error');
                                 } else {
-                                    // Error de campo específico
                                     showFieldError(field, errorMessage);
                                 }
                             }
-                        }
-                        
-                        // Si no hay errores de campo específicos pero hay errores generales, mostrar notificación
-                        if (!hasErrors && data.errors.general) {
-                            window.SIGVE.showNotification(data.errors.general[0], 'error');
                         }
                         
                         window.SIGVE.hideButtonLoading(submitBtn);
@@ -388,46 +379,31 @@
          * @returns {boolean} true si el formulario es válido, false en caso contrario
          */
         function validateForm() {
-            // Limpiar errores previos
             clearFormErrors();
             
             let isValid = true;
             const requiredFields = form.querySelectorAll('[required]');
             
-            // Mensajes de error en español
+            // Mensajes de error en español para campos requeridos
             const errorMessages = {
                 'name': 'Por favor, ingresa un nombre para el taller.',
-                'address': 'Por favor, ingresa una dirección.',
-                'phone': 'Por favor, ingresa un número de teléfono válido.',
-                'email': 'Por favor, ingresa un correo electrónico válido.'
+                'address': 'Por favor, ingresa una dirección.'
             };
             
             requiredFields.forEach(field => {
                 const fieldName = field.name;
                 const fieldValue = field.value.trim();
                 
-                // Validar campo requerido
                 if (!fieldValue) {
                     isValid = false;
                     field.classList.add('is-invalid');
                     const errorMsg = errorMessages[fieldName] || 'Este campo es obligatorio.';
                     showFieldError(fieldName, errorMsg);
-                } else {
-                    // Validar formato de email si es un campo de email
-                    if (field.type === 'email' && fieldValue) {
-                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                        if (!emailRegex.test(fieldValue)) {
-                            isValid = false;
-                            field.classList.add('is-invalid');
-                            showFieldError(fieldName, 'Por favor, ingresa un correo electrónico válido.');
-                        }
-                    }
                 }
             });
             
-            // Si el formulario no es válido, mostrar mensaje general
             if (!isValid) {
-                window.SIGVE.showNotification('Por favor, completa todos los campos obligatorios correctamente.', 'error');
+                window.SIGVE.showNotification('Por favor, completa todos los campos obligatorios.', 'error');
             }
             
             return isValid;
@@ -442,25 +418,9 @@
                 field.classList.remove('is-invalid');
             });
             
-            // Remover mensajes de error dinámicos (los que tienen data-field-error)
+            // Limpiar mensajes de error dinámicos
             form.querySelectorAll('.invalid-feedback[data-field-error]').forEach(feedback => {
-                // Si el feedback tiene contenido personalizado, limpiarlo pero mantener el elemento
-                // Solo removemos si fue creado dinámicamente (sin contenido predeterminado)
-                const fieldName = feedback.dataset.fieldError;
-                const defaultMessages = {
-                    'address': 'Por favor, ingresa una dirección.',
-                    'name': 'Por favor, ingresa un nombre para el taller.'
-                };
-                
-                // Si no tiene el mensaje predeterminado, significa que fue creado dinámicamente
-                if (!defaultMessages[fieldName] || feedback.textContent.trim() !== defaultMessages[fieldName]) {
-                    // Restaurar mensaje predeterminado si existe
-                    if (defaultMessages[fieldName]) {
-                        feedback.textContent = defaultMessages[fieldName];
-                    } else {
-                        feedback.textContent = '';
-                    }
-                }
+                feedback.textContent = '';
             });
         }
         
@@ -470,41 +430,25 @@
          * @param {string} errorMessage - Mensaje de error a mostrar
          */
         function showFieldError(fieldName, errorMessage) {
-            // Mapeo de nombres de campos a IDs de elementos
             const fieldIdMap = {
                 'name': 'id_name',
                 'phone': 'id_phone',
                 'email': 'id_email',
-                'address': 'workshop-address' // Este campo puede tener diferentes IDs
+                'address': 'workshop-address'
             };
             
-            let fieldId = fieldIdMap[fieldName];
-            if (!fieldId) {
-                // Si no está en el mapa, intentar con el prefijo estándar
-                fieldId = `id_${fieldName}`;
-            }
-            
-            // Buscar el campo (puede tener diferentes IDs)
-            let field = document.getElementById(fieldId);
-            if (!field && fieldName === 'address') {
-                // Intentar con el ID alternativo
-                field = document.getElementById('id_address');
-            }
+            const fieldId = fieldIdMap[fieldName] || `id_${fieldName}`;
+            const field = document.getElementById(fieldId) || (fieldName === 'address' ? document.getElementById('id_address') : null);
             
             if (field) {
-                // Agregar clase de error de Bootstrap
                 field.classList.add('is-invalid');
                 
-                // Buscar el elemento de feedback existente
                 let feedback = field.parentElement.querySelector(`.invalid-feedback[data-field-error="${fieldName}"]`);
                 if (!feedback) {
-                    // Si no existe, buscar cualquier invalid-feedback en el mismo contenedor
                     feedback = field.parentElement.querySelector('.invalid-feedback');
                     if (feedback) {
-                        // Agregar el atributo data-field-error si no lo tiene
                         feedback.setAttribute('data-field-error', fieldName);
                     } else {
-                        // Crear nuevo elemento de feedback si no existe ninguno
                         feedback = document.createElement('div');
                         feedback.className = 'invalid-feedback';
                         feedback.setAttribute('data-field-error', fieldName);
@@ -513,9 +457,8 @@
                 }
                 feedback.textContent = errorMessage;
             } else {
-                // Si no se encuentra el campo, mostrar como notificación
                 console.warn(`Campo no encontrado para mostrar error: ${fieldName}`);
-                window.SIGVE.showNotification(`${fieldName}: ${errorMessage}`, 'error');
+                window.SIGVE.showNotification(errorMessage, 'error');
             }
         }
         
