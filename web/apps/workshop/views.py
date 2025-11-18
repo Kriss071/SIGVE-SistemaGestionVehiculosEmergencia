@@ -71,10 +71,20 @@ def dashboard(request):
 @require_GET
 def order_create_context_api(request):
     """Devuelve datos de contexto para inicializar el modal de órdenes."""
+    from .services.order_service import OrderService
+    
     workshop_id = request.workshop_id
     
     maintenance_types = VehicleService.get_maintenance_types()
-    order_statuses = VehicleService.get_order_statuses()
+    all_order_statuses = VehicleService.get_order_statuses()
+    
+    # Filtrar estados de finalización (Cancelada, Terminada, etc.) para creación
+    # Solo se permiten estados activos al crear una orden
+    order_statuses = [
+        status for status in all_order_statuses
+        if not OrderService.is_completion_status(status.get('name', ''))
+    ]
+    
     fire_stations = VehicleService.get_all_fire_stations()
     vehicle_catalog_data = VehicleService.get_catalog_data()
     

@@ -240,6 +240,32 @@ class MaintenanceOrderForm(forms.Form):
             if entry_date > date.today():
                 raise forms.ValidationError('La fecha de ingreso no puede ser futura.')
         return entry_date
+    
+    def clean_order_status_id(self):
+        """Valida que el estado de orden no sea de finalización al crear."""
+        order_status_id = self.cleaned_data.get('order_status_id')
+        if order_status_id:
+            # Importar aquí para evitar importaciones circulares
+            from apps.workshop.services.vehicle_service import VehicleService
+            from apps.workshop.services.order_service import OrderService
+            
+            # Obtener todos los estados
+            all_statuses = VehicleService.get_order_statuses()
+            selected_status = next(
+                (s for s in all_statuses if s.get('id') == order_status_id),
+                None
+            )
+            
+            if selected_status:
+                status_name = selected_status.get('name', '')
+                # Verificar si es un estado de finalización
+                if OrderService.is_completion_status(status_name):
+                    raise forms.ValidationError(
+                        f'No se puede crear una orden con el estado "{status_name}". '
+                        'Solo se permiten estados activos al crear una orden.'
+                    )
+        
+        return order_status_id
 
 
 class MaintenanceTaskForm(forms.Form):
