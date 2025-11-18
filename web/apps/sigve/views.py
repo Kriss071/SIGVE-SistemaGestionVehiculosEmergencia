@@ -78,13 +78,54 @@ def dashboard(request):
 @require_role("Admin SIGVE")
 def requests_center(request):
     """Centro de solicitudes con pestañas."""
+    from datetime import datetime
+    
     status = request.GET.get('status', 'pendiente')
+    
+    # Obtener solicitudes
+    requests = RequestService.get_requests_by_status(status)
+    
+    # Procesar fechas: convertir strings ISO a objetos datetime
+    for req in requests:
+        if req.get('created_at'):
+            if isinstance(req['created_at'], str):
+                date_str = req['created_at']
+                try:
+                    # Normalizar formato: reemplazar Z por +00:00 para timezone
+                    if date_str.endswith('Z'):
+                        date_str = date_str[:-1] + '+00:00'
+                    
+                    # Intentar parsear con fromisoformat (Python 3.7+)
+                    try:
+                        req['created_at'] = datetime.fromisoformat(date_str)
+                    except (ValueError, AttributeError):
+                        # Fallback: intentar formatos comunes de Supabase
+                        # Formato: 2024-01-15T10:30:45.123456+00:00
+                        patterns = [
+                            '%Y-%m-%dT%H:%M:%S.%f%z',
+                            '%Y-%m-%dT%H:%M:%S%z',
+                            '%Y-%m-%dT%H:%M:%S.%f',
+                            '%Y-%m-%dT%H:%M:%S',
+                        ]
+                        parsed = False
+                        for pattern in patterns:
+                            try:
+                                req['created_at'] = datetime.strptime(date_str, pattern)
+                                parsed = True
+                                break
+                            except (ValueError, AttributeError):
+                                continue
+                        if not parsed:
+                            # Si no se puede parsear, dejar como está
+                            logger.warning(f"No se pudo parsear la fecha: {date_str}")
+                except Exception as e:
+                    logger.warning(f"Error procesando fecha {date_str}: {e}")
     
     context = {
         'page_title': 'Centro de Solicitudes',
         'active_page': 'requests',
         'current_status': status,
-        'requests': RequestService.get_requests_by_status(status)
+        'requests': requests
     }
     
     return render(request, 'sigve/requests_center.html', context)
