@@ -31,7 +31,7 @@
                                placeholder="Ej: Mecánica Rápida"
                                required>
                         <small class="text-muted">Nombre oficial del taller</small>
-                        <div class="invalid-feedback">
+                        <div class="invalid-feedback" data-field-error="name">
                             Por favor, ingresa un nombre para el taller.
                         </div>
                     </div>
@@ -45,7 +45,7 @@
                                placeholder="Ej: Av. Libertador Bernardo O'Higgins 1234, Santiago, Chile"
                                required>
                         <small class="text-muted">Dirección completa del taller (incluye comuna y ciudad para mejor precisión)</small>
-                        <div class="invalid-feedback">
+                        <div class="invalid-feedback" data-field-error="address">
                             Por favor, ingresa una dirección.
                         </div>
                         <!-- Campos ocultos para coordenadas -->
@@ -62,6 +62,9 @@
                                    id="id_phone" 
                                    placeholder="Ej: +56912345678">
                             <small class="text-muted">Teléfono de contacto</small>
+                            <div class="invalid-feedback" data-field-error="phone">
+                                <!-- Los errores se mostrarán aquí dinámicamente -->
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="id_email" class="form-label">Email</label>
@@ -71,6 +74,9 @@
                                    id="id_email" 
                                    placeholder="Ej: contacto@taller.cl">
                             <small class="text-muted">Email de contacto</small>
+                            <div class="invalid-feedback" data-field-error="email">
+                                <!-- Los errores se mostrarán aquí dinámicamente -->
+                            </div>
                         </div>
                     </div>
 

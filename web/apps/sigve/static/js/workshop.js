@@ -38,6 +38,12 @@
             
             // Evento al enviar el formulario
             form.addEventListener('submit', handleSubmit);
+            
+            // Prevenir validación HTML5 nativa del navegador
+            form.addEventListener('invalid', function(e) {
+                e.preventDefault();
+                // La validación se manejará en handleSubmit
+            }, true);
         }
         
         /**
@@ -244,6 +250,11 @@
          */
         function handleSubmit(e) {
             e.preventDefault();
+            
+            // Validar formulario manualmente para mostrar mensajes en español
+            if (!validateForm()) {
+                return;
+            }
                 
             const submitBtn = document.getElementById('workshopSubmitBtn');
             if (!submitBtn) return;
@@ -280,9 +291,31 @@
                         return;
                     } else if (data.errors) {
                         // Errores de validación
-                        // Mostramos el primer error
-                        const firstError = Object.values(data.errors)[0][0];
-                        window.SIGVE.showNotification(firstError, 'error');
+                        // Limpiar errores previos
+                        clearFormErrors();
+                        
+                        // Mostrar errores por campo
+                        let hasErrors = false;
+                        for (const [field, errors] of Object.entries(data.errors)) {
+                            if (Array.isArray(errors) && errors.length > 0) {
+                                hasErrors = true;
+                                const errorMessage = errors[0]; // Tomar el primer error del campo
+                                
+                                if (field === 'general' || field === '__all__') {
+                                    // Error general, mostrar como notificación
+                                    window.SIGVE.showNotification(errorMessage, 'error');
+                                } else {
+                                    // Error de campo específico
+                                    showFieldError(field, errorMessage);
+                                }
+                            }
+                        }
+                        
+                        // Si no hay errores de campo específicos pero hay errores generales, mostrar notificación
+                        if (!hasErrors && data.errors.general) {
+                            window.SIGVE.showNotification(data.errors.general[0], 'error');
+                        }
+                        
                         window.SIGVE.hideButtonLoading(submitBtn);
                     }
                 }
@@ -351,6 +384,142 @@
         }
         
         /**
+         * Valida el formulario y muestra errores en español
+         * @returns {boolean} true si el formulario es válido, false en caso contrario
+         */
+        function validateForm() {
+            // Limpiar errores previos
+            clearFormErrors();
+            
+            let isValid = true;
+            const requiredFields = form.querySelectorAll('[required]');
+            
+            // Mensajes de error en español
+            const errorMessages = {
+                'name': 'Por favor, ingresa un nombre para el taller.',
+                'address': 'Por favor, ingresa una dirección.',
+                'phone': 'Por favor, ingresa un número de teléfono válido.',
+                'email': 'Por favor, ingresa un correo electrónico válido.'
+            };
+            
+            requiredFields.forEach(field => {
+                const fieldName = field.name;
+                const fieldValue = field.value.trim();
+                
+                // Validar campo requerido
+                if (!fieldValue) {
+                    isValid = false;
+                    field.classList.add('is-invalid');
+                    const errorMsg = errorMessages[fieldName] || 'Este campo es obligatorio.';
+                    showFieldError(fieldName, errorMsg);
+                } else {
+                    // Validar formato de email si es un campo de email
+                    if (field.type === 'email' && fieldValue) {
+                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (!emailRegex.test(fieldValue)) {
+                            isValid = false;
+                            field.classList.add('is-invalid');
+                            showFieldError(fieldName, 'Por favor, ingresa un correo electrónico válido.');
+                        }
+                    }
+                }
+            });
+            
+            // Si el formulario no es válido, mostrar mensaje general
+            if (!isValid) {
+                window.SIGVE.showNotification('Por favor, completa todos los campos obligatorios correctamente.', 'error');
+            }
+            
+            return isValid;
+        }
+        
+        /**
+         * Limpia todos los errores del formulario
+         */
+        function clearFormErrors() {
+            // Remover clases de error de Bootstrap
+            form.querySelectorAll('.is-invalid').forEach(field => {
+                field.classList.remove('is-invalid');
+            });
+            
+            // Remover mensajes de error dinámicos (los que tienen data-field-error)
+            form.querySelectorAll('.invalid-feedback[data-field-error]').forEach(feedback => {
+                // Si el feedback tiene contenido personalizado, limpiarlo pero mantener el elemento
+                // Solo removemos si fue creado dinámicamente (sin contenido predeterminado)
+                const fieldName = feedback.dataset.fieldError;
+                const defaultMessages = {
+                    'address': 'Por favor, ingresa una dirección.',
+                    'name': 'Por favor, ingresa un nombre para el taller.'
+                };
+                
+                // Si no tiene el mensaje predeterminado, significa que fue creado dinámicamente
+                if (!defaultMessages[fieldName] || feedback.textContent.trim() !== defaultMessages[fieldName]) {
+                    // Restaurar mensaje predeterminado si existe
+                    if (defaultMessages[fieldName]) {
+                        feedback.textContent = defaultMessages[fieldName];
+                    } else {
+                        feedback.textContent = '';
+                    }
+                }
+            });
+        }
+        
+        /**
+         * Muestra un error en un campo específico del formulario
+         * @param {string} fieldName - Nombre del campo (ej: 'phone', 'email', 'address')
+         * @param {string} errorMessage - Mensaje de error a mostrar
+         */
+        function showFieldError(fieldName, errorMessage) {
+            // Mapeo de nombres de campos a IDs de elementos
+            const fieldIdMap = {
+                'name': 'id_name',
+                'phone': 'id_phone',
+                'email': 'id_email',
+                'address': 'workshop-address' // Este campo puede tener diferentes IDs
+            };
+            
+            let fieldId = fieldIdMap[fieldName];
+            if (!fieldId) {
+                // Si no está en el mapa, intentar con el prefijo estándar
+                fieldId = `id_${fieldName}`;
+            }
+            
+            // Buscar el campo (puede tener diferentes IDs)
+            let field = document.getElementById(fieldId);
+            if (!field && fieldName === 'address') {
+                // Intentar con el ID alternativo
+                field = document.getElementById('id_address');
+            }
+            
+            if (field) {
+                // Agregar clase de error de Bootstrap
+                field.classList.add('is-invalid');
+                
+                // Buscar el elemento de feedback existente
+                let feedback = field.parentElement.querySelector(`.invalid-feedback[data-field-error="${fieldName}"]`);
+                if (!feedback) {
+                    // Si no existe, buscar cualquier invalid-feedback en el mismo contenedor
+                    feedback = field.parentElement.querySelector('.invalid-feedback');
+                    if (feedback) {
+                        // Agregar el atributo data-field-error si no lo tiene
+                        feedback.setAttribute('data-field-error', fieldName);
+                    } else {
+                        // Crear nuevo elemento de feedback si no existe ninguno
+                        feedback = document.createElement('div');
+                        feedback.className = 'invalid-feedback';
+                        feedback.setAttribute('data-field-error', fieldName);
+                        field.parentElement.appendChild(feedback);
+                    }
+                }
+                feedback.textContent = errorMessage;
+            } else {
+                // Si no se encuentra el campo, mostrar como notificación
+                console.warn(`Campo no encontrado para mostrar error: ${fieldName}`);
+                window.SIGVE.showNotification(`${fieldName}: ${errorMessage}`, 'error');
+            }
+        }
+        
+        /**
          * Resetea el modal a su estado inicial
          */
         function resetModal() {
@@ -358,6 +527,7 @@
             currentWorkshopId = null;
             form.reset();
             form.classList.remove('was-validated'); // Limpiar validación
+            clearFormErrors(); // Limpiar errores
             setFieldsEnabled(true);
             footer.innerHTML = '';
             hideLoading();

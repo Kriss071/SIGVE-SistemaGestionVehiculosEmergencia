@@ -147,19 +147,29 @@ def workshop_create(request):
         if form.is_valid():
             logger.info("✅ Formulario válido, preparando datos para creación de taller.")
             
+            # Obtener valores (el método clean() ya convierte cadenas vacías a None)
+            phone = form.cleaned_data.get('phone')
+            email = form.cleaned_data.get('email')
+            
+            # Asegurar que cadenas vacías se conviertan en None (capa adicional de seguridad)
+            if phone is not None and isinstance(phone, str) and not phone.strip():
+                phone = None
+            if email is not None and isinstance(email, str) and not email.strip():
+                email = None
+            
             data = {
                 'name': form.cleaned_data['name'],
                 'address': form.cleaned_data.get('address'),
-                'phone': form.cleaned_data.get('phone'),
-                'email': form.cleaned_data.get('email'),
+                'phone': phone,
+                'email': email,
                 'latitude': float(form.cleaned_data['latitude']) if form.cleaned_data.get('latitude') else None,
                 'longitude': float(form.cleaned_data['longitude']) if form.cleaned_data.get('longitude') else None
             }
             
             logger.debug("Datos limpios del formulario: %s", data)
 
-            workshop = WorkshopService.create_workshop(data)
-            logger.info("Resultado de WorkshopService.create_workshop: %s", workshop)
+            workshop, duplicate_errors = WorkshopService.create_workshop(data)
+            logger.info("Resultado de WorkshopService.create_workshop: workshop=%s, errors=%s", workshop, duplicate_errors)
 
             if workshop:
                 message = f'✅ Taller "{data["name"]}" creado correctamente.'
@@ -176,10 +186,29 @@ def workshop_create(request):
                 return redirect('sigve:workshops_list')
             else:
                 logger.error("❌ Error al crear taller en WorkshopService.")
-                # Error al crear
-                if is_ajax:
-                    return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el taller.']}})
-                messages.error(request, '❌ Error al crear el taller.')
+                # Si hay errores de duplicación, agregarlos al formulario
+                if duplicate_errors:
+                    for field, error_msg in duplicate_errors.items():
+                        if field == 'general':
+                            # Si es un error general, agregarlo como error no asociado a un campo
+                            form.add_error(None, error_msg if isinstance(error_msg, str) else error_msg[0])
+                        else:
+                            form.add_error(field, error_msg if isinstance(error_msg, str) else error_msg[0])
+                    
+                    # Manejar errores del formulario
+                    response = handle_form_errors(
+                        request,
+                        form,
+                        is_ajax,
+                        message='⚠️ Corrige los errores del formulario para crear el taller.'
+                    )
+                    if response:
+                        return response
+                else:
+                    # Error genérico
+                    if is_ajax:
+                        return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el taller.']}})
+                    messages.error(request, '❌ Error al crear el taller.')
         else:
             logger.warning("⚠️ Formulario inválido: %s", form.errors)
             response = handle_form_errors(
@@ -222,16 +251,26 @@ def workshop_edit(request, workshop_id):
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         
         if form.is_valid():
+            # Obtener valores (el método clean() ya convierte cadenas vacías a None)
+            phone = form.cleaned_data.get('phone')
+            email = form.cleaned_data.get('email')
+            
+            # Asegurar que cadenas vacías se conviertan en None (capa adicional de seguridad)
+            if phone is not None and isinstance(phone, str) and not phone.strip():
+                phone = None
+            if email is not None and isinstance(email, str) and not email.strip():
+                email = None
+            
             data = {
                 'name': form.cleaned_data['name'],
                 'address': form.cleaned_data.get('address'),
-                'phone': form.cleaned_data.get('phone'),
-                'email': form.cleaned_data.get('email'),
+                'phone': phone,
+                'email': email,
                 'latitude': float(form.cleaned_data['latitude']) if form.cleaned_data.get('latitude') else None,
                 'longitude': float(form.cleaned_data['longitude']) if form.cleaned_data.get('longitude') else None
             }
             
-            success = WorkshopService.update_workshop(workshop_id, data)
+            success, duplicate_errors = WorkshopService.update_workshop(workshop_id, data)
             
             if success:
                 # Si viene del dashboard y es AJAX, devolver JSON (sin redirección)
@@ -246,10 +285,29 @@ def workshop_edit(request, workshop_id):
                 messages.success(request, '✅ Taller actualizado correctamente.')
                 return redirect('sigve:workshops_list')
             else:
-                # Error al actualizar
-                if is_ajax:
-                    return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el taller.']}})
-                messages.error(request, '❌ Error al actualizar el taller.')
+                # Si hay errores de duplicación, agregarlos al formulario
+                if duplicate_errors:
+                    for field, error_msg in duplicate_errors.items():
+                        if field == 'general':
+                            # Si es un error general, agregarlo como error no asociado a un campo
+                            form.add_error(None, error_msg if isinstance(error_msg, str) else error_msg[0])
+                        else:
+                            form.add_error(field, error_msg if isinstance(error_msg, str) else error_msg[0])
+                    
+                    # Manejar errores del formulario
+                    response = handle_form_errors(
+                        request,
+                        form,
+                        is_ajax,
+                        message='⚠️ Corrige los errores del formulario para actualizar el taller.'
+                    )
+                    if response:
+                        return response
+                else:
+                    # Error genérico
+                    if is_ajax:
+                        return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el taller.']}})
+                    messages.error(request, '❌ Error al actualizar el taller.')
         else:
             response = handle_form_errors(
                 request,

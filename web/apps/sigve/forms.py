@@ -6,11 +6,19 @@ class WorkshopForm(forms.Form):
     name = forms.CharField(
         max_length=255,
         label="Nombre del Taller",
+        error_messages={
+            'required': 'Por favor, ingresa un nombre para el taller.',
+            'max_length': 'El nombre del taller no puede exceder 255 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Mecánica Rápida'})
     )
     address = forms.CharField(
         max_length=255,
         label="Dirección",
+        error_messages={
+            'required': 'Por favor, ingresa una dirección.',
+            'max_length': 'La dirección no puede exceder 255 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control', 
             'placeholder': 'Ej: Av. Libertador Bernardo O\'Higgins 1234, Santiago, Chile',
@@ -21,25 +29,62 @@ class WorkshopForm(forms.Form):
         max_digits=10,
         decimal_places=8,
         required=False,
+        error_messages={
+            'invalid': 'La latitud debe ser un número válido.',
+            'max_digits': 'La latitud no puede tener más de 10 dígitos.',
+            'max_decimal_places': 'La latitud no puede tener más de 8 decimales.'
+        },
         widget=forms.HiddenInput(attrs={'id': 'workshop-latitude'})
     )
     longitude = forms.DecimalField(
         max_digits=11,
         decimal_places=8,
         required=False,
+        error_messages={
+            'invalid': 'La longitud debe ser un número válido.',
+            'max_digits': 'La longitud no puede tener más de 11 dígitos.',
+            'max_decimal_places': 'La longitud no puede tener más de 8 decimales.'
+        },
         widget=forms.HiddenInput(attrs={'id': 'workshop-longitude'})
     )
     phone = forms.CharField(
         max_length=20,
         label="Teléfono",
         required=False,
+        error_messages={
+            'max_length': 'El teléfono no puede exceder 20 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: +56912345678'})
     )
     email = forms.EmailField(
         label="Email",
         required=False,
+        error_messages={
+            'invalid': 'Por favor, ingresa un correo electrónico válido.',
+            'max_length': 'El correo electrónico no puede exceder 254 caracteres.'
+        },
         widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Ej: contacto@taller.cl'})
     )
+    
+    def __init__(self, *args, **kwargs):
+        """Inicializa el formulario."""
+        self.workshop_id = kwargs.pop('workshop_id', None)
+        super().__init__(*args, **kwargs)
+    
+    def clean(self):
+        """Limpia y valida los datos del formulario."""
+        cleaned_data = super().clean()
+        
+        # Convertir cadenas vacías a None para campos opcionales
+        phone = cleaned_data.get('phone')
+        if phone is not None and isinstance(phone, str) and phone.strip() == '':
+            cleaned_data['phone'] = None
+        
+        email = cleaned_data.get('email')
+        if email is not None and isinstance(email, str) and email.strip() == '':
+            cleaned_data['email'] = None
+        
+        return cleaned_data
 
 
 class FireStationForm(forms.Form):
