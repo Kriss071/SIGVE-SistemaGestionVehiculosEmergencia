@@ -1,7 +1,8 @@
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
 from decimal import Decimal
+from supabase import PostgrestAPIError
 from .base_service import FireStationBaseService
 
 logger = logging.getLogger(__name__)
@@ -75,8 +76,56 @@ class VehicleService(FireStationBaseService):
         
         return vehicle
     
+    @staticmethod
+    def _parse_duplicate_error(error: Exception) -> Optional[Dict[str, str]]:
+        """
+        Parsea un error de Supabase para identificar qué campo está duplicado.
+        
+        Args:
+            error: La excepción capturada.
+            
+        Returns:
+            Diccionario con el campo duplicado y mensaje, o None si no es un error de duplicación.
+        """
+        error_msg = str(error).lower()
+        error_details = getattr(error, 'message', '') or error_msg
+        
+        # Mapeo de campos y sus mensajes de error
+        field_mapping = {
+            'license_plate': {
+                'keywords': ['license_plate', 'patente', 'license plate'],
+                'message': 'Esta patente ya está registrada en el sistema.'
+            },
+            'vin': {
+                'keywords': ['vin', 'chasis', 'chassis'],
+                'message': 'Este número de chasis (VIN) ya está registrado en otro vehículo.'
+            },
+            'engine_number': {
+                'keywords': ['engine_number', 'motor', 'engine number', 'engine'],
+                'message': 'Este número de motor ya está registrado en otro vehículo.'
+            }
+        }
+        
+        # Buscar el campo duplicado en el mensaje de error
+        for field, info in field_mapping.items():
+            for keyword in info['keywords']:
+                if keyword in error_details.lower():
+                    return {
+                        'field': field,
+                        'message': info['message']
+                    }
+        
+        # Si no se identifica un campo específico, verificar si es un error de constraint único
+        if 'unique constraint' in error_details or 'duplicate key' in error_details or '23505' in error_details:
+            return {
+                'field': 'general',
+                'message': 'Ya existe un vehículo con estos datos. Verifica que la patente, VIN y número de motor sean únicos.'
+            }
+        
+        return None
+    
     @classmethod
-    def create_vehicle(cls, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def create_vehicle(cls, data: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, str]]]:
         """
         Crea un nuevo vehículo.
         
@@ -84,7 +133,7 @@ class VehicleService(FireStationBaseService):
             data: Datos del vehículo.
             
         Returns:
-            El vehículo creado o None si falla.
+            Tupla (vehículo, errores). Si hay errores, el primer elemento es None.
         """
         logger.info(f"➕ Creando vehículo {data.get('license_plate')}")
         
@@ -93,8 +142,9 @@ class VehicleService(FireStationBaseService):
         # Agregar timestamps
         data['created_at'] = datetime.utcnow().isoformat()
         
-        # Asegurar que los valores None se manejen correctamente
-        for key in ['engine_number', 'vin', 'fuel_type_id', 'transmission_type_id', 
+        # Asegurar que los valores None se manejen correctamente (solo para campos opcionales)
+        # engine_number y vin ahora son obligatorios, no se convierten a None
+        for key in ['fuel_type_id', 'transmission_type_id', 
                     'oil_type_id', 'coolant_type_id', 'mileage', 'oil_capacity_liters',
                     'registration_date', 'next_revision_date']:
             if key not in data or data[key] == '':
@@ -106,20 +156,38 @@ class VehicleService(FireStationBaseService):
                 # Para cantidades numéricas preferimos float
                 data[key] = float(value)
         
-        vehicle = cls._execute_single(
-            client.table('vehicle').insert(data),
-            'create_vehicle'
-        )
-        
-        if vehicle:
-            logger.info(f"✅ Vehículo {vehicle['id']} creado correctamente")
-        else:
-            logger.error(f"❌ Error al crear vehículo")
-        
-        return vehicle
+        try:
+            # Ejecutar directamente para capturar excepciones de duplicado
+            response = client.table('vehicle').insert(data).execute()
+            
+            if response.data and len(response.data) > 0:
+                vehicle = response.data[0]
+                logger.info(f"✅ Vehículo {vehicle['id']} creado correctamente")
+                return vehicle, None
+            else:
+                logger.error(f"❌ Error al crear vehículo: respuesta vacía")
+                return None, {'general': ['Error al crear el vehículo. Por favor, intenta nuevamente.']}
+        except PostgrestAPIError as e:
+            logger.error(f"❌ Error de API creando vehículo: {e.message}", exc_info=True)
+            
+            # Intentar parsear error de duplicación
+            duplicate_error = cls._parse_duplicate_error(e)
+            if duplicate_error:
+                return None, {duplicate_error['field']: [duplicate_error['message']]}
+            
+            return None, {'general': ['Error al crear el vehículo. Por favor, intenta nuevamente.']}
+        except Exception as e:
+            logger.error(f"❌ Error inesperado creando vehículo: {e}", exc_info=True)
+            
+            # Intentar parsear error de duplicación
+            duplicate_error = cls._parse_duplicate_error(e)
+            if duplicate_error:
+                return None, {duplicate_error['field']: [duplicate_error['message']]}
+            
+            return None, {'general': ['Error al crear el vehículo. Por favor, intenta nuevamente.']}
     
     @classmethod
-    def update_vehicle(cls, vehicle_id: int, fire_station_id: int, data: Dict[str, Any]) -> bool:
+    def update_vehicle(cls, vehicle_id: int, fire_station_id: int, data: Dict[str, Any]) -> Tuple[bool, Optional[Dict[str, str]]]:
         """
         Actualiza un vehículo existente.
         
@@ -129,7 +197,7 @@ class VehicleService(FireStationBaseService):
             data: Datos a actualizar.
             
         Returns:
-            True si se actualizó correctamente, False en caso contrario.
+            Tupla (éxito, errores). Si hay errores, el primer elemento es False.
         """
         logger.info(f"✏️ Actualizando vehículo {vehicle_id}")
         
@@ -152,20 +220,38 @@ class VehicleService(FireStationBaseService):
         
         # Los campos no editables no se incluyen en data (validado en el formulario)
         
-        result = cls._execute_single(
-            client.table('vehicle')
-                .update(data)
-                .eq('id', vehicle_id)
-                .eq('fire_station_id', fire_station_id),
-            'update_vehicle'
-        )
-        
-        if result:
-            logger.info(f"✅ Vehículo {vehicle_id} actualizado correctamente")
-            return True
-        else:
-            logger.error(f"❌ Error al actualizar vehículo {vehicle_id}")
-            return False
+        try:
+            # Ejecutar directamente para capturar excepciones de duplicado
+            response = client.table('vehicle') \
+                .update(data) \
+                .eq('id', vehicle_id) \
+                .eq('fire_station_id', fire_station_id) \
+                .execute()
+            
+            if response.data and len(response.data) > 0:
+                logger.info(f"✅ Vehículo {vehicle_id} actualizado correctamente")
+                return True, None
+            else:
+                logger.error(f"❌ Error al actualizar vehículo {vehicle_id}: respuesta vacía")
+                return False, {'general': ['Error al actualizar el vehículo. Por favor, intenta nuevamente.']}
+        except PostgrestAPIError as e:
+            logger.error(f"❌ Error de API actualizando vehículo {vehicle_id}: {e.message}", exc_info=True)
+            
+            # Intentar parsear error de duplicación
+            duplicate_error = cls._parse_duplicate_error(e)
+            if duplicate_error:
+                return False, {duplicate_error['field']: [duplicate_error['message']]}
+            
+            return False, {'general': ['Error al actualizar el vehículo. Por favor, intenta nuevamente.']}
+        except Exception as e:
+            logger.error(f"❌ Error inesperado actualizando vehículo {vehicle_id}: {e}", exc_info=True)
+            
+            # Intentar parsear error de duplicación
+            duplicate_error = cls._parse_duplicate_error(e)
+            if duplicate_error:
+                return False, {duplicate_error['field']: [duplicate_error['message']]}
+            
+            return False, {'general': ['Error al actualizar el vehículo. Por favor, intenta nuevamente.']}
     
     @classmethod
     def delete_vehicle(cls, vehicle_id: int, fire_station_id: int) -> bool:

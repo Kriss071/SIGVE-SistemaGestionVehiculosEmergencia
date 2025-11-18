@@ -8,6 +8,10 @@ class VehicleForm(forms.Form):
     license_plate = forms.CharField(
         max_length=20,
         label="Patente",
+        error_messages={
+            'required': 'Por favor, ingresa una patente.',
+            'max_length': 'La patente no puede exceder 20 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: AA-BB-12'
@@ -16,7 +20,10 @@ class VehicleForm(forms.Form):
     engine_number = forms.CharField(
         max_length=100,
         label="Número de Motor",
-        required=False,
+        error_messages={
+            'required': 'Por favor, ingresa el número de motor.',
+            'max_length': 'El número de motor no puede exceder 100 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Número de motor'
@@ -25,7 +32,10 @@ class VehicleForm(forms.Form):
     vin = forms.CharField(
         max_length=100,
         label="Número de Chasis (VIN)",
-        required=False,
+        error_messages={
+            'required': 'Por favor, ingresa el número de chasis (VIN).',
+            'max_length': 'El número de chasis (VIN) no puede exceder 100 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'VIN'
@@ -36,6 +46,10 @@ class VehicleForm(forms.Form):
     brand = forms.CharField(
         max_length=100,
         label="Marca",
+        error_messages={
+            'required': 'Por favor, ingresa una marca.',
+            'max_length': 'La marca no puede exceder 100 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: Mercedes-Benz'
@@ -44,6 +58,10 @@ class VehicleForm(forms.Form):
     model = forms.CharField(
         max_length=100,
         label="Modelo",
+        error_messages={
+            'required': 'Por favor, ingresa un modelo.',
+            'max_length': 'El modelo no puede exceder 100 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: Atego 1725'
@@ -53,6 +71,12 @@ class VehicleForm(forms.Form):
         label="Año",
         min_value=1900,
         max_value=2100,
+        error_messages={
+            'required': 'Por favor, ingresa un año.',
+            'invalid': 'Por favor, ingresa un año válido.',
+            'min_value': 'El año debe ser mayor o igual a 1900.',
+            'max_value': 'El año debe ser menor o igual a 2100.'
+        },
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: 2020',
@@ -62,10 +86,18 @@ class VehicleForm(forms.Form):
     )
     vehicle_type_id = forms.IntegerField(
         label="Tipo de Vehículo",
+        error_messages={
+            'required': 'Por favor, selecciona un tipo de vehículo.',
+            'invalid': 'El tipo de vehículo seleccionado no es válido.'
+        },
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     vehicle_status_id = forms.IntegerField(
         label="Estado",
+        error_messages={
+            'required': 'Por favor, selecciona un estado.',
+            'invalid': 'El estado seleccionado no es válido.'
+        },
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     
@@ -73,6 +105,10 @@ class VehicleForm(forms.Form):
     mileage = forms.IntegerField(
         label="Kilometraje",
         required=False,
+        error_messages={
+            'invalid': 'Por favor, ingresa un kilometraje válido (número entero mayor o igual a 0).',
+            'min_value': 'El kilometraje no puede ser negativo.'
+        },
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: 50000',
@@ -84,6 +120,11 @@ class VehicleForm(forms.Form):
         required=False,
         max_digits=5,
         decimal_places=2,
+        error_messages={
+            'invalid': 'Por favor, ingresa una capacidad de aceite válida.',
+            'max_digits': 'La capacidad de aceite no puede exceder 5 dígitos.',
+            'max_decimal_places': 'La capacidad de aceite no puede tener más de 2 decimales.'
+        },
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: 12.5',
@@ -132,10 +173,30 @@ class VehicleForm(forms.Form):
 
     def clean_license_plate(self):
         value = (self.cleaned_data.get('license_plate') or '').strip().upper()
+        if not value:
+            raise forms.ValidationError('Por favor, ingresa una patente.')
         # Permitir letras, números y guiones, largo razonable
         import re
-        if not re.fullmatch(r'[A-Z0-9\-]{4,10}', value):
-            raise forms.ValidationError('La patente debe contener 4 a 10 caracteres alfanuméricos o guiones.')
+        if not re.fullmatch(r'[A-Z0-9\-]{4,20}', value):
+            raise forms.ValidationError('La patente debe contener 4 a 20 caracteres alfanuméricos o guiones.')
+        return value
+    
+    def clean_engine_number(self):
+        """Valida y normaliza el número de motor."""
+        value = (self.cleaned_data.get('engine_number') or '').strip()
+        if not value:
+            raise forms.ValidationError('Por favor, ingresa el número de motor.')
+        if len(value) > 100:
+            raise forms.ValidationError('El número de motor no puede exceder 100 caracteres.')
+        return value
+    
+    def clean_vin(self):
+        """Valida y normaliza el VIN."""
+        value = (self.cleaned_data.get('vin') or '').strip()
+        if not value:
+            raise forms.ValidationError('Por favor, ingresa el número de chasis (VIN).')
+        if len(value) > 100:
+            raise forms.ValidationError('El número de chasis (VIN) no puede exceder 100 caracteres.')
         return value
 
 
@@ -151,6 +212,10 @@ class VehicleEditForm(forms.Form):
     brand = forms.CharField(
         max_length=100,
         label="Marca",
+        error_messages={
+            'required': 'Por favor, ingresa una marca.',
+            'max_length': 'La marca no puede exceder 100 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: Mercedes-Benz'
@@ -159,6 +224,10 @@ class VehicleEditForm(forms.Form):
     model = forms.CharField(
         max_length=100,
         label="Modelo",
+        error_messages={
+            'required': 'Por favor, ingresa un modelo.',
+            'max_length': 'El modelo no puede exceder 100 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: Atego 1725'
@@ -166,6 +235,12 @@ class VehicleEditForm(forms.Form):
     )
     year = forms.IntegerField(
         label="Año",
+        error_messages={
+            'required': 'Por favor, ingresa un año.',
+            'invalid': 'Por favor, ingresa un año válido.',
+            'min_value': 'El año debe ser mayor o igual a 1900.',
+            'max_value': 'El año debe ser menor o igual a 2100.'
+        },
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: 2020',
@@ -175,15 +250,27 @@ class VehicleEditForm(forms.Form):
     )
     vehicle_type_id = forms.IntegerField(
         label="Tipo de Vehículo",
+        error_messages={
+            'required': 'Por favor, selecciona un tipo de vehículo.',
+            'invalid': 'El tipo de vehículo seleccionado no es válido.'
+        },
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     vehicle_status_id = forms.IntegerField(
         label="Estado",
+        error_messages={
+            'required': 'Por favor, selecciona un estado.',
+            'invalid': 'El estado seleccionado no es válido.'
+        },
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     mileage = forms.IntegerField(
         label="Kilometraje",
         required=False,
+        error_messages={
+            'invalid': 'Por favor, ingresa un kilometraje válido (número entero mayor o igual a 0).',
+            'min_value': 'El kilometraje no puede ser negativo.'
+        },
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: 50000',
@@ -195,6 +282,11 @@ class VehicleEditForm(forms.Form):
         required=False,
         max_digits=5,
         decimal_places=2,
+        error_messages={
+            'invalid': 'Por favor, ingresa una capacidad de aceite válida.',
+            'max_digits': 'La capacidad de aceite no puede exceder 5 dígitos.',
+            'max_decimal_places': 'La capacidad de aceite no puede tener más de 2 decimales.'
+        },
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: 12.5',

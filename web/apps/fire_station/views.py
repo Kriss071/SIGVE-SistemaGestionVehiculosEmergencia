@@ -124,7 +124,7 @@ def vehicle_create(request):
         if data.get('next_revision_date'):
             data['next_revision_date'] = data['next_revision_date'].isoformat()
         
-        vehicle = VehicleService.create_vehicle(data)
+        vehicle, errors = VehicleService.create_vehicle(data)
         
         if vehicle:
             message = f'✅ Vehículo "{data["license_plate"]}" creado correctamente.'
@@ -135,8 +135,16 @@ def vehicle_create(request):
             return redirect('fire_station:vehicles_list')
         else:
             if is_ajax:
-                return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el vehículo.']}})
-            messages.error(request, '❌ Error al crear el vehículo.')
+                return JsonResponse({'success': False, 'errors': errors or {'general': ['Error al crear el vehículo.']}})
+            # Mostrar el primer error encontrado
+            if errors:
+                first_error = list(errors.values())[0]
+                if isinstance(first_error, list) and first_error:
+                    messages.error(request, f'❌ {first_error[0]}')
+                else:
+                    messages.error(request, '❌ Error al crear el vehículo.')
+            else:
+                messages.error(request, '❌ Error al crear el vehículo.')
     else:
         response = handle_form_errors(
             request,
@@ -197,7 +205,7 @@ def vehicle_edit(request, vehicle_id):
             from datetime import datetime
             data['mileage_last_updated'] = datetime.utcnow().date().isoformat()
         
-        success = VehicleService.update_vehicle(vehicle_id, fire_station_id, data)
+        success, errors = VehicleService.update_vehicle(vehicle_id, fire_station_id, data)
         
         if success:
             message = '✅ Vehículo actualizado correctamente.'
@@ -208,8 +216,16 @@ def vehicle_edit(request, vehicle_id):
             return redirect('fire_station:vehicles_list')
         else:
             if is_ajax:
-                return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el vehículo.']}})
-            messages.error(request, '❌ Error al actualizar el vehículo.')
+                return JsonResponse({'success': False, 'errors': errors or {'general': ['Error al actualizar el vehículo.']}})
+            # Mostrar el primer error encontrado
+            if errors:
+                first_error = list(errors.values())[0]
+                if isinstance(first_error, list) and first_error:
+                    messages.error(request, f'❌ {first_error[0]}')
+                else:
+                    messages.error(request, '❌ Error al actualizar el vehículo.')
+            else:
+                messages.error(request, '❌ Error al actualizar el vehículo.')
     else:
         response = handle_form_errors(
             request,

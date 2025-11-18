@@ -17,7 +17,7 @@
                 <p class="mt-3 text-muted">Cargando información del vehículo...</p>
             </div>
             
-            <form method="post" action="{% url 'fire_station:vehicle_create' %}" id="vehicleForm" class="needs-validation" style="display: none;" novalidate>
+            <form method="post" action="{% url 'fire_station:vehicle_create' %}" id="vehicleForm" style="display: none;" novalidate>
                 {% csrf_token %}
                 <input type="hidden" name="vehicle_id" id="vehicleId">
                 
@@ -31,28 +31,36 @@
                                 <label for="id_license_plate" class="form-label">Patente <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" name="license_plate" id="id_license_plate" 
                                        placeholder="Ej: AA-BB-12" required>
-                                <div class="invalid-feedback">Por favor, ingresa una patente.</div>
+                                <div class="invalid-feedback" data-field-error="license_plate">
+                                    Por favor, ingresa una patente.
+                                </div>
                             </div>
                             
                             <div class="mb-3">
                                 <label for="id_brand" class="form-label">Marca <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" name="brand" id="id_brand" 
                                        placeholder="Ej: Mercedes-Benz" required>
-                                <div class="invalid-feedback">Por favor, ingresa una marca.</div>
+                                <div class="invalid-feedback" data-field-error="brand">
+                                    Por favor, ingresa una marca.
+                                </div>
                             </div>
                             
                             <div class="mb-3">
                                 <label for="id_model" class="form-label">Modelo <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" name="model" id="id_model" 
                                        placeholder="Ej: Atego 1725" required>
-                                <div class="invalid-feedback">Por favor, ingresa un modelo.</div>
+                                <div class="invalid-feedback" data-field-error="model">
+                                    Por favor, ingresa un modelo.
+                                </div>
                             </div>
                             
                             <div class="mb-3">
                                 <label for="id_year" class="form-label">Año <span class="text-danger">*</span></label>
                                 <input type="number" class="form-control" name="year" id="id_year" 
                                        placeholder="Ej: 2020" min="1900" max="2100" required>
-                                <div class="invalid-feedback">Por favor, ingresa un año válido.</div>
+                                <div class="invalid-feedback" data-field-error="year">
+                                    Por favor, ingresa un año válido.
+                                </div>
                             </div>
                             
                             <div class="mb-3">
@@ -63,7 +71,9 @@
                                         <option value="{{ type.id }}">{{ type.name }}</option>
                                     {% endfor %}
                                 </select>
-                                <div class="invalid-feedback">Por favor, selecciona un tipo.</div>
+                                <div class="invalid-feedback" data-field-error="vehicle_type_id">
+                                    Por favor, selecciona un tipo de vehículo.
+                                </div>
                             </div>
                             
                             <div class="mb-3">
@@ -74,24 +84,32 @@
                                         <option value="{{ status.id }}">{{ status.name }}</option>
                                     {% endfor %}
                                 </select>
-                                <div class="invalid-feedback">Por favor, selecciona un estado.</div>
+                                <div class="invalid-feedback" data-field-error="vehicle_status_id">
+                                    Por favor, selecciona un estado.
+                                </div>
                             </div>
                         </div>
                         
                         <!-- Columna Derecha -->
                         <div class="col-md-6">
-                            <h6 class="text-muted mb-3">Detalles Técnicos (Opcional)</h6>
+                            <h6 class="text-muted mb-3">Detalles Técnicos</h6>
                             
                             <div class="mb-3">
-                                <label for="id_engine_number" class="form-label">Número de Motor</label>
+                                <label for="id_engine_number" class="form-label">Número de Motor <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" name="engine_number" id="id_engine_number" 
-                                       placeholder="Número de motor">
+                                       placeholder="Número de motor" required>
+                                <div class="invalid-feedback" data-field-error="engine_number">
+                                    Por favor, ingresa el número de motor.
+                                </div>
                             </div>
                             
                             <div class="mb-3">
-                                <label for="id_vin" class="form-label">Número de Chasis (VIN)</label>
+                                <label for="id_vin" class="form-label">Número de Chasis (VIN) <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" name="vin" id="id_vin" 
-                                       placeholder="VIN">
+                                       placeholder="VIN" required>
+                                <div class="invalid-feedback" data-field-error="vin">
+                                    Por favor, ingresa el número de chasis (VIN).
+                                </div>
                             </div>
                             
                             <div class="mb-3">

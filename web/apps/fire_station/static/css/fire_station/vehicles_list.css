@@ -201,7 +201,6 @@ h1 i {
 }
 
 .text-center.py-5 i {
-    font-size: 4rem;
     color: #dee2e6;
 }
 
@@ -282,7 +281,7 @@ h1 i {
 /* Estilos para campos readonly en modal */
 input[readonly],
 select[disabled] {
-    background-color: #e9ecef;
+    background-color: #dee2e6 !important;
     cursor: not-allowed;
 }
 

@@ -71,6 +71,15 @@
             
             // Evento al enviar el formulario
             form.addEventListener('submit', handleSubmit);
+            
+            // Prevenir validación HTML5 nativa del navegador
+            form.addEventListener('invalid', function(e) {
+                e.preventDefault();
+                // La validación se manejará en handleSubmit
+            }, true);
+            
+            // Limpiar errores cuando el usuario empiece a escribir
+            setupFieldErrorClearing();
         }
         
         /**
@@ -291,6 +300,11 @@
         function handleSubmit(e) {
             e.preventDefault();
             
+            // Validar formulario manualmente
+            if (!validateForm()) {
+                return;
+            }
+            
             const submitBtn = document.getElementById('vehicleSubmitBtn');
             if (!submitBtn) return;
             
@@ -319,23 +333,249 @@
                 return response.json();
             })
             .then(data => {
-                if (data) {
-                    if (data.success) {
-                        FS.hideButtonLoading(submitBtn);
-                        modalInstance.hide();
-                        setTimeout(() => window.location.reload(), 150);
-                        return;
-                    } else if (data.errors) {
-                        const firstError = Object.values(data.errors)[0][0];
-                        FS.showNotification(firstError, 'error');
-                        FS.hideButtonLoading(submitBtn);
+                if (!data) return; // Ya se manejó la redirección
+                
+                if (data.success) {
+                    FS.hideButtonLoading(submitBtn);
+                    modalInstance.hide();
+                    setTimeout(() => window.location.reload(), 150);
+                    return;
+                } else if (data.errors) {
+                    // Errores de validación
+                    clearFormErrors();
+                    
+                    // Mostrar errores por campo
+                    for (const [field, errors] of Object.entries(data.errors)) {
+                        if (Array.isArray(errors) && errors.length > 0) {
+                            const errorMessage = errors[0];
+                            
+                            if (field === 'general' || field === '__all__') {
+                                FS.showNotification(errorMessage, 'error');
+                            } else {
+                                showFieldError(field, errorMessage);
+                            }
+                        }
                     }
+                    
+                    FS.hideButtonLoading(submitBtn);
+                } else {
+                    throw new Error(data.error || 'Error al guardar el vehículo');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                FS.showNotification('Error al guardar el vehículo', 'error');
+                FS.showNotification('Error al guardar el vehículo: ' + error.message, 'error');
                 FS.hideButtonLoading(submitBtn);
+            });
+        }
+        
+        /**
+         * Valida el formulario y muestra errores en español
+         * @returns {boolean} true si el formulario es válido, false en caso contrario
+         */
+        function validateForm() {
+            clearFormErrors();
+            
+            let isValid = true;
+            const requiredFields = form.querySelectorAll('[required]');
+            
+            // Mensajes de error en español para campos requeridos
+            const errorMessages = {
+                'license_plate': 'Por favor, ingresa una patente.',
+                'brand': 'Por favor, ingresa una marca.',
+                'model': 'Por favor, ingresa un modelo.',
+                'year': 'Por favor, ingresa un año válido.',
+                'vehicle_type_id': 'Por favor, selecciona un tipo de vehículo.',
+                'vehicle_status_id': 'Por favor, selecciona un estado.',
+                'engine_number': 'Por favor, ingresa el número de motor.',
+                'vin': 'Por favor, ingresa el número de chasis (VIN).'
+            };
+            
+            requiredFields.forEach(field => {
+                const fieldName = field.name;
+                let fieldValue = field.value;
+                
+                // Para selects, verificar que tenga un valor seleccionado
+                if (field.tagName === 'SELECT') {
+                    if (!fieldValue || fieldValue === '') {
+                        isValid = false;
+                        field.classList.add('is-invalid');
+                        const errorMsg = errorMessages[fieldName] || 'Este campo es obligatorio.';
+                        showFieldError(fieldName, errorMsg);
+                    }
+                } else {
+                    // Para inputs, usar trim
+                    fieldValue = fieldValue ? fieldValue.trim() : '';
+                    if (!fieldValue) {
+                        isValid = false;
+                        field.classList.add('is-invalid');
+                        const errorMsg = errorMessages[fieldName] || 'Este campo es obligatorio.';
+                        showFieldError(fieldName, errorMsg);
+                    }
+                }
+            });
+            
+            // Validar formato de patente
+            const licensePlateField = document.getElementById('id_license_plate');
+            if (licensePlateField && licensePlateField.value) {
+                const plate = licensePlateField.value.trim().toUpperCase();
+                const plateRegex = /^[A-Z0-9\-]{4,20}$/;
+                if (!plateRegex.test(plate)) {
+                    isValid = false;
+                    licensePlateField.classList.add('is-invalid');
+                    showFieldError('license_plate', 'La patente debe contener 4 a 20 caracteres alfanuméricos o guiones.');
+                }
+            }
+            
+            // Validar año
+            const yearField = document.getElementById('id_year');
+            if (yearField && yearField.value) {
+                const year = parseInt(yearField.value);
+                if (isNaN(year) || year < 1900 || year > 2100) {
+                    isValid = false;
+                    yearField.classList.add('is-invalid');
+                    showFieldError('year', 'El año debe estar entre 1900 y 2100.');
+                }
+            }
+            
+            // Validar engine_number (obligatorio)
+            const engineNumberField = document.getElementById('id_engine_number');
+            if (engineNumberField) {
+                const engineNumber = engineNumberField.value ? engineNumberField.value.trim() : '';
+                if (!engineNumber) {
+                    isValid = false;
+                    engineNumberField.classList.add('is-invalid');
+                    showFieldError('engine_number', 'Por favor, ingresa el número de motor.');
+                } else if (engineNumber.length > 100) {
+                    isValid = false;
+                    engineNumberField.classList.add('is-invalid');
+                    showFieldError('engine_number', 'El número de motor no puede exceder 100 caracteres.');
+                }
+            }
+            
+            // Validar VIN (obligatorio)
+            const vinField = document.getElementById('id_vin');
+            if (vinField) {
+                const vin = vinField.value ? vinField.value.trim() : '';
+                if (!vin) {
+                    isValid = false;
+                    vinField.classList.add('is-invalid');
+                    showFieldError('vin', 'Por favor, ingresa el número de chasis (VIN).');
+                } else if (vin.length > 100) {
+                    isValid = false;
+                    vinField.classList.add('is-invalid');
+                    showFieldError('vin', 'El número de chasis (VIN) no puede exceder 100 caracteres.');
+                }
+            }
+            
+            // Validar kilometraje
+            const mileageField = document.getElementById('id_mileage');
+            if (mileageField && mileageField.value) {
+                const mileage = parseInt(mileageField.value);
+                if (isNaN(mileage) || mileage < 0) {
+                    isValid = false;
+                    mileageField.classList.add('is-invalid');
+                    showFieldError('mileage', 'El kilometraje debe ser un número mayor o igual a 0.');
+                }
+            }
+            
+            if (!isValid) {
+                FS.showNotification('Por favor, completa todos los campos obligatorios correctamente.', 'error');
+            }
+            
+            return isValid;
+        }
+        
+        /**
+         * Limpia todos los errores del formulario
+         */
+        function clearFormErrors() {
+            if (!form) return;
+            
+            // Remover clases de error de Bootstrap
+            form.querySelectorAll('.is-invalid').forEach(field => {
+                field.classList.remove('is-invalid');
+            });
+            
+            // Limpiar mensajes de error dinámicos
+            form.querySelectorAll('.invalid-feedback[data-field-error]').forEach(feedback => {
+                feedback.textContent = '';
+            });
+        }
+        
+        /**
+         * Muestra un error en un campo específico del formulario
+         * @param {string} fieldName - Nombre del campo
+         * @param {string} errorMessage - Mensaje de error a mostrar
+         */
+        function showFieldError(fieldName, errorMessage) {
+            if (!form) return;
+            
+            const fieldIdMap = {
+                'license_plate': 'id_license_plate',
+                'brand': 'id_brand',
+                'model': 'id_model',
+                'year': 'id_year',
+                'vehicle_type_id': 'id_vehicle_type_id',
+                'vehicle_status_id': 'id_vehicle_status_id',
+                'engine_number': 'id_engine_number',
+                'vin': 'id_vin',
+                'mileage': 'id_mileage',
+                'oil_capacity_liters': 'id_oil_capacity_liters'
+            };
+            
+            const fieldId = fieldIdMap[fieldName] || `id_${fieldName}`;
+            const field = document.getElementById(fieldId);
+            
+            if (field) {
+                field.classList.add('is-invalid');
+                
+                let feedback = field.parentElement.querySelector(`.invalid-feedback[data-field-error="${fieldName}"]`);
+                if (!feedback) {
+                    feedback = field.parentElement.querySelector('.invalid-feedback');
+                    if (feedback) {
+                        feedback.setAttribute('data-field-error', fieldName);
+                    } else {
+                        feedback = document.createElement('div');
+                        feedback.className = 'invalid-feedback';
+                        feedback.setAttribute('data-field-error', fieldName);
+                        field.parentElement.appendChild(feedback);
+                    }
+                }
+                feedback.textContent = errorMessage;
+            } else {
+                console.warn(`Campo no encontrado para mostrar error: ${fieldName}`);
+                FS.showNotification(errorMessage, 'error');
+            }
+        }
+        
+        /**
+         * Configura la limpieza automática de errores cuando el usuario empiece a escribir
+         */
+        function setupFieldErrorClearing() {
+            if (!form) return;
+            
+            // Limpiar errores en campos cuando el usuario empiece a escribir
+            form.querySelectorAll('input, select, textarea').forEach(field => {
+                field.addEventListener('input', function() {
+                    if (this.classList.contains('is-invalid')) {
+                        this.classList.remove('is-invalid');
+                        const feedback = this.parentElement.querySelector(`.invalid-feedback[data-field-error="${this.name}"]`);
+                        if (feedback) {
+                            feedback.textContent = '';
+                        }
+                    }
+                });
+                
+                field.addEventListener('change', function() {
+                    if (this.classList.contains('is-invalid')) {
+                        this.classList.remove('is-invalid');
+                        const feedback = this.parentElement.querySelector(`.invalid-feedback[data-field-error="${this.name}"]`);
+                        if (feedback) {
+                            feedback.textContent = '';
+                        }
+                    }
+                });
             });
         }
         
@@ -380,6 +620,7 @@
             currentVehicleId = null;
             form.reset();
             form.classList.remove('was-validated');
+            clearFormErrors();
             setFieldsEnabled(true);
             footer.innerHTML = '';
             hideLoading();
