@@ -1,23 +1,18 @@
 <!-- Modal para Crear/Editar Tipo de Solicitud -->
-<div class="modal fade" id="requestTypeModal" tabindex="-1">
+<div class="modal fade" id="requestTypeModal" tabindex="-1" aria-labelledby="requestTypeModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="requestTypeModalLabel">
-                    <i class="bi bi-file-earmark-text"></i> <span id="modalTitle">Nuevo Tipo de Solicitud</span>
+                    <i class="bi bi-file-earmark-text"></i> <span id="requestTypeModalTitle">Nuevo Tipo de Solicitud</span>
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-            <form id="requestTypeForm" method="POST">
+            <form id="requestTypeForm" method="POST" class="needs-validation" novalidate>
                 {% csrf_token %}
                 <input type="hidden" id="requestTypeId" name="request_type_id" value="">
                 
                 <div class="modal-body">
-                    <!-- Alert para errores -->
-                    <div id="modalErrorAlert" class="alert alert-danger d-none" role="alert">
-                        <ul id="modalErrorList" class="mb-0"></ul>
-                    </div>
-
                     <div class="row">
                         <!-- Columna izquierda: Información básica -->
                         <div class="col-md-6">
@@ -25,19 +20,30 @@
                                 <label for="name" class="form-label">Nombre del Tipo de Solicitud <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="name" name="name" required 
                                        placeholder="Ej: Solicitud de Nuevo Repuesto">
+                                <small class="text-muted">Nombre descriptivo que identifica este tipo de solicitud</small>
+                                <div class="invalid-feedback" data-field-error="name">
+                                    Por favor, ingresa un nombre para el tipo de solicitud.
+                                </div>
                             </div>
                             
                             <div class="mb-3">
                                 <label for="target_table" class="form-label">Tabla Objetivo <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="target_table" name="target_table" required 
                                        placeholder="Ej: spare_part, supplier">
-                                <div class="form-text">Nombre de la tabla donde se guardará la información solicitada</div>
+                                <small class="text-muted">Nombre de la tabla de la base de datos donde se guardará la información solicitada (solo letras minúsculas, números y guiones bajos)</small>
+                                <div class="invalid-feedback" data-field-error="target_table">
+                                    Por favor, ingresa el nombre de la tabla objetivo (ej: spare_part, supplier).
+                                </div>
                             </div>
                             
                             <div class="mb-3">
                                 <label for="description" class="form-label">Descripción</label>
                                 <textarea class="form-control" id="description" name="description" rows="4" 
                                           placeholder="Descripción del tipo de solicitud"></textarea>
+                                <small class="text-muted">Descripción opcional que explica el propósito de este tipo de solicitud</small>
+                                <div class="invalid-feedback" data-field-error="description">
+                                    <!-- Los errores se mostrarán aquí dinámicamente -->
+                                </div>
                             </div>
                         </div>
 
@@ -51,10 +57,13 @@
                                           rows="15" required 
                                           placeholder='{"fields": [...]}'></textarea>
                                 <div class="form-text">
-                                    Define los campos del formulario en formato JSON. 
+                                    Define los campos del formulario en formato JSON. El esquema debe contener un array "fields" con la definición de cada campo. 
                                     <button type="button" class="btn btn-link btn-sm p-0" onclick="showSchemaExample()">
                                         Ver ejemplo
                                     </button>
+                                </div>
+                                <div class="invalid-feedback" data-field-error="form_schema">
+                                    Por favor, ingresa un esquema de formulario válido en formato JSON.
                                 </div>
                             </div>
 
@@ -88,13 +97,14 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <div class="alert alert-danger alert-permanent border-0" role="alert">
+                        <small><i class="bi bi-info-circle me-1"></i>Los campos marcados con <span class="text-danger">*</span> son obligatorios</small>
+                    </div>
                 </div>
                 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary" id="submitBtn">
-                        <i class="bi bi-save"></i> Guardar
-                    </button>
+                <div class="modal-footer" id="requestTypeModalFooter">
+                    <!-- Los botones se insertarán dinámicamente según el modo -->
                 </div>
             </form>
         </div>

@@ -1,3 +1,5 @@
+import json
+import re
 from django import forms
 
 
@@ -483,6 +485,10 @@ class RequestTypeForm(forms.Form):
     name = forms.CharField(
         max_length=255,
         label="Nombre del Tipo de Solicitud",
+        error_messages={
+            'required': 'Por favor, ingresa un nombre para el tipo de solicitud.',
+            'max_length': 'El nombre del tipo de solicitud no puede exceder 255 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Solicitud de Nuevo Repuesto'})
     )
     description = forms.CharField(
@@ -493,10 +499,17 @@ class RequestTypeForm(forms.Form):
     target_table = forms.CharField(
         max_length=255,
         label="Tabla Objetivo",
+        error_messages={
+            'required': 'Por favor, ingresa el nombre de la tabla objetivo.',
+            'max_length': 'El nombre de la tabla objetivo no puede exceder 255 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: spare_part, supplier'})
     )
     form_schema = forms.CharField(
         label="Esquema del Formulario (JSON)",
+        error_messages={
+            'required': 'Por favor, ingresa un esquema de formulario válido en formato JSON.'
+        },
         widget=forms.Textarea(attrs={
             'class': 'form-control',
             'rows': 10,
@@ -504,5 +517,39 @@ class RequestTypeForm(forms.Form):
         }),
         help_text="Define los campos del formulario en formato JSON"
     )
+    
+    def clean_target_table(self):
+        """Valida que target_table tenga un formato válido."""
+        target_table = self.cleaned_data.get('target_table')
+        if target_table:
+            # Validar que solo contenga letras minúsculas, números y guiones bajos
+            if not re.match(r'^[a-z_][a-z0-9_]*$', target_table):
+                raise forms.ValidationError(
+                    'La tabla objetivo debe contener solo letras minúsculas, números y guiones bajos, sin espacios.'
+                )
+        return target_table
+    
+    def clean_form_schema(self):
+        """Valida que form_schema sea un JSON válido con la estructura correcta."""
+        form_schema = self.cleaned_data.get('form_schema')
+        if form_schema:
+            try:
+                parsed = json.loads(form_schema)
+                # Validar que tenga la estructura básica esperada
+                if not isinstance(parsed, dict):
+                    raise forms.ValidationError('El esquema JSON debe ser un objeto (diccionario).')
+                if 'fields' not in parsed:
+                    raise forms.ValidationError(
+                        'El esquema JSON debe contener un array "fields" con la definición de los campos del formulario.'
+                    )
+                if not isinstance(parsed['fields'], list):
+                    raise forms.ValidationError('El campo "fields" debe ser un array.')
+                if len(parsed['fields']) == 0:
+                    raise forms.ValidationError('El esquema debe contener al menos un campo en el array "fields".')
+            except json.JSONDecodeError as e:
+                raise forms.ValidationError(
+                    'El esquema debe ser un JSON válido. Verifica la sintaxis (comas, llaves, comillas).'
+                )
+        return form_schema
 
 

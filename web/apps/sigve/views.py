@@ -1477,26 +1477,17 @@ def request_type_create(request):
     if form.is_valid():
         import json
         
-        # Validar que form_schema sea JSON válido
-        try:
-            form_schema = json.loads(form.cleaned_data['form_schema'])
-        except json.JSONDecodeError:
-            if is_ajax:
-                return JsonResponse({
-                    'success': False,
-                    'errors': {'form_schema': ['El esquema del formulario debe ser JSON válido.']}
-                })
-            messages.error(request, '❌ El esquema del formulario debe ser JSON válido.')
-            return redirect('sigve:request_types_list')
+        # El form_schema ya está validado en clean_form_schema, solo necesitamos parsearlo
+        form_schema = json.loads(form.cleaned_data['form_schema'])
         
         data = {
             'name': form.cleaned_data['name'],
-            'description': form.cleaned_data.get('description'),
+            'description': form.cleaned_data.get('description') or None,
             'target_table': form.cleaned_data['target_table'],
             'form_schema': form_schema
         }
         
-        request_type = RequestTypeService.create_request_type(data)
+        request_type, errors = RequestTypeService.create_request_type(data)
         
         if request_type:
             message = f'✅ Tipo de solicitud "{data["name"]}" creado correctamente.'
@@ -1508,8 +1499,17 @@ def request_type_create(request):
             return redirect('sigve:request_types_list')
         else:
             if is_ajax:
-                return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el tipo de solicitud.']}})
-            messages.error(request, '❌ Error al crear el tipo de solicitud.')
+                # Convertir errores a formato de arrays para consistencia con Django forms
+                formatted_errors = {k: [v] if isinstance(v, str) else v for k, v in errors.items()}
+                return JsonResponse({'success': False, 'errors': formatted_errors})
+            # Mostrar el primer error encontrado
+            if errors:
+                first_error = list(errors.values())[0] if errors else 'Error al crear el tipo de solicitud.'
+                if isinstance(first_error, list):
+                    first_error = first_error[0]
+                messages.error(request, f'❌ {first_error}')
+            else:
+                messages.error(request, '❌ Error al crear el tipo de solicitud.')
     else:
         response = handle_form_errors(
             request,
@@ -1534,26 +1534,17 @@ def request_type_update(request, request_type_id):
     if form.is_valid():
         import json
         
-        # Validar que form_schema sea JSON válido
-        try:
-            form_schema = json.loads(form.cleaned_data['form_schema'])
-        except json.JSONDecodeError:
-            if is_ajax:
-                return JsonResponse({
-                    'success': False,
-                    'errors': {'form_schema': ['El esquema del formulario debe ser JSON válido.']}
-                })
-            messages.error(request, '❌ El esquema del formulario debe ser JSON válido.')
-            return redirect('sigve:request_types_list')
+        # El form_schema ya está validado en clean_form_schema, solo necesitamos parsearlo
+        form_schema = json.loads(form.cleaned_data['form_schema'])
         
         data = {
             'name': form.cleaned_data['name'],
-            'description': form.cleaned_data.get('description'),
+            'description': form.cleaned_data.get('description') or None,
             'target_table': form.cleaned_data['target_table'],
             'form_schema': form_schema
         }
         
-        success = RequestTypeService.update_request_type(request_type_id, data)
+        success, errors = RequestTypeService.update_request_type(request_type_id, data)
         
         if success:
             message = '✅ Tipo de solicitud actualizado correctamente.'
@@ -1565,8 +1556,17 @@ def request_type_update(request, request_type_id):
             return redirect('sigve:request_types_list')
         else:
             if is_ajax:
-                return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el tipo de solicitud.']}})
-            messages.error(request, '❌ Error al actualizar el tipo de solicitud.')
+                # Convertir errores a formato de arrays para consistencia con Django forms
+                formatted_errors = {k: [v] if isinstance(v, str) else v for k, v in errors.items()}
+                return JsonResponse({'success': False, 'errors': formatted_errors})
+            # Mostrar el primer error encontrado
+            if errors:
+                first_error = list(errors.values())[0] if errors else 'Error al actualizar el tipo de solicitud.'
+                if isinstance(first_error, list):
+                    first_error = first_error[0]
+                messages.error(request, f'❌ {first_error}')
+            else:
+                messages.error(request, '❌ Error al actualizar el tipo de solicitud.')
     else:
         response = handle_form_errors(
             request,

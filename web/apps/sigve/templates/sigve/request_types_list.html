@@ -12,7 +12,7 @@
             <h2><i class="bi bi-file-earmark-text"></i> Tipos de Solicitudes</h2>
             <p class="text-muted">Gestiona los tipos de solicitudes disponibles para los talleres</p>
         </div>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#requestTypeModal" onclick="openCreateRequestTypeModal()">
+        <button type="button" class="btn btn-primary" onclick="RequestTypeModal.open('create')">
             <i class="bi bi-plus-circle"></i> Nuevo Tipo de Solicitud
         </button>
     </div>
@@ -21,8 +21,13 @@
     <div class="card shadow-sm">
         <div class="card-body">
             {% if request_types %}
+            <!-- Input de Búsqueda -->
+            <div class="mb-3">
+                <input type="text" id="tableSearchInput" class="form-control" placeholder="Buscar en tipos de solicitudes...">
+            </div>
+            
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
+                <table class="table table-hover align-middle" id="requestTypesTable">
                     <thead class="table-light">
                         <tr>
                             <th>Nombre</th>
@@ -46,16 +51,17 @@
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm" role="group">
                                     <button type="button" class="btn btn-outline-primary" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#requestTypeModal" 
-                                            onclick="openEditRequestTypeModal({{ rt.id }})">
+                                            onclick="RequestTypeModal.open('edit', {{ rt.id }})">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     <button type="button" class="btn btn-outline-danger" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#confirmationModal" 
-                                            data-action="{% url 'sigve:request_type_delete' rt.id %}"
-                                            data-message="¿Estás seguro de que deseas eliminar el tipo de solicitud '<strong>{{ rt.name }}</strong>'?">
+                                            onclick="event.stopPropagation(); ConfirmationModal.open({
+                                                formAction: '{% url 'sigve:request_type_delete' rt.id %}',
+                                                warningText: '¿Estás seguro de eliminar el tipo de solicitud <strong>{{ rt.name }}</strong>?',
+                                                title: 'Confirmar Eliminación',
+                                                btnClass: 'btn-danger',
+                                                btnText: 'Sí, Eliminar'
+                                            })">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
@@ -69,7 +75,7 @@
             <div class="text-center py-5">
                 <i class="bi bi-inbox display-1 text-muted"></i>
                 <p class="text-muted mt-3">No hay tipos de solicitudes registrados.</p>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#requestTypeModal" onclick="openCreateRequestTypeModal()">
+                <button type="button" class="btn btn-primary" onclick="RequestTypeModal.open('create')">
                     <i class="bi bi-plus-circle"></i> Crear el Primero
                 </button>
             </div>
