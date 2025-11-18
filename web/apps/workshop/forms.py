@@ -699,6 +699,10 @@ class DataRequestForm(forms.Form):
     """Formulario para crear una solicitud a SIGVE."""
     request_type_id = forms.IntegerField(
         label="Tipo de Solicitud",
+        error_messages={
+            'required': 'Por favor, selecciona un tipo de solicitud.',
+            'invalid': 'El tipo de solicitud seleccionado no es válido.'
+        },
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     # Los campos dinámicos se agregan via JavaScript basándose en el form_schema

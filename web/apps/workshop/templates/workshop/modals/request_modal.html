@@ -8,7 +8,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="requestForm" method="POST" action="{% url 'workshop:request_create' %}">
+            <form id="requestForm" method="POST" action="{% url 'workshop:request_create' %}" novalidate>
                 {% csrf_token %}
                 
                 <div class="modal-body">
@@ -23,6 +23,9 @@
                             <option value="{{ rt.id }}">{{ rt.name }}</option>
                             {% endfor %}
                         </select>
+                        <div class="invalid-feedback" data-field-error="request_type_id">
+                            Por favor, selecciona un tipo de solicitud.
+                        </div>
                         <div class="form-text" id="requestTypeDescription"></div>
                     </div>
 

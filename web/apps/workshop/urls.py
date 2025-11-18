@@ -53,6 +53,7 @@ urlpatterns = [
     path('requests/', views.requests_list, name='requests_list'),
     path('requests/create/', views.request_create, name='request_create'),
     path('api/request-types/<int:request_type_id>/schema/', views.request_type_schema_api, name='request_type_schema_api'),
+    path('api/requests/<int:request_id>/', views.request_detail_api, name='request_detail_api'),
 ]
 
 

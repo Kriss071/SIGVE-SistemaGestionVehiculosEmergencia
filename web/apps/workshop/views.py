@@ -1212,36 +1212,84 @@ def request_type_schema_api(request, request_type_id):
 def request_create(request):
     """Crea una nueva solicitud a SIGVE."""
     user_id = request.session.get('sb_user_id')
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    # Validar formulario base
+    form = DataRequestForm(request.POST)
+    if not form.is_valid():
+        if is_ajax:
+            return JsonResponse({'success': False, 'errors': form.errors})
+        messages.error(request, '❌ Datos inválidos.')
+        return redirect('workshop:requests_list')
     
     # Obtener los datos del formulario
-    request_type_id = request.POST.get('request_type_id')
+    request_type_id = form.cleaned_data.get('request_type_id')
     
     if not request_type_id:
-        messages.error(request, '❌ Debe seleccionar un tipo de solicitud.')
+        error_msg = 'Debe seleccionar un tipo de solicitud.'
+        if is_ajax:
+            return JsonResponse({'success': False, 'errors': {'request_type_id': [error_msg]}})
+        messages.error(request, f'❌ {error_msg}')
         return redirect('workshop:requests_list')
     
     # Obtener el tipo de solicitud para validar los campos
     request_type = RequestService.get_request_type(int(request_type_id))
     
     if not request_type:
-        messages.error(request, '❌ Tipo de solicitud no encontrado.')
+        error_msg = 'Tipo de solicitud no encontrado.'
+        if is_ajax:
+            return JsonResponse({'success': False, 'errors': {'general': [error_msg]}})
+        messages.error(request, f'❌ {error_msg}')
         return redirect('workshop:requests_list')
     
     # Construir el diccionario de datos solicitados basándose en el form_schema
     requested_data = {}
     form_schema = request_type.get('form_schema', {})
     fields = form_schema.get('fields', [])
+    errors = {}
+    
+    # Parsear form_schema si viene como string
+    if isinstance(form_schema, str):
+        try:
+            import json
+            form_schema = json.loads(form_schema)
+            fields = form_schema.get('fields', [])
+        except (json.JSONDecodeError, TypeError):
+            error_msg = 'Error al procesar el esquema del formulario.'
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': {'general': [error_msg]}})
+            messages.error(request, f'❌ {error_msg}')
+            return redirect('workshop:requests_list')
     
     for field in fields:
         field_name = field.get('name')
         field_value = request.POST.get(field_name)
+        field_label = field.get('label', field_name)
         
         # Validar campos requeridos
         if field.get('required') and not field_value:
-            messages.error(request, f'❌ El campo "{field.get("label", field_name)}" es requerido.')
-            return redirect('workshop:requests_list')
+            error_msg = f'El campo "{field_label}" es requerido.'
+            errors[field_name] = [error_msg]
+        
+        # Validar formato de email si es campo de tipo email
+        if field.get('type') == 'email' and field_value:
+            import re
+            email_regex = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+            if not re.match(email_regex, field_value):
+                error_msg = f'Por favor, ingresa un correo electrónico válido en el campo "{field_label}".'
+                errors[field_name] = [error_msg]
         
         requested_data[field_name] = field_value
+    
+    # Si hay errores de validación, devolverlos
+    if errors:
+        if is_ajax:
+            return JsonResponse({'success': False, 'errors': errors})
+        # Mostrar el primer error encontrado
+        first_error = list(errors.values())[0]
+        if isinstance(first_error, list) and first_error:
+            messages.error(request, f'❌ {first_error[0]}')
+        return redirect('workshop:requests_list')
     
     # Crear la solicitud
     data = {
@@ -1252,8 +1300,96 @@ def request_create(request):
     new_request = RequestService.create_request(user_id, data)
     
     if new_request:
+        if is_ajax:
+            return JsonResponse({'success': True})
         messages.success(request, f'✅ Solicitud de "{request_type["name"]}" enviada correctamente.')
     else:
-        messages.error(request, '❌ Error al crear la solicitud.')
+        error_msg = 'Error al crear la solicitud.'
+        if is_ajax:
+            return JsonResponse({'success': False, 'errors': {'general': [error_msg]}})
+        messages.error(request, f'❌ {error_msg}')
     
     return redirect('workshop:requests_list')
+
+
+@require_http_methods(["GET"])
+@require_workshop_user
+def request_detail_api(request, request_id):
+    """API para obtener los detalles completos de una solicitud."""
+    workshop_id = request.workshop_id
+    
+    try:
+        request_detail = RequestService.get_request(int(request_id), workshop_id)
+        
+        if not request_detail:
+            return JsonResponse({
+                'success': False,
+                'error': 'Solicitud no encontrada o no pertenece a este taller.'
+            }, status=404)
+        
+        # Formatear fechas
+        created_at = None
+        updated_at = None
+        
+        if request_detail.get('created_at'):
+            try:
+                if isinstance(request_detail['created_at'], str):
+                    created_at = request_detail['created_at']
+                else:
+                    created_at = request_detail['created_at'].isoformat() if hasattr(request_detail['created_at'], 'isoformat') else str(request_detail['created_at'])
+            except:
+                created_at = str(request_detail.get('created_at', ''))
+        
+        if request_detail.get('updated_at'):
+            try:
+                if isinstance(request_detail['updated_at'], str):
+                    updated_at = request_detail['updated_at']
+                else:
+                    updated_at = request_detail['updated_at'].isoformat() if hasattr(request_detail['updated_at'], 'isoformat') else str(request_detail['updated_at'])
+            except:
+                updated_at = str(request_detail.get('updated_at', ''))
+        
+        # Parsear form_schema si existe
+        form_schema = None
+        if request_detail.get('request_type') and request_detail['request_type'].get('form_schema'):
+            form_schema = request_detail['request_type']['form_schema']
+            if isinstance(form_schema, str):
+                import json
+                try:
+                    form_schema = json.loads(form_schema)
+                except:
+                    pass
+        
+        return JsonResponse({
+            'success': True,
+            'request': {
+                'id': request_detail.get('id'),
+                'status': request_detail.get('status'),
+                'created_at': created_at,
+                'updated_at': updated_at,
+                'requested_data': request_detail.get('requested_data', {}),
+                'admin_notes': request_detail.get('admin_notes'),
+                'request_type': {
+                    'id': request_detail.get('request_type', {}).get('id'),
+                    'name': request_detail.get('request_type', {}).get('name'),
+                    'description': request_detail.get('request_type', {}).get('description'),
+                    'form_schema': form_schema
+                },
+                'user_profile': {
+                    'first_name': request_detail.get('user_profile', {}).get('first_name'),
+                    'last_name': request_detail.get('user_profile', {}).get('last_name')
+                } if request_detail.get('user_profile') else None
+            }
+        })
+        
+    except ValueError:
+        return JsonResponse({
+            'success': False,
+            'error': 'ID de solicitud inválido.'
+        }, status=400)
+    except Exception as e:
+        logger.error(f"❌ Error obteniendo detalles de solicitud: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': f'Error del servidor: {str(e)}'
+        }, status=500)

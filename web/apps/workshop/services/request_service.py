@@ -35,7 +35,7 @@ class RequestService(WorkshopBaseService):
         # Luego obtener las solicitudes de esos usuarios
         query = (
             client.table('data_request')
-            .select('*, request_type(*), user_profile!requesting_user_id(*)')
+            .select('id, status, created_at, updated_at, requested_data, admin_notes, request_type(*), user_profile!requesting_user_id(*)')
             .in_('requesting_user_id', user_ids)
             .order('created_at', desc=True)
         )
@@ -101,7 +101,7 @@ class RequestService(WorkshopBaseService):
         # Obtener la solicitud
         query = (
             client.table('data_request')
-            .select('*, request_type(*), user_profile!requesting_user_id(*)')
+            .select('id, status, created_at, updated_at, requested_data, admin_notes, request_type(*), user_profile!requesting_user_id(*)')
             .eq('id', request_id)
         )
         
