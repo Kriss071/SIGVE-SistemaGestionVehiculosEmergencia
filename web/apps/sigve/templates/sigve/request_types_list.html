@@ -34,7 +34,7 @@
                             <th>Descripción</th>
                             <th>Tabla Objetivo</th>
                             <th>Esquema</th>
-                            <th class="text-center" style="width: 150px;">Acciones</th>
+                            <th class="text-end">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -44,27 +44,25 @@
                             <td>{{ rt.description|default:"—"|truncatewords:10 }}</td>
                             <td><code>{{ rt.target_table }}</code></td>
                             <td>
-                                <button type="button" class="btn btn-sm btn-outline-info" onclick="viewSchema({{ rt.id }})">
+                                <button type="button" class="btn btn-sm btn-outline-info" onclick="viewSchema({{ rt.id }}, this)">
                                     <i class="bi bi-code-square"></i> Ver JSON
                                 </button>
                             </td>
-                            <td class="text-center">
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <button type="button" class="btn btn-outline-primary" 
-                                            onclick="RequestTypeModal.open('edit', {{ rt.id }})">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-outline-danger" 
-                                            onclick="event.stopPropagation(); ConfirmationModal.open({
-                                                formAction: '{% url 'sigve:request_type_delete' rt.id %}',
-                                                warningText: '¿Estás seguro de eliminar el tipo de solicitud <strong>{{ rt.name }}</strong>?',
-                                                title: 'Confirmar Eliminación',
-                                                btnClass: 'btn-danger',
-                                                btnText: 'Sí, Eliminar'
-                                            })">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        onclick="event.stopPropagation(); ConfirmationModal.open({
+                                            formAction: '{% url 'sigve:request_type_delete' rt.id %}',
+                                            warningText: '¿Estás seguro de eliminar el tipo de solicitud {{ rt.name|escapejs }}?',
+                                            title: 'Confirmar Eliminación',
+                                            btnClass: 'btn-danger',
+                                            btnText: 'Sí, Eliminar'
+                                        })">
+                                    <i class="bi bi-trash"></i> Eliminar
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                        onclick="event.stopPropagation(); RequestTypeModal.open('edit', {{ rt.id }})">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </button>
                             </td>
                         </tr>
                         {% endfor %}
@@ -90,6 +88,11 @@
 <!-- Modal de Confirmación (genérico) -->
 {% include 'sigve/modals/confirmation_modal.html' %}
 
+<!-- Form oculto para eliminar -->
+<form id="confirmationForm" method="post" style="display: none;">
+    {% csrf_token %}
+</form>
+
 <!-- Modal para Ver Esquema JSON -->
 <div class="modal fade" id="schemaViewModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -110,6 +113,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/modal.js' %}"></script>
 <script src="{% static 'js/request_types.js' %}"></script>
 {% endblock %}
 

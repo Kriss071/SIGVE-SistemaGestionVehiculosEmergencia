@@ -16,6 +16,7 @@
         // Referencias a elementos del DOM
         const modal = document.getElementById('requestTypeModal');
         const form = document.getElementById('requestTypeForm');
+        const loading = document.getElementById('requestTypeModalLoading');
         const footer = document.getElementById('requestTypeModalFooter');
         const titleSpan = document.getElementById('requestTypeModalTitle');
         
@@ -58,6 +59,7 @@
                 setupCreateMode();
                 modalInstance.show();
             } else if (mode === 'edit') {
+                showLoading();
                 modalInstance.show();
                 loadRequestTypeData(requestTypeId);
             }
@@ -74,39 +76,44 @@
             setFieldsEnabled(true);
             renderButtons('create');
             clearFormErrors();
+            hideLoading();
+            showForm();
         }
         
         /**
          * Carga los datos del tipo de solicitud
          */
         function loadRequestTypeData(requestTypeId) {
-    fetch(`/sigve/api/request-types/${requestTypeId}/`)
+            fetch(`/sigve/api/request-types/${requestTypeId}/`)
                 .then(response => {
                     if (!response.ok) {
                          throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     return response.json();
                 })
-        .then(data => {
-            if (data.success) {
+                .then(data => {
+                    if (data.success) {
                         populateForm(data.request_type);
+                        hideLoading();
+                        showForm();
                         setupEditMode();
-            } else {
+                    } else {
                         throw new Error(data.error || 'Error al cargar el tipo de solicitud');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    hideLoading();
                     if (window.SIGVE && window.SIGVE.showNotification) {
                         window.SIGVE.showNotification('Error al cargar los datos del tipo de solicitud', 'error');
                     } else {
-            alert('Error al cargar los datos del tipo de solicitud.');
+                        alert('Error al cargar los datos del tipo de solicitud.');
                     }
                     modalInstance.hide();
-        });
-}
+                });
+        }
 
-/**
+        /**
          * Configura el modal para editar un tipo de solicitud
          */
         function setupEditMode() {
@@ -414,6 +421,36 @@
         }
         
         /**
+         * Muestra el spinner de carga
+         */
+        function showLoading() {
+            if (loading) {
+                loading.style.display = 'block';
+            }
+            if (form) {
+                form.style.display = 'none';
+            }
+        }
+        
+        /**
+         * Oculta el spinner y muestra el formulario
+         */
+        function hideLoading() {
+            if (loading) {
+                loading.style.display = 'none';
+            }
+        }
+        
+        /**
+         * Muestra el formulario
+         */
+        function showForm() {
+            if (form) {
+                form.style.display = 'block';
+            }
+        }
+        
+        /**
          * Resetea el modal a su estado inicial
          */
         function resetModal() {
@@ -424,6 +461,7 @@
             clearFormErrors();
             setFieldsEnabled(true);
             footer.innerHTML = '';
+            hideLoading();
         }
         
         // Inicializar cuando el DOM esté listo
@@ -452,9 +490,23 @@
     /**
      * Ver el esquema JSON completo de un tipo de solicitud
      */
-    window.viewSchema = function(requestTypeId) {
+    window.viewSchema = function(requestTypeId, buttonElement) {
+        const button = buttonElement || null;
+        const originalContent = button ? button.innerHTML : null;
+        
+        // Mostrar loader en el botón
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Cargando...';
+        }
+        
         fetch(`/sigve/api/request-types/${requestTypeId}/`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     const schemaContent = document.getElementById('schemaContent');
@@ -466,15 +518,27 @@
                         window.SIGVE.showNotification('Error al cargar el esquema: ' + data.error, 'error');
                     } else {
                         alert('Error al cargar el esquema: ' + data.error);
-            }
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
+                    }
+                }
+                
+                // Restaurar botón
+                if (button && originalContent) {
+                    button.disabled = false;
+                    button.innerHTML = originalContent;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
                 if (window.SIGVE && window.SIGVE.showNotification) {
                     window.SIGVE.showNotification('Error al cargar el esquema.', 'error');
                 } else {
                     alert('Error al cargar el esquema.');
+                }
+                
+                // Restaurar botón
+                if (button && originalContent) {
+                    button.disabled = false;
+                    button.innerHTML = originalContent;
                 }
             });
     };
