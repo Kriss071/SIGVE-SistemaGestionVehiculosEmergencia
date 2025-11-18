@@ -121,14 +121,26 @@ def requests_center(request):
                 except Exception as e:
                     logger.warning(f"Error procesando fecha {date_str}: {e}")
         
-        # Asegurar que form_schema y requested_data están en formato JSON string para el template
+        # Asegurar que form_schema está en formato JSON string para JavaScript
         if req.get('request_type') and req['request_type'].get('form_schema'):
             if not isinstance(req['request_type']['form_schema'], str):
                 req['request_type']['form_schema'] = json.dumps(req['request_type']['form_schema'])
         
+        # Mantener requested_data como diccionario para el template, pero crear copia JSON para JavaScript
         if req.get('requested_data'):
-            if not isinstance(req['requested_data'], str):
-                req['requested_data'] = json.dumps(req['requested_data'])
+            # Si es string, parsearlo a diccionario
+            if isinstance(req['requested_data'], str):
+                try:
+                    req['requested_data'] = json.loads(req['requested_data'])
+                except (json.JSONDecodeError, TypeError):
+                    logger.warning(f"Error parseando requested_data para solicitud {req.get('id')}")
+                    req['requested_data'] = {}
+            # Crear copia JSON string para JavaScript (mantener como dict para template)
+            req['requested_data_json'] = json.dumps(req['requested_data']) if req.get('requested_data') else '{}'
+        else:
+            # Si no hay requested_data, inicializar como diccionario vacío y JSON vacío
+            req['requested_data'] = {}
+            req['requested_data_json'] = '{}'
     
     context = {
         'page_title': 'Centro de Solicitudes',

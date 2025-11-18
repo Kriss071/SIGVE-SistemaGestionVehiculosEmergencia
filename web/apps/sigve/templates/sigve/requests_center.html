@@ -60,17 +60,21 @@
                             </span>
                         </td>
                         <td>
-                            <small class="text-muted">
-                                {% if request.requested_data.name %}
-                                    <strong>Nombre:</strong> {{ request.requested_data.name }}<br>
-                                {% endif %}
-                                {% if request.requested_data.sku %}
-                                    <strong>SKU:</strong> {{ request.requested_data.sku }}<br>
-                                {% endif %}
-                                {% if request.requested_data.brand %}
-                                    <strong>Marca:</strong> {{ request.requested_data.brand }}
-                                {% endif %}
-                            </small>
+                            {% if request.requested_data %}
+                                <small class="text-muted">
+                                    {% for key, value in request.requested_data.items %}
+                                        <strong>{{ key|title }}:</strong> 
+                                        {% if value %}
+                                            {{ value }}
+                                        {% else %}
+                                            <em class="text-muted">N/A</em>
+                                        {% endif %}
+                                        {% if not forloop.last %}<br>{% endif %}
+                                    {% endfor %}
+                                </small>
+                            {% else %}
+                                <small class="text-muted"><em>Sin datos</em></small>
+                            {% endif %}
                         </td>
                         <td>
                             {% if request.requesting_user %}
@@ -237,7 +241,7 @@
                     
                     // Datos del request
                     const formSchemaStr = {{ request.request_type.form_schema|default:"null"|safe }};
-                    const originalDataStr = {{ request.requested_data|safe }};
+                    const originalDataStr = {{ request.requested_data_json|default:"{}"|safe }};
                     
                     let formSchema = null;
                     let originalData = {};
