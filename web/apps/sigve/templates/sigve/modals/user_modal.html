@@ -30,8 +30,8 @@
                                    name="email" 
                                    id="id_email" 
                                    required>
-                            <div class="invalid-feedback">
-                                Por favor, ingresa un correo válido.
+                            <div class="invalid-feedback" data-field-error="email">
+                                Por favor, ingresa un correo electrónico válido.
                             </div>
                         </div>
                         <div class="col-md-3 mb-3">
@@ -41,7 +41,7 @@
                                    name="first_name" 
                                    id="id_first_name" 
                                    required>
-                            <div class="invalid-feedback">
+                            <div class="invalid-feedback" data-field-error="first_name">
                                 Por favor, ingresa un nombre.
                             </div>
                         </div>
@@ -52,7 +52,7 @@
                                    name="last_name" 
                                    id="id_last_name" 
                                    required>
-                            <div class="invalid-feedback">
+                            <div class="invalid-feedback" data-field-error="last_name">
                                 Por favor, ingresa un apellido.
                             </div>
                         </div>
@@ -66,7 +66,7 @@
                                    name="password"
                                    id="id_password"
                                    minlength="8">
-                            <div class="invalid-feedback">
+                            <div class="invalid-feedback" data-field-error="password">
                                 La contraseña debe tener al menos 8 caracteres.
                             </div>
                         </div>
@@ -77,7 +77,7 @@
                                    name="password_confirm"
                                    id="id_password_confirm"
                                    minlength="8">
-                            <div class="invalid-feedback">
+                            <div class="invalid-feedback" data-field-error="password_confirm">
                                 Debes confirmar la contraseña.
                             </div>
                         </div>
@@ -91,6 +91,9 @@
                                    name="rut" 
                                    id="id_rut" 
                                    placeholder="Ej: 12345678-9">
+                            <div class="invalid-feedback" data-field-error="rut">
+                                <!-- Los errores se mostrarán aquí dinámicamente -->
+                            </div>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label for="id_phone" class="form-label">Teléfono</label>
@@ -99,6 +102,9 @@
                                    name="phone" 
                                    id="id_phone" 
                                    placeholder="Ej: +56912345678">
+                            <div class="invalid-feedback" data-field-error="phone">
+                                <!-- Los errores se mostrarán aquí dinámicamente -->
+                            </div>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label for="id_role_id" class="form-label">Rol <span class="text-danger">*</span></label>
@@ -108,7 +114,7 @@
                                 <option value="{{ role.id }}" data-role-name="{{ role.name }}">{{ role.name }}</option>
                                 {% endfor %}
                             </select>
-                            <div class="invalid-feedback">
+                            <div class="invalid-feedback" data-field-error="role_id">
                                 Por favor, selecciona un rol.
                             </div>
                         </div>

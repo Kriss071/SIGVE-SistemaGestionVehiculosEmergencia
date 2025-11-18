@@ -246,28 +246,47 @@ class UserProfileForm(forms.Form):
     """Formulario para editar perfil de usuario."""
     email = forms.EmailField(
         label="Correo electrónico",
+        error_messages={
+            'required': 'Por favor, ingresa un correo electrónico.',
+            'invalid': 'Por favor, ingresa un correo electrónico válido.',
+            'max_length': 'El correo electrónico no puede exceder 254 caracteres.'
+        },
         widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'usuario@ejemplo.cl'})
     )
     first_name = forms.CharField(
         max_length=255,
         label="Nombre",
+        error_messages={
+            'required': 'Por favor, ingresa un nombre.',
+            'max_length': 'El nombre no puede exceder 255 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     last_name = forms.CharField(
         max_length=255,
         label="Apellido",
+        error_messages={
+            'required': 'Por favor, ingresa un apellido.',
+            'max_length': 'El apellido no puede exceder 255 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     rut = forms.CharField(
         max_length=20,
         label="RUT",
         required=False,
+        error_messages={
+            'max_length': 'El RUT no puede exceder 20 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '12345678-9'})
     )
     phone = forms.CharField(
         max_length=20,
         label="Teléfono",
         required=False,
+        error_messages={
+            'max_length': 'El teléfono no puede exceder 20 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+56912345678'})
     )
     role_id = forms.TypedChoiceField(
@@ -328,36 +347,62 @@ class UserCreateForm(forms.Form):
     """Formulario para crear usuarios completos (auth + perfil)."""
     email = forms.EmailField(
         label="Correo electrónico",
+        error_messages={
+            'required': 'Por favor, ingresa un correo electrónico.',
+            'invalid': 'Por favor, ingresa un correo electrónico válido.',
+            'max_length': 'El correo electrónico no puede exceder 254 caracteres.'
+        },
         widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'usuario@ejemplo.cl'})
     )
     password = forms.CharField(
         label="Contraseña",
+        error_messages={
+            'required': 'Por favor, ingresa una contraseña.',
+            'min_length': 'La contraseña debe tener al menos 8 caracteres.'
+        },
         widget=forms.PasswordInput(attrs={'class': 'form-control'})
     )
     password_confirm = forms.CharField(
         label="Confirmar contraseña",
+        error_messages={
+            'required': 'Por favor, confirma la contraseña.'
+        },
         widget=forms.PasswordInput(attrs={'class': 'form-control'})
     )
     first_name = forms.CharField(
         max_length=255,
         label="Nombre",
+        error_messages={
+            'required': 'Por favor, ingresa un nombre.',
+            'max_length': 'El nombre no puede exceder 255 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     last_name = forms.CharField(
         max_length=255,
         label="Apellido",
+        error_messages={
+            'required': 'Por favor, ingresa un apellido.',
+            'max_length': 'El apellido no puede exceder 255 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     rut = forms.CharField(
         max_length=20,
         label="RUT",
         required=False,
+        error_messages={
+            'max_length': 'El RUT no puede exceder 20 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '12345678-9'})
     )
     phone = forms.CharField(
         max_length=20,
         label="Teléfono",
         required=False,
+        error_messages={
+            'max_length': 'El teléfono no puede exceder 20 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+56912345678'})
     )
     role_id = forms.TypedChoiceField(

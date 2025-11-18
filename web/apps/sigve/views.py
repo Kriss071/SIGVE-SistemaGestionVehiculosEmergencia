@@ -1222,8 +1222,8 @@ def user_create(request):
             'rut': cleaned_data.get('rut') or None,
             'phone': cleaned_data.get('phone') or None,
             'role_id': cleaned_data['role_id'],
-            'workshop_id': cleaned_data.get('workshop_id'),
-            'fire_station_id': cleaned_data.get('fire_station_id'),
+            'workshop_id': cleaned_data.get('workshop_id') or None,
+            'fire_station_id': cleaned_data.get('fire_station_id') or None,
             'is_active': cleaned_data.get('is_active', False)
         }
 
@@ -1244,6 +1244,25 @@ def user_create(request):
                 return JsonResponse({'success': True, 'reload_page': True})
             return redirect('sigve:users_list')
 
+        # Si hay errores de duplicación, agregarlos al formulario
+        duplicate_errors = result.get('errors')
+        if duplicate_errors:
+            for field, error_msg in duplicate_errors.items():
+                if field == 'general':
+                    form.add_error(None, error_msg if isinstance(error_msg, str) else error_msg[0])
+                else:
+                    form.add_error(field, error_msg if isinstance(error_msg, str) else error_msg[0])
+            
+            # Manejar errores del formulario
+            response = handle_form_errors(
+                request,
+                form,
+                is_ajax,
+                message='⚠️ Corrige los errores del formulario para crear el usuario.'
+            )
+            if response:
+                return response
+        
         error_message = result.get('error') or 'Error al crear el usuario.'
         messages.error(request, f'❌ {error_message}')
         if is_ajax:
@@ -1295,15 +1314,15 @@ def user_edit(request, user_id):
             profile_data = {
                 'first_name': cleaned_data['first_name'],
                 'last_name': cleaned_data['last_name'],
-                'rut': cleaned_data.get('rut'),
-                'phone': cleaned_data.get('phone'),
+                'rut': cleaned_data.get('rut') or None,
+                'phone': cleaned_data.get('phone') or None,
                 'role_id': cleaned_data['role_id'],
                 'is_active': cleaned_data['is_active'],
-                'workshop_id': cleaned_data.get('workshop_id'),
-                'fire_station_id': cleaned_data.get('fire_station_id')
+                'workshop_id': cleaned_data.get('workshop_id') or None,
+                'fire_station_id': cleaned_data.get('fire_station_id') or None
             }
 
-            success = UserService.update_user(
+            success, duplicate_errors = UserService.update_user(
                 user_id,
                 profile_data,
                 email=cleaned_data['email']
@@ -1318,9 +1337,28 @@ def user_edit(request, user_id):
                 messages.success(request, message)
                 return redirect('sigve:users_list')
             else:
-                if is_ajax:
-                    return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el usuario.']}})
-                messages.error(request, '❌ Error al actualizar el usuario.')
+                # Si hay errores de duplicación, agregarlos al formulario
+                if duplicate_errors:
+                    for field, error_msg in duplicate_errors.items():
+                        if field == 'general':
+                            form.add_error(None, error_msg if isinstance(error_msg, str) else error_msg[0])
+                        else:
+                            form.add_error(field, error_msg if isinstance(error_msg, str) else error_msg[0])
+                    
+                    # Manejar errores del formulario
+                    response = handle_form_errors(
+                        request,
+                        form,
+                        is_ajax,
+                        message='⚠️ Corrige los errores del formulario para actualizar el usuario.'
+                    )
+                    if response:
+                        return response
+                else:
+                    # Error genérico
+                    if is_ajax:
+                        return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el usuario.']}})
+                    messages.error(request, '❌ Error al actualizar el usuario.')
         else:
             response = handle_form_errors(
                 request,
@@ -1398,8 +1436,9 @@ def user_delete(request, user_id):
     """Elimina permanentemente un usuario."""
     
     # Evitar que el admin se elimine a sí mismo
-    if request.session.get('sb_user_id') == user_id:
-        messages.error(request, '❌ No puedes eliminar tu propia cuenta.')
+    current_user_id = request.session.get('sb_user_id')
+    if current_user_id and str(current_user_id) == str(user_id):
+        messages.error(request, '❌ No es posible eliminarse a sí mismo. Por favor, contacta a otro administrador si necesitas eliminar tu cuenta.')
         return redirect('sigve:users_list')
         
     success = UserService.delete_user(user_id)

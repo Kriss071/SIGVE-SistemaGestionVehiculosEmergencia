@@ -1,7 +1,7 @@
 import logging
-from typing import Dict, List, Any, Optional, Iterable
+from typing import Dict, List, Any, Optional, Iterable, Tuple
 from .base_service import SigveBaseService
-from supabase import Client
+from supabase import Client, PostgrestAPIError
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +65,138 @@ class UserService(SigveBaseService):
             return None
     
     @staticmethod
-    def update_user(user_id: str, profile_data: Dict[str, Any], *, email: Optional[str] = None) -> bool:
+    def _parse_duplicate_error_user(error: Exception) -> Optional[Dict[str, str]]:
+        """
+        Parsea un error de Supabase para identificar qué campo está duplicado en usuarios.
+        
+        Args:
+            error: La excepción capturada.
+            
+        Returns:
+            Diccionario con el campo duplicado y mensaje, o None si no es un error de duplicación.
+        """
+        error_msg = str(error).lower()
+        error_details = getattr(error, 'message', '') or error_msg
+        
+        # Mapeo de campos y sus mensajes de error
+        field_mapping = {
+            'email': {
+                'keywords': ['email', 'correo', 'e-mail', 'user already registered'],
+                'message': 'Este correo electrónico ya está registrado en otro usuario.'
+            },
+            'rut': {
+                'keywords': ['rut'],
+                'message': 'Este RUT ya está registrado en otro usuario.'
+            },
+            'phone': {
+                'keywords': ['phone', 'teléfono', 'telefono'],
+                'message': 'Este número de teléfono ya está registrado en otro usuario.'
+            }
+        }
+        
+        # Buscar el campo duplicado en el mensaje de error
+        for field, info in field_mapping.items():
+            for keyword in info['keywords']:
+                if keyword in error_details.lower():
+                    return {
+                        'field': field,
+                        'message': info['message']
+                    }
+        
+        # Si no se identifica un campo específico, verificar si es un error de constraint único
+        if 'unique constraint' in error_details or 'duplicate key' in error_details or '23505' in error_details:
+            # Intentar extraer el nombre del constraint del mensaje
+            import re
+            constraint_match = re.search(r'unique constraint[^"]*"([^"]+)"', error_details, re.IGNORECASE)
+            if constraint_match:
+                constraint_name = constraint_match.group(1).lower()
+                # Mapear nombres de constraints comunes
+                if 'email' in constraint_name or 'user_email' in constraint_name:
+                    return {'field': 'email', 'message': field_mapping['email']['message']}
+                elif 'rut' in constraint_name:
+                    return {'field': 'rut', 'message': field_mapping['rut']['message']}
+                elif 'phone' in constraint_name:
+                    return {'field': 'phone', 'message': field_mapping['phone']['message']}
+            
+            # Si no se puede identificar, retornar un error genérico
+            return {
+                'field': 'general',
+                'message': 'Ya existe un usuario con estos datos. Verifica que el correo, RUT y teléfono sean únicos.'
+            }
+        
+        return None
+    
+    @staticmethod
+    def check_duplicates_user(email: Optional[str] = None, profile_data: Optional[Dict[str, Any]] = None, exclude_user_id: Optional[str] = None) -> Dict[str, str]:
+        """
+        Verifica si hay duplicados antes de crear/actualizar un usuario.
+        
+        Args:
+            email: Correo electrónico a verificar (en auth.users).
+            profile_data: Datos del perfil a verificar (rut, phone en user_profile).
+            exclude_user_id: ID del usuario a excluir de la verificación (para edición).
+            
+        Returns:
+            Diccionario con errores por campo si hay duplicados, vacío si no hay.
+        """
+        errors = {}
+        admin_client: Optional[Client] = None
+        client = SigveBaseService.get_client()
+        
+        # Verificar email duplicado en auth.users
+        if email:
+            try:
+                admin_client = SigveBaseService.get_admin_client()
+                # Intentar obtener usuario por email
+                try:
+                    response = admin_client.auth.admin.list_users()
+                    users = getattr(response, 'users', [])
+                    
+                    for user in users:
+                        user_email = getattr(user, 'email', None) or (user.get('email') if isinstance(user, dict) else None)
+                        user_id = getattr(user, 'id', None) or (user.get('id') if isinstance(user, dict) else None)
+                        
+                        if user_email and user_email.lower() == email.lower():
+                            if not exclude_user_id or user_id != exclude_user_id:
+                                errors['email'] = 'Este correo electrónico ya está registrado en otro usuario.'
+                                break
+                except Exception as e:
+                    logger.warning(f"⚠️ No se pudo verificar email duplicado: {e}")
+            except Exception as e:
+                logger.warning(f"⚠️ Error obteniendo admin client para verificar email: {e}")
+        
+        # Verificar RUT duplicado en user_profile (solo si se proporciona y no es None o vacío)
+        if profile_data and profile_data.get('rut'):
+            rut_value = profile_data['rut']
+            if rut_value and isinstance(rut_value, str) and rut_value.strip():
+                try:
+                    query = client.table("user_profile").select("id, first_name, last_name").eq("rut", rut_value.strip())
+                    if exclude_user_id:
+                        query = query.neq("id", exclude_user_id)
+                    existing = query.execute()
+                    if existing.data and len(existing.data) > 0:
+                        errors['rut'] = 'Este RUT ya está registrado en otro usuario.'
+                except Exception as e:
+                    logger.warning(f"⚠️ Error verificando RUT duplicado: {e}")
+        
+        # Verificar teléfono duplicado en user_profile (solo si se proporciona y no es None o vacío)
+        if profile_data and profile_data.get('phone'):
+            phone_value = profile_data['phone']
+            if phone_value and isinstance(phone_value, str) and phone_value.strip():
+                try:
+                    query = client.table("user_profile").select("id, first_name, last_name").eq("phone", phone_value.strip())
+                    if exclude_user_id:
+                        query = query.neq("id", exclude_user_id)
+                    existing = query.execute()
+                    if existing.data and len(existing.data) > 0:
+                        errors['phone'] = 'Este número de teléfono ya está registrado en otro usuario.'
+                except Exception as e:
+                    logger.warning(f"⚠️ Error verificando teléfono duplicado: {e}")
+        
+        return errors
+    
+    @staticmethod
+    def update_user(user_id: str, profile_data: Dict[str, Any], *, email: Optional[str] = None) -> Tuple[bool, Optional[Dict[str, str]]]:
         """
         Actualiza un usuario existente.
         
@@ -75,10 +206,22 @@ class UserService(SigveBaseService):
             email: Nuevo correo electrónico (se actualiza en auth.users).
             
         Returns:
-            True si se actualizó correctamente, False en caso contrario.
+            Tupla (éxito, errores):
+            - éxito: True si se actualizó correctamente, False en caso contrario.
+            - errores: Diccionario con errores por campo si hay duplicados, None si no hay errores.
         """
         client = SigveBaseService.get_client()
         admin_client: Optional[Client] = None
+
+        # Verificar duplicados antes de intentar actualizar
+        duplicate_errors = UserService.check_duplicates_user(
+            email=email,
+            profile_data=profile_data,
+            exclude_user_id=user_id
+        )
+        if duplicate_errors:
+            logger.warning(f"⚠️ Intento de actualizar usuario {user_id} con datos duplicados: {duplicate_errors}")
+            return False, duplicate_errors
 
         if email is not None:
             try:
@@ -87,7 +230,11 @@ class UserService(SigveBaseService):
                 logger.info(f"📧 Email actualizado para usuario {user_id}")
             except Exception as auth_error:
                 logger.error(f"❌ Error actualizando email del usuario {user_id}: {auth_error}", exc_info=True)
-                return False
+                # Intentar parsear el error de duplicación
+                duplicate_error = UserService._parse_duplicate_error_user(auth_error)
+                if duplicate_error:
+                    return False, {duplicate_error['field']: duplicate_error['message']}
+                return False, {'email': ['Error al actualizar el correo electrónico.']}
 
         try:
             result = client.table("user_profile") \
@@ -96,10 +243,21 @@ class UserService(SigveBaseService):
                 .execute()
             
             logger.info(f"✅ Usuario {user_id} actualizado")
-            return True
+            return True, None
+        except PostgrestAPIError as e:
+            logger.error(f"❌ Error de API actualizando usuario {user_id}: {e.message}", exc_info=True)
+            # Intentar parsear el error de duplicación
+            duplicate_error = UserService._parse_duplicate_error_user(e)
+            if duplicate_error:
+                return False, {duplicate_error['field']: duplicate_error['message']}
+            return False, {'general': ['Error al actualizar el usuario. Por favor, intenta nuevamente.']}
         except Exception as e:
             logger.error(f"❌ Error actualizando usuario {user_id}: {e}", exc_info=True)
-            return False
+            # Intentar parsear el error de duplicación
+            duplicate_error = UserService._parse_duplicate_error_user(e)
+            if duplicate_error:
+                return False, {duplicate_error['field']: duplicate_error['message']}
+            return False, {'general': ['Error al actualizar el usuario. Por favor, intenta nuevamente.']}
     
     @staticmethod
     def deactivate_user(user_id: str) -> bool:
@@ -237,9 +395,24 @@ class UserService(SigveBaseService):
                 success (bool)
                 user_id (str | None)
                 error (str | None)
+                errors (Dict[str, str] | None) - Errores de validación por campo
         """
         admin_client: Client = SigveBaseService.get_admin_client()
         metadata = metadata or {}
+
+        # Verificar duplicados antes de intentar crear
+        duplicate_errors = UserService.check_duplicates_user(
+            email=email,
+            profile_data=profile_data
+        )
+        if duplicate_errors:
+            logger.warning(f"⚠️ Intento de crear usuario con datos duplicados: {duplicate_errors}")
+            return {
+                "success": False,
+                "user_id": None,
+                "error": "Error de validación: datos duplicados.",
+                "errors": duplicate_errors
+            }
 
         try:
             response = admin_client.auth.admin.create_user({
@@ -252,35 +425,83 @@ class UserService(SigveBaseService):
             auth_user = getattr(response, "user", None)
             if not auth_user:
                 logger.error("❌ (create_user) Supabase no retornó usuario en la respuesta.")
-                return {"success": False, "user_id": None, "error": "Supabase no retornó el usuario creado."}
+                return {"success": False, "user_id": None, "error": "Supabase no retornó el usuario creado.", "errors": None}
 
             user_id = getattr(auth_user, "id", None)
             if not user_id:
                 logger.error("❌ (create_user) No se obtuvo el ID del usuario creado en auth.")
-                return {"success": False, "user_id": None, "error": "No se obtuvo el ID del usuario creado en auth."}
+                return {"success": False, "user_id": None, "error": "No se obtuvo el ID del usuario creado en auth.", "errors": None}
 
         except Exception as auth_error:
             logger.error(f"❌ Error creando usuario en auth.users: {auth_error}", exc_info=True)
-            return {"success": False, "user_id": None, "error": "Error creando el usuario en Supabase Auth."}
+            # Intentar parsear el error de duplicación
+            duplicate_error = UserService._parse_duplicate_error_user(auth_error)
+            if duplicate_error:
+                return {
+                    "success": False,
+                    "user_id": None,
+                    "error": "Error creando el usuario en Supabase Auth.",
+                    "errors": {duplicate_error['field']: duplicate_error['message']}
+                }
+            return {"success": False, "user_id": None, "error": "Error creando el usuario en Supabase Auth.", "errors": None}
 
         profile_payload = {
             **profile_data,
             "id": user_id
         }
 
-        created_profile = UserService.create_user_profile(profile_payload)
-        if not created_profile:
-            logger.error("❌ (create_user) No se pudo crear el perfil, revirtiendo usuario en auth.")
+        try:
+            created_profile = UserService.create_user_profile(profile_payload)
+            if not created_profile:
+                logger.error("❌ (create_user) No se pudo crear el perfil, revirtiendo usuario en auth.")
+                try:
+                    admin_client.auth.admin.delete_user(user_id)
+                    logger.info("♻️ (create_user) Usuario en auth eliminado tras fallo en user_profile.")
+                except Exception as cleanup_error:
+                    logger.error(f"⚠️ (create_user) Fallo al revertir usuario en auth: {cleanup_error}", exc_info=True)
+
+                return {"success": False, "user_id": user_id, "error": "Error creando el perfil del usuario.", "errors": None}
+        except PostgrestAPIError as e:
+            logger.error(f"❌ Error de API creando perfil de usuario: {e.message}", exc_info=True)
+            # Intentar parsear el error de duplicación
+            duplicate_error = UserService._parse_duplicate_error_user(e)
+            # Revertir usuario en auth
             try:
                 admin_client.auth.admin.delete_user(user_id)
                 logger.info("♻️ (create_user) Usuario en auth eliminado tras fallo en user_profile.")
             except Exception as cleanup_error:
                 logger.error(f"⚠️ (create_user) Fallo al revertir usuario en auth: {cleanup_error}", exc_info=True)
-
-            return {"success": False, "user_id": user_id, "error": "Error creando el perfil del usuario."}
+            
+            if duplicate_error:
+                return {
+                    "success": False,
+                    "user_id": user_id,
+                    "error": "Error creando el perfil del usuario.",
+                    "errors": {duplicate_error['field']: duplicate_error['message']}
+                }
+            return {"success": False, "user_id": user_id, "error": "Error creando el perfil del usuario.", "errors": None}
+        except Exception as e:
+            logger.error(f"❌ Error creando perfil de usuario: {e}", exc_info=True)
+            # Revertir usuario en auth
+            try:
+                admin_client.auth.admin.delete_user(user_id)
+                logger.info("♻️ (create_user) Usuario en auth eliminado tras fallo en user_profile.")
+            except Exception as cleanup_error:
+                logger.error(f"⚠️ (create_user) Fallo al revertir usuario en auth: {cleanup_error}", exc_info=True)
+            
+            # Intentar parsear el error de duplicación
+            duplicate_error = UserService._parse_duplicate_error_user(e)
+            if duplicate_error:
+                return {
+                    "success": False,
+                    "user_id": user_id,
+                    "error": "Error creando el perfil del usuario.",
+                    "errors": {duplicate_error['field']: duplicate_error['message']}
+                }
+            return {"success": False, "user_id": user_id, "error": "Error creando el perfil del usuario.", "errors": None}
 
         logger.info(f"✅ Usuario creado correctamente con ID {user_id}")
-        return {"success": True, "user_id": user_id, "error": None}
+        return {"success": True, "user_id": user_id, "error": None, "errors": None}
 
     @staticmethod
     def _attach_auth_user_data(users: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

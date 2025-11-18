@@ -119,6 +119,12 @@
             
             // Evento al enviar el formulario
             form.addEventListener('submit', handleSubmit);
+            
+            // Prevenir validación HTML5 nativa del navegador
+            form.addEventListener('invalid', function(e) {
+                e.preventDefault();
+                // La validación se manejará en handleSubmit
+            }, true);
 
             mutualController = createMutualSelectController(workshopSelect, fireStationSelect);
             roleSelect?.addEventListener('change', handleRoleChange);
@@ -388,6 +394,11 @@
          */
         function handleSubmit(e) {
             e.preventDefault();
+            
+            // Validar formulario manualmente para mostrar mensajes en español
+            if (!validateForm()) {
+                return;
+            }
                 
             const submitBtn = document.getElementById('userSubmitBtn');
             if (!submitBtn) return;
@@ -396,11 +407,12 @@
                 if (passwordInput.value !== passwordConfirmInput.value) {
                     window.SIGVE.showNotification('Las contraseñas no coinciden.', 'warning');
                     passwordConfirmInput.focus();
-                    window.SIGVE.hideButtonLoading(submitBtn);
+                    passwordConfirmInput.classList.add('is-invalid');
                     return;
                 }
             }
             
+            // Refactorizado para usar la utilidad global
             window.SIGVE.showButtonLoading(submitBtn);
                 
             // Enviar formulario
@@ -425,11 +437,29 @@
                     if (data.success) {
                         window.SIGVE.hideButtonLoading(submitBtn);
                         modalInstance.hide();
-                        setTimeout(() => window.location.reload(), 150);
+                        
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 150);
                         return;
                     } else if (data.errors) {
-                        const firstError = Object.values(data.errors)[0][0];
-                        window.SIGVE.showNotification(firstError, 'error');
+                        // Errores de validación
+                        // Limpiar errores previos
+                        clearFormErrors();
+                        
+                        // Mostrar errores por campo
+                        for (const [field, errors] of Object.entries(data.errors)) {
+                            if (Array.isArray(errors) && errors.length > 0) {
+                                const errorMessage = errors[0];
+                                
+                                if (field === 'general' || field === '__all__') {
+                                    window.SIGVE.showNotification(errorMessage, 'error');
+                                } else {
+                                    showFieldError(field, errorMessage);
+                                }
+                            }
+                        }
+                        
                         window.SIGVE.hideButtonLoading(submitBtn);
                     }
                 }
@@ -506,12 +536,131 @@
             form.style.display = 'block';
         }
         
+        /**
+         * Valida el formulario y muestra errores en español
+         * @returns {boolean} true si el formulario es válido, false en caso contrario
+         */
+        function validateForm() {
+            clearFormErrors();
+            
+            let isValid = true;
+            const requiredFields = form.querySelectorAll('[required]');
+            
+            // Mensajes de error en español para campos requeridos
+            const errorMessages = {
+                'email': 'Por favor, ingresa un correo electrónico válido.',
+                'first_name': 'Por favor, ingresa un nombre.',
+                'last_name': 'Por favor, ingresa un apellido.',
+                'role_id': 'Por favor, selecciona un rol.',
+                'password': 'Por favor, ingresa una contraseña (mínimo 8 caracteres).',
+                'password_confirm': 'Por favor, confirma la contraseña.'
+            };
+            
+            requiredFields.forEach(field => {
+                const fieldName = field.name;
+                const fieldValue = field.value.trim();
+                
+                // Para select, verificar que tenga un valor seleccionado
+                if (field.tagName === 'SELECT') {
+                    if (!fieldValue || fieldValue === '') {
+                        isValid = false;
+                        field.classList.add('is-invalid');
+                        const errorMsg = errorMessages[fieldName] || 'Este campo es obligatorio.';
+                        showFieldError(fieldName, errorMsg);
+                    }
+                } else if (!fieldValue) {
+                    isValid = false;
+                    field.classList.add('is-invalid');
+                    const errorMsg = errorMessages[fieldName] || 'Este campo es obligatorio.';
+                    showFieldError(fieldName, errorMsg);
+                }
+            });
+            
+            // Validar contraseñas si estamos en modo crear
+            if (currentMode === 'create' && passwordInput && passwordConfirmInput) {
+                if (passwordInput.value && passwordInput.value.length < 8) {
+                    isValid = false;
+                    passwordInput.classList.add('is-invalid');
+                    showFieldError('password', 'La contraseña debe tener al menos 8 caracteres.');
+                }
+                if (passwordInput.value !== passwordConfirmInput.value) {
+                    isValid = false;
+                    passwordConfirmInput.classList.add('is-invalid');
+                    showFieldError('password_confirm', 'Las contraseñas no coinciden.');
+                }
+            }
+            
+            if (!isValid) {
+                window.SIGVE.showNotification('Por favor, completa todos los campos obligatorios correctamente.', 'error');
+            }
+            
+            return isValid;
+        }
+        
+        /**
+         * Limpia todos los errores del formulario
+         */
+        function clearFormErrors() {
+            // Remover clases de error de Bootstrap
+            form.querySelectorAll('.is-invalid').forEach(field => {
+                field.classList.remove('is-invalid');
+            });
+            
+            // Limpiar mensajes de error dinámicos
+            form.querySelectorAll('.invalid-feedback[data-field-error]').forEach(feedback => {
+                feedback.textContent = '';
+            });
+        }
+        
+        /**
+         * Muestra un error en un campo específico del formulario
+         * @param {string} fieldName - Nombre del campo (ej: 'email', 'rut', 'phone')
+         * @param {string} errorMessage - Mensaje de error a mostrar
+         */
+        function showFieldError(fieldName, errorMessage) {
+            const fieldIdMap = {
+                'email': 'id_email',
+                'first_name': 'id_first_name',
+                'last_name': 'id_last_name',
+                'rut': 'id_rut',
+                'phone': 'id_phone',
+                'role_id': 'id_role_id',
+                'password': 'id_password',
+                'password_confirm': 'id_password_confirm'
+            };
+            
+            const fieldId = fieldIdMap[fieldName] || `id_${fieldName}`;
+            const field = document.getElementById(fieldId);
+            
+            if (field) {
+                field.classList.add('is-invalid');
+                
+                let feedback = field.parentElement.querySelector(`.invalid-feedback[data-field-error="${fieldName}"]`);
+                if (!feedback) {
+                    feedback = field.parentElement.querySelector('.invalid-feedback');
+                    if (feedback) {
+                        feedback.setAttribute('data-field-error', fieldName);
+                    } else {
+                        feedback = document.createElement('div');
+                        feedback.className = 'invalid-feedback';
+                        feedback.setAttribute('data-field-error', fieldName);
+                        field.parentElement.appendChild(feedback);
+                    }
+                }
+                feedback.textContent = errorMessage;
+            } else {
+                console.warn(`Campo no encontrado para mostrar error: ${fieldName}`);
+                window.SIGVE.showNotification(errorMessage, 'error');
+            }
+        }
+        
         /** Resetea el modal a su estado inicial */
         function resetModal() {
             currentMode = 'view';
             currentUserId = null;
             form.reset();
-            form.classList.remove('was-validated');
+            form.classList.remove('was-validated'); // Limpiar validación
+            clearFormErrors(); // Limpiar errores
             const isActiveCheckbox = document.getElementById('id_is_active');
             if (isActiveCheckbox) {
                 isActiveCheckbox.checked = false;
