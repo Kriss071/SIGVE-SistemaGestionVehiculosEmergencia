@@ -376,7 +376,7 @@ class InventoryAddForm(forms.Form):
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'placeholder': '0',
-            'min': 0,
+            'min': 0.01,
             'step': '0.01'
         })
     )

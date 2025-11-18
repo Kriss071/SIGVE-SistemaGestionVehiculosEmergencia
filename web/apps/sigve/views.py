@@ -426,12 +426,12 @@ def workshop_edit(request, workshop_id):
 @require_role("Admin SIGVE")
 def workshop_delete(request, workshop_id):
     """Eliminar un taller."""
-    success = WorkshopService.delete_workshop(workshop_id)
+    success, error_message = WorkshopService.delete_workshop(workshop_id)
     
     if success:
-        messages.success(request, '🗑️ Taller eliminado.')
+        messages.success(request, '🗑️ Taller eliminado correctamente.')
     else:
-        messages.error(request, '❌ Error al eliminar el taller (puede tener empleados o datos asociados).')
+        messages.error(request, f'❌ {error_message or "Error al eliminar el taller."}')
     
     return redirect('sigve:workshops_list')
 

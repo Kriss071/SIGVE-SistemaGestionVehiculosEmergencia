@@ -274,30 +274,94 @@ class WorkshopService(SigveBaseService):
             return False, {'general': ['Error al actualizar el taller. Por favor, intenta nuevamente.']}
     
     @staticmethod
-    def delete_workshop(workshop_id: int) -> bool:
+    def can_delete_workshop(workshop_id: int) -> Tuple[bool, Optional[str]]:
         """
-        Elimina (desactiva) un taller.
+        Verifica si un taller puede ser eliminado (no tiene datos asociados).
         
         Args:
             workshop_id: ID del taller.
             
         Returns:
-            True si se eliminó correctamente, False en caso contrario.
+            Tupla (puede_eliminar, mensaje_error):
+            - puede_eliminar: True si puede eliminarse, False en caso contrario.
+            - mensaje_error: Mensaje descriptivo si no puede eliminarse, None si puede.
         """
         client = SigveBaseService.get_client()
         
         try:
-            # En lugar de eliminar, podríamos desactivar usuarios asociados
-            # Por ahora, intentamos eliminar directamente
+            # Verificar si tiene empleados
+            employees_count = client.table("user_profile") \
+                .select("id", count="exact") \
+                .eq("workshop_id", workshop_id) \
+                .execute()
+            
+            if employees_count.count and employees_count.count > 0:
+                return False, f"No se puede eliminar el taller porque tiene {employees_count.count} empleado(s) asociado(s)."
+            
+            # Verificar si tiene órdenes de mantenimiento
+            orders_count = client.table("maintenance_order") \
+                .select("id", count="exact") \
+                .eq("workshop_id", workshop_id) \
+                .execute()
+            
+            if orders_count.count and orders_count.count > 0:
+                return False, f"No se puede eliminar el taller porque tiene {orders_count.count} orden(es) de mantenimiento asociada(s)."
+            
+            # Verificar si tiene inventario
+            inventory_count = client.table("workshop_inventory") \
+                .select("id", count="exact") \
+                .eq("workshop_id", workshop_id) \
+                .execute()
+            
+            if inventory_count.count and inventory_count.count > 0:
+                return False, f"No se puede eliminar el taller porque tiene {inventory_count.count} item(s) en el inventario."
+            
+            # Verificar si tiene proveedores locales
+            suppliers_count = client.table("supplier") \
+                .select("id", count="exact") \
+                .eq("workshop_id", workshop_id) \
+                .execute()
+            
+            if suppliers_count.count and suppliers_count.count > 0:
+                return False, f"No se puede eliminar el taller porque tiene {suppliers_count.count} proveedor(es) local(es) asociado(s)."
+            
+            return True, None
+            
+        except Exception as e:
+            logger.error(f"❌ Error verificando si se puede eliminar taller {workshop_id}: {e}", exc_info=True)
+            return False, "Error al verificar datos asociados al taller."
+    
+    @staticmethod
+    def delete_workshop(workshop_id: int) -> Tuple[bool, Optional[str]]:
+        """
+        Elimina un taller solo si no tiene datos asociados.
+        
+        Args:
+            workshop_id: ID del taller.
+            
+        Returns:
+            Tupla (éxito, mensaje_error):
+            - éxito: True si se eliminó correctamente, False en caso contrario.
+            - mensaje_error: Mensaje descriptivo si no se pudo eliminar, None si fue exitoso.
+        """
+        client = SigveBaseService.get_client()
+        
+        # Verificar si puede eliminarse
+        can_delete, error_message = WorkshopService.can_delete_workshop(workshop_id)
+        if not can_delete:
+            logger.warning(f"⚠️ Intento de eliminar taller {workshop_id} con datos asociados: {error_message}")
+            return False, error_message
+        
+        try:
             result = client.table("workshop") \
                 .delete() \
                 .eq("id", workshop_id) \
                 .execute()
             
             logger.info(f"🗑️ Taller {workshop_id} eliminado")
-            return True
+            return True, None
         except Exception as e:
             logger.error(f"❌ Error eliminando taller {workshop_id}: {e}", exc_info=True)
-            return False
+            return False, "Error al eliminar el taller. Por favor, intenta nuevamente."
 
 
