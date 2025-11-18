@@ -13,6 +13,10 @@
     let completionKeywords = ['termin', 'final', 'complet', 'cerrad'];
     let taskForm, taskFormSubmitBtn;
     let isSubmittingTask = false;
+    let exitDateRow, exitDateInput;
+    let editObservationsBtn, cancelEditObservationsBtn, observationsDisplay, observationsEdit, observationsForm;
+    let partToTaskForm, partToTaskSubmitBtn;
+    let isSubmittingPart = false;
 
     /**
      * Inicialización del controlador
@@ -22,10 +26,19 @@
         orderForm = document.getElementById('orderUpdateForm');
         orderStatusSelect = document.getElementById('orderStatusSelect');
         saveOrderBtn = document.getElementById('saveOrderBtn');
+        exitDateRow = document.getElementById('exitDateRow');
+        exitDateInput = document.getElementById('exitDateInput');
         
         // Obtener modal de confirmación
         confirmModal = document.getElementById('confirmCompletionModal');
         confirmBtn = document.getElementById('confirmCompletionBtn');
+        
+        // Elementos de observaciones
+        editObservationsBtn = document.getElementById('editObservationsBtn');
+        cancelEditObservationsBtn = document.getElementById('cancelEditObservationsBtn');
+        observationsDisplay = document.getElementById('observationsDisplay');
+        observationsEdit = document.getElementById('observationsEdit');
+        observationsForm = document.getElementById('observationsForm');
 
         // Verificar que los elementos existan
         if (!orderForm || !orderStatusSelect) {
@@ -46,12 +59,27 @@
             orderForm.addEventListener('submit', handleFormSubmit);
         }
 
+        if (orderStatusSelect) {
+            orderStatusSelect.addEventListener('change', handleStatusChange);
+            // Verificar estado inicial solo si la orden no está completada
+            // (si está completada, el campo ya está visible en el HTML)
+            if (!orderStatusSelect.disabled) {
+                handleStatusChange();
+            }
+        }
+
         if (confirmBtn) {
             confirmBtn.addEventListener('click', handleConfirmCompletion);
         }
 
+        // Configurar edición de observaciones
+        setupObservationsEditing();
+
         // Configurar protección contra doble envío para el formulario de tareas
         setupTaskFormProtection();
+
+        // Configurar validación para el formulario de agregar repuesto a tarea
+        setupPartToTaskFormValidation();
 
         console.log('OrderDetail: Controlador inicializado correctamente');
     }
@@ -75,6 +103,31 @@
     }
 
     /**
+     * Maneja el cambio de estado
+     */
+    function handleStatusChange() {
+        const selectedStatusName = getSelectedStatusName();
+        const isCompletion = isCompletionStatus(selectedStatusName);
+        
+        // Mostrar/ocultar campo de fecha de salida
+        if (exitDateRow && exitDateInput) {
+            if (isCompletion) {
+                exitDateRow.style.display = 'table-row';
+                exitDateInput.required = true;
+                // Establecer fecha mínima como fecha de ingreso
+                const entryDateStr = exitDateInput.getAttribute('data-entry-date');
+                if (entryDateStr) {
+                    exitDateInput.setAttribute('min', entryDateStr);
+                }
+            } else {
+                exitDateRow.style.display = 'none';
+                exitDateInput.required = false;
+                exitDateInput.value = '';
+            }
+        }
+    }
+
+    /**
      * Maneja el envío del formulario
      */
     function handleFormSubmit(event) {
@@ -82,6 +135,31 @@
         
         const selectedStatusName = getSelectedStatusName();
         const isCompletion = isCompletionStatus(selectedStatusName);
+        
+        // Validar que si es estado de finalización, tenga fecha de salida
+        if (isCompletion) {
+            if (!exitDateInput || !exitDateInput.value) {
+                alert('Por favor, ingrese la fecha de salida para finalizar la orden.');
+                if (exitDateInput) {
+                    exitDateInput.focus();
+                }
+                return;
+            }
+            
+            // Validar que la fecha de salida no sea anterior a la fecha de ingreso
+            const entryDateStr = exitDateInput.getAttribute('data-entry-date');
+            if (entryDateStr) {
+                const entryDate = new Date(entryDateStr);
+                const exitDate = new Date(exitDateInput.value);
+                entryDate.setHours(0, 0, 0, 0);
+                exitDate.setHours(0, 0, 0, 0);
+                if (exitDate < entryDate) {
+                    alert('La fecha de salida no puede ser anterior a la fecha de ingreso.');
+                    exitDateInput.focus();
+                    return;
+                }
+            }
+        }
         
         // Si el estado cambió a "Terminada", mostrar modal de confirmación
         if (isCompletion && orderStatusSelect.value !== originalStatusValue) {
@@ -174,6 +252,10 @@
                 
                 // Agregar listener para prevenir doble envío
                 taskForm.addEventListener('submit', handleTaskFormSubmit);
+                
+                // Limpiar errores cuando el usuario empiece a escribir
+                setupFieldErrorClearing(taskForm);
+                
                 isSubmittingTask = false;
             }
         });
@@ -189,9 +271,10 @@
                     taskFormSubmitBtn.removeAttribute('data-original-html');
                 }
             }
-            // Resetear el formulario
+            // Resetear el formulario y limpiar errores
             if (taskForm) {
                 taskForm.reset();
+                clearFormErrors(taskForm);
             }
         });
     }
@@ -202,6 +285,13 @@
     function handleTaskFormSubmit(event) {
         // Si ya se está enviando, prevenir el envío
         if (isSubmittingTask) {
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        }
+
+        // Validar formulario antes de enviar
+        if (!validateTaskForm()) {
             event.preventDefault();
             event.stopPropagation();
             return false;
@@ -218,6 +308,328 @@
         // Permitir que el formulario se envíe normalmente
         // El flag isSubmittingTask prevendrá envíos adicionales
         return true;
+    }
+
+    /**
+     * Valida el formulario de tareas y muestra errores en español
+     * @returns {boolean} true si el formulario es válido, false en caso contrario
+     */
+    function validateTaskForm() {
+        if (!taskForm) return false;
+        
+        clearFormErrors(taskForm);
+        
+        let isValid = true;
+        
+        // Mensajes de error en español para campos requeridos
+        const errorMessages = {
+            'task_type_id': 'Por favor, selecciona un tipo de tarea.',
+            'cost': 'Por favor, ingresa un costo válido (mínimo 0).'
+        };
+        
+        // Validar tipo de tarea
+        const taskTypeField = taskForm.querySelector('[name="task_type_id"]');
+        if (taskTypeField && taskTypeField.hasAttribute('required')) {
+            const taskTypeValue = taskTypeField.value;
+            if (!taskTypeValue || taskTypeValue === '') {
+                isValid = false;
+                taskTypeField.classList.add('is-invalid');
+                showFieldError(taskForm, 'task_type_id', errorMessages['task_type_id']);
+            }
+        }
+        
+        // Validar costo
+        const costField = taskForm.querySelector('[name="cost"]');
+        if (costField && costField.hasAttribute('required')) {
+            const costValue = costField.value;
+            const numValue = parseFloat(costValue);
+            // Validar que sea un número válido y no negativo
+            if (costValue === '' || costValue === null || isNaN(numValue) || numValue < 0) {
+                isValid = false;
+                costField.classList.add('is-invalid');
+                showFieldError(taskForm, 'cost', errorMessages['cost']);
+            }
+        }
+        
+        if (!isValid) {
+            if (window.SIGVE && window.SIGVE.showNotification) {
+                window.SIGVE.showNotification('Por favor, completa todos los campos obligatorios.', 'error');
+            } else {
+                alert('Por favor, completa todos los campos obligatorios.');
+            }
+        }
+        
+        return isValid;
+    }
+
+    /**
+     * Configura validación para el formulario de agregar repuesto a tarea
+     */
+    function setupPartToTaskFormValidation() {
+        partToTaskForm = document.getElementById('addPartToTaskForm');
+        partToTaskSubmitBtn = document.getElementById('addPartToTaskSubmitBtn');
+        
+        if (partToTaskForm && partToTaskSubmitBtn) {
+            partToTaskForm.addEventListener('submit', handlePartToTaskFormSubmit);
+            
+            // Limpiar errores cuando el usuario empiece a escribir
+            setupFieldErrorClearing(partToTaskForm);
+        }
+    }
+
+    /**
+     * Configura la limpieza automática de errores cuando el usuario empiece a escribir
+     * @param {HTMLElement} form - El formulario a configurar
+     */
+    function setupFieldErrorClearing(form) {
+        if (!form) return;
+        
+        // Limpiar errores en campos cuando el usuario empiece a escribir
+        form.querySelectorAll('input, select, textarea').forEach(field => {
+            field.addEventListener('input', function() {
+                if (this.classList.contains('is-invalid')) {
+                    this.classList.remove('is-invalid');
+                    const feedback = this.parentElement.querySelector(`.invalid-feedback[data-field-error="${this.name}"]`);
+                    if (feedback) {
+                        feedback.textContent = '';
+                    }
+                }
+            });
+            
+            field.addEventListener('change', function() {
+                if (this.classList.contains('is-invalid')) {
+                    this.classList.remove('is-invalid');
+                    const feedback = this.parentElement.querySelector(`.invalid-feedback[data-field-error="${this.name}"]`);
+                    if (feedback) {
+                        feedback.textContent = '';
+                    }
+                }
+            });
+        });
+    }
+
+    /**
+     * Maneja el envío del formulario de agregar repuesto a tarea
+     */
+    function handlePartToTaskFormSubmit(event) {
+        // Si ya se está enviando, prevenir el envío
+        if (isSubmittingPart) {
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        }
+
+        // Validar formulario antes de enviar
+        if (!validatePartToTaskForm()) {
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        }
+
+        // Marcar como enviando
+        isSubmittingPart = true;
+
+        // Deshabilitar el botón y mostrar indicador de carga
+        if (partToTaskSubmitBtn) {
+            showButtonLoading(partToTaskSubmitBtn);
+        }
+
+        return true;
+    }
+
+    /**
+     * Valida el formulario de agregar repuesto a tarea y muestra errores en español
+     * @returns {boolean} true si el formulario es válido, false en caso contrario
+     */
+    function validatePartToTaskForm() {
+        if (!partToTaskForm) return false;
+        
+        clearFormErrors(partToTaskForm);
+        
+        let isValid = true;
+        
+        // Mensajes de error en español para campos requeridos
+        const errorMessages = {
+            'maintenance_task_id': 'Por favor, selecciona una tarea.',
+            'workshop_inventory_id': 'Por favor, selecciona un repuesto del inventario.',
+            'quantity_used': 'Por favor, ingresa una cantidad válida (mínimo 1).'
+        };
+        
+        // Validar tarea
+        const taskField = partToTaskForm.querySelector('[name="maintenance_task_id"]');
+        if (taskField && taskField.hasAttribute('required')) {
+            const taskValue = taskField.value;
+            if (!taskValue || taskValue === '') {
+                isValid = false;
+                taskField.classList.add('is-invalid');
+                showFieldError(partToTaskForm, 'maintenance_task_id', errorMessages['maintenance_task_id']);
+            }
+        }
+        
+        // Validar repuesto
+        const inventoryField = partToTaskForm.querySelector('[name="workshop_inventory_id"]');
+        if (inventoryField && inventoryField.hasAttribute('required')) {
+            const inventoryValue = inventoryField.value;
+            if (!inventoryValue || inventoryValue === '') {
+                isValid = false;
+                inventoryField.classList.add('is-invalid');
+                showFieldError(partToTaskForm, 'workshop_inventory_id', errorMessages['workshop_inventory_id']);
+            }
+        }
+        
+        // Validar cantidad
+        const quantityField = partToTaskForm.querySelector('[name="quantity_used"]');
+        if (quantityField && quantityField.hasAttribute('required')) {
+            const quantityValue = quantityField.value;
+            const numValue = parseInt(quantityValue);
+            // Validar que sea un número válido y mayor o igual a 1
+            if (quantityValue === '' || quantityValue === null || isNaN(numValue) || numValue < 1) {
+                isValid = false;
+                quantityField.classList.add('is-invalid');
+                showFieldError(partToTaskForm, 'quantity_used', errorMessages['quantity_used']);
+            }
+        }
+        
+        if (!isValid) {
+            if (window.SIGVE && window.SIGVE.showNotification) {
+                window.SIGVE.showNotification('Por favor, completa todos los campos obligatorios.', 'error');
+            } else {
+                alert('Por favor, completa todos los campos obligatorios.');
+            }
+        }
+        
+        return isValid;
+    }
+
+    /**
+     * Limpia todos los errores del formulario
+     * @param {HTMLElement} form - El formulario a limpiar
+     */
+    function clearFormErrors(form) {
+        if (!form) return;
+        
+        // Remover clases de error de Bootstrap
+        form.querySelectorAll('.is-invalid').forEach(field => {
+            field.classList.remove('is-invalid');
+        });
+        
+        // Limpiar mensajes de error dinámicos
+        form.querySelectorAll('.invalid-feedback[data-field-error]').forEach(feedback => {
+            feedback.textContent = '';
+            feedback.style.display = '';
+        });
+        
+        // Remover clase was-validated si existe
+        form.classList.remove('was-validated');
+    }
+
+    /**
+     * Muestra un error en un campo específico del formulario
+     * @param {HTMLElement} form - El formulario que contiene el campo
+     * @param {string} fieldName - Nombre del campo (ej: 'task_type_id', 'cost')
+     * @param {string} errorMessage - Mensaje de error a mostrar
+     */
+    function showFieldError(form, fieldName, errorMessage) {
+        if (!form) return;
+        
+        const fieldIdMap = {
+            'task_type_id': 'id_task_type_id',
+            'description': 'id_description',
+            'cost': 'id_cost',
+            'maintenance_task_id': 'id_maintenance_task_id',
+            'workshop_inventory_id': 'id_workshop_inventory_id',
+            'quantity_used': 'id_quantity_used'
+        };
+        
+        const fieldId = fieldIdMap[fieldName] || `id_${fieldName}`;
+        const field = document.getElementById(fieldId);
+        
+        if (field) {
+            // Agregar clase de error al campo
+            field.classList.add('is-invalid');
+            
+            // Buscar el elemento de feedback de error
+            let feedback = field.parentElement.querySelector(`.invalid-feedback[data-field-error="${fieldName}"]`);
+            
+            // Si no existe, buscar cualquier invalid-feedback en el mismo contenedor
+            if (!feedback) {
+                feedback = field.parentElement.querySelector('.invalid-feedback');
+            }
+            
+            // Si aún no existe, crear uno nuevo
+            if (!feedback) {
+                feedback = document.createElement('div');
+                feedback.className = 'invalid-feedback';
+                feedback.setAttribute('data-field-error', fieldName);
+                // Insertar después del campo
+                field.parentElement.appendChild(feedback);
+            } else {
+                // Asegurar que tenga el atributo data-field-error
+                feedback.setAttribute('data-field-error', fieldName);
+            }
+            
+            // Establecer el mensaje de error
+            feedback.textContent = errorMessage;
+            feedback.style.display = 'block';
+            
+            // Asegurar que el formulario tenga la clase was-validated para mostrar los errores
+            form.classList.add('was-validated');
+        } else {
+            console.warn(`Campo no encontrado para mostrar error: ${fieldName}`);
+            if (window.SIGVE && window.SIGVE.showNotification) {
+                window.SIGVE.showNotification(errorMessage, 'error');
+            } else {
+                alert(errorMessage);
+            }
+        }
+    }
+
+    /**
+     * Configura la funcionalidad de edición de observaciones
+     */
+    function setupObservationsEditing() {
+        if (!editObservationsBtn || !observationsDisplay || !observationsEdit) return;
+
+        editObservationsBtn.addEventListener('click', function() {
+            observationsDisplay.style.display = 'none';
+            observationsEdit.style.display = 'block';
+            const textarea = document.getElementById('observationsTextarea');
+            if (textarea) {
+                textarea.focus();
+            }
+        });
+
+        if (cancelEditObservationsBtn) {
+            cancelEditObservationsBtn.addEventListener('click', function() {
+                observationsEdit.style.display = 'none';
+                observationsDisplay.style.display = 'block';
+                // Restaurar valor original desde el display
+                const textarea = document.getElementById('observationsTextarea');
+                const displayText = observationsDisplay.querySelector('p');
+                if (textarea && displayText) {
+                    const originalText = displayText.textContent.trim();
+                    textarea.value = originalText === 'Sin observaciones' ? '' : originalText;
+                }
+            });
+        }
+
+        // Prevenir doble envío del formulario de observaciones
+        if (observationsForm) {
+            let isSubmittingObservations = false;
+            observationsForm.addEventListener('submit', function(e) {
+                if (isSubmittingObservations) {
+                    e.preventDefault();
+                    return false;
+                }
+                isSubmittingObservations = true;
+                const submitBtn = observationsForm.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+                }
+                return true;
+            });
+        }
     }
 
     // Inicializar cuando el DOM esté listo

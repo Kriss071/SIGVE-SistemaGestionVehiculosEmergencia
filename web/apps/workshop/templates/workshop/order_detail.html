@@ -90,12 +90,25 @@
                             </td>
                         </tr>
                         <tr>
-                            <th>Fecha Ingreso:</th>
-                            <td>{{ order.entry_date }}</td>
-                        </tr>
-                        <tr>
                             <th>Kilometraje:</th>
                             <td>{{ order.mileage }} km</td>
+                        </tr>
+                        <tr>
+                            <th>Fecha Ingreso:</th>
+                            <td id="entryDateDisplay" data-entry-date="{{ order.entry_date|date:'Y-m-d' }}">{{ order.entry_date }}</td>
+                        </tr>
+                        <tr id="exitDateRow" style="display: {% if order.exit_date or order.is_completed %}table-row{% else %}none{% endif %};">
+                            <th>Fecha de Salida:{% if not order.is_completed %} <span class="text-danger">*</span>{% endif %}</th>
+                            <td>
+                                {% if order.is_completed %}
+                                    {{ order.exit_date|default:"—" }}
+                                {% else %}
+                                    <input type="date" name="exit_date" id="exitDateInput" class="form-control form-control-sm" 
+                                           value="{{ order.exit_date|default:'' }}" 
+                                           data-entry-date="{{ order.entry_date|date:'Y-m-d' }}">
+                                    <small class="text-muted">Requerida para finalizar la orden</small>
+                                {% endif %}
+                            </td>
                         </tr>
                     </table>
                     {% if order.is_completed %}
@@ -115,11 +128,37 @@
 
 <!-- Observaciones -->
 <div class="card mb-4">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0"><i class="bi bi-chat-left-text"></i> Observaciones Generales</h5>
+        {% if not order.is_completed %}
+        <button type="button" class="btn btn-sm btn-outline-primary" id="editObservationsBtn">
+            <i class="bi bi-pencil"></i> Editar
+        </button>
+        {% endif %}
     </div>
     <div class="card-body">
-        <p class="mb-0">{{ order.observations|default:"Sin observaciones" }}</p>
+        <div id="observationsDisplay">
+            <p class="mb-0">{{ order.observations|default:"Sin observaciones" }}</p>
+        </div>
+        <div id="observationsEdit" style="display: none;">
+            <form method="post" action="{% url 'workshop:order_update' order.id %}" id="observationsForm">
+                {% csrf_token %}
+                <input type="hidden" name="order_status_id" value="{{ order.order_status_id }}">
+                <input type="hidden" name="maintenance_type_id" value="{{ order.maintenance_type_id }}">
+                {% if order.assigned_mechanic_id %}
+                <input type="hidden" name="assigned_mechanic_id" value="{{ order.assigned_mechanic_id }}">
+                {% endif %}
+                <textarea name="observations" class="form-control" rows="4" id="observationsTextarea">{{ order.observations|default:'' }}</textarea>
+                <div class="mt-2">
+                    <button type="submit" class="btn btn-sm btn-success">
+                        <i class="bi bi-check-lg"></i> Guardar
+                    </button>
+                    <button type="button" class="btn btn-sm btn-secondary" id="cancelEditObservationsBtn">
+                        <i class="bi bi-x-lg"></i> Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -218,20 +257,23 @@
         <h5 class="mb-0"><i class="bi bi-box-seam"></i> Agregar Repuesto a Tarea</h5>
     </div>
     <div class="card-body">
-        <form method="post" action="{% url 'workshop:part_add_to_task' order.id %}" class="row g-3">
+        <form method="post" action="{% url 'workshop:part_add_to_task' order.id %}" id="addPartToTaskForm" class="row g-3" novalidate>
             {% csrf_token %}
             <div class="col-md-4">
-                <label class="form-label">Tarea</label>
-                <select name="maintenance_task_id" class="form-select" required>
+                <label class="form-label">Tarea <span class="text-danger">*</span></label>
+                <select name="maintenance_task_id" id="id_maintenance_task_id" class="form-select" required>
                     <option value="">Selecciona una tarea</option>
                     {% for task in tasks %}
                     <option value="{{ task.id }}">{{ task.task_type.name }}</option>
                     {% endfor %}
                 </select>
+                <div class="invalid-feedback" data-field-error="maintenance_task_id">
+                    Por favor, selecciona una tarea.
+                </div>
             </div>
             <div class="col-md-5">
-                <label class="form-label">Repuesto del Inventario</label>
-                <select name="workshop_inventory_id" class="form-select" required>
+                <label class="form-label">Repuesto del Inventario <span class="text-danger">*</span></label>
+                <select name="workshop_inventory_id" id="id_workshop_inventory_id" class="form-select" required>
                     <option value="">Selecciona un repuesto</option>
                     {% for item in inventory %}
                     <option value="{{ item.id }}">
@@ -239,13 +281,19 @@
                     </option>
                     {% endfor %}
                 </select>
+                <div class="invalid-feedback" data-field-error="workshop_inventory_id">
+                    Por favor, selecciona un repuesto del inventario.
+                </div>
             </div>
             <div class="col-md-2">
-                <label class="form-label">Cantidad</label>
-                <input type="number" name="quantity_used" class="form-control" min="1" value="1" required>
+                <label class="form-label">Cantidad <span class="text-danger">*</span></label>
+                <input type="number" name="quantity_used" id="id_quantity_used" class="form-control" min="1" value="1" required>
+                <div class="invalid-feedback" data-field-error="quantity_used">
+                    Por favor, ingresa una cantidad válida (mínimo 1).
+                </div>
             </div>
             <div class="col-md-1 d-flex align-items-end">
-                <button type="submit" class="btn btn-success w-100">
+                <button type="submit" class="btn btn-success w-100" id="addPartToTaskSubmitBtn">
                     <i class="bi bi-plus"></i>
                 </button>
             </div>
@@ -262,26 +310,38 @@
                 <h5 class="modal-title">Agregar Nueva Tarea</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="post" action="{% url 'workshop:task_create' order.id %}">
+            <form method="post" action="{% url 'workshop:task_create' order.id %}" id="addTaskForm" novalidate>
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Tipo de Tarea</label>
-                        <select name="task_type_id" class="form-select" required>
+                        <label class="form-label">Tipo de Tarea <span class="text-danger">*</span></label>
+                        <select name="task_type_id" id="id_task_type_id" class="form-select" required>
                             <option value="">Selecciona un tipo</option>
                             {% for task_type in task_types %}
                             <option value="{{ task_type.id }}">{{ task_type.name }}</option>
                             {% endfor %}
                         </select>
+                        <div class="invalid-feedback" data-field-error="task_type_id">
+                            Por favor, selecciona un tipo de tarea.
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Descripción (opcional)</label>
-                        <textarea name="description" class="form-control" rows="3" 
+                        <textarea name="description" id="id_description" class="form-control" rows="3" 
                                   placeholder="Detalle adicional de la tarea..."></textarea>
+                        <div class="invalid-feedback" data-field-error="description">
+                            <!-- Los errores se mostrarán aquí dinámicamente -->
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Costo de Mano de Obra (CLP)</label>
-                        <input type="number" name="cost" class="form-control" min="0" step="0.01" value="0">
+                        <input type="number" name="cost" id="id_cost" class="form-control" min="0" step="0.01" value="0" required>
+                        <div class="invalid-feedback" data-field-error="cost">
+                            Por favor, ingresa un costo válido (mínimo 0).
+                        </div>
+                    </div>
+                    <div class="alert alert-info alert-permanent border-0" role="alert">
+                        <small><i class="bi bi-info-circle me-1"></i>Los campos marcados con <span class="text-danger">*</span> son obligatorios</small>
                     </div>
                 </div>
                 <div class="modal-footer">

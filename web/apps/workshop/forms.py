@@ -272,6 +272,10 @@ class MaintenanceTaskForm(forms.Form):
     """Formulario para crear/editar una tarea de mantención."""
     task_type_id = forms.IntegerField(
         label="Tipo de Tarea",
+        error_messages={
+            'required': 'Por favor, selecciona un tipo de tarea.',
+            'invalid': 'Por favor, selecciona un tipo de tarea válido.'
+        },
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     description = forms.CharField(
@@ -288,6 +292,12 @@ class MaintenanceTaskForm(forms.Form):
         max_digits=10,
         decimal_places=2,
         initial=0,
+        error_messages={
+            'required': 'Por favor, ingresa un costo de mano de obra.',
+            'invalid': 'Por favor, ingresa un costo válido (mínimo 0).',
+            'max_digits': 'El costo no puede exceder 10 dígitos.',
+            'max_decimal_places': 'El costo no puede tener más de 2 decimales.'
+        },
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'placeholder': '0',
@@ -301,14 +311,27 @@ class TaskPartForm(forms.Form):
     """Formulario para agregar un repuesto a una tarea."""
     maintenance_task_id = forms.IntegerField(
         label="Tarea",
+        error_messages={
+            'required': 'Por favor, selecciona una tarea.',
+            'invalid': 'Por favor, selecciona una tarea válida.'
+        },
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     workshop_inventory_id = forms.IntegerField(
         label="Repuesto",
+        error_messages={
+            'required': 'Por favor, selecciona un repuesto del inventario.',
+            'invalid': 'Por favor, selecciona un repuesto válido.'
+        },
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     quantity_used = forms.IntegerField(
         label="Cantidad",
+        error_messages={
+            'required': 'Por favor, ingresa una cantidad.',
+            'invalid': 'Por favor, ingresa una cantidad válida (mínimo 1).',
+            'min_value': 'La cantidad debe ser mayor o igual a 1.'
+        },
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'placeholder': '1',

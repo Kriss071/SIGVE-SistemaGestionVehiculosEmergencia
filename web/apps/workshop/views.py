@@ -460,10 +460,37 @@ def order_update(request, order_id):
         data['maintenance_type_id'] = int(request.POST.get('maintenance_type_id'))
     if request.POST.get('assigned_mechanic_id'):
         data['assigned_mechanic_id'] = request.POST.get('assigned_mechanic_id')
-    if request.POST.get('exit_date'):
-        data['exit_date'] = request.POST.get('exit_date')
-    if request.POST.get('observations'):
-        data['observations'] = request.POST.get('observations')
+    # Manejar exit_date: solo incluir si se envía (puede estar vacío)
+    exit_date_value = request.POST.get('exit_date', '').strip()
+    if exit_date_value:
+        data['exit_date'] = exit_date_value
+    # Si se envía vacío explícitamente y no hay order_status_id, no incluir en data
+    # (para permitir actualizar solo observaciones sin afectar exit_date)
+    
+    if request.POST.get('observations') is not None:
+        data['observations'] = request.POST.get('observations', '')
+    
+    # Validar que si se cambia a estado de finalización, se requiera fecha de salida
+    if data.get('order_status_id'):
+        order_statuses = VehicleService.get_order_statuses()
+        selected_status = next((s for s in order_statuses if s['id'] == data['order_status_id']), None)
+        if selected_status and OrderService.is_completion_status(selected_status.get('name', '')):
+            if not data.get('exit_date'):
+                messages.error(request, '❌ Para finalizar la orden, debe ingresar la fecha de salida.')
+                return redirect('workshop:order_detail', order_id=order_id)
+            
+            # Validar que la fecha de salida no sea anterior a la fecha de ingreso
+            from datetime import datetime
+            try:
+                exit_date = datetime.strptime(data['exit_date'], '%Y-%m-%d').date()
+                entry_date = datetime.strptime(order['entry_date'], '%Y-%m-%d').date() if isinstance(order['entry_date'], str) else order['entry_date']
+                if exit_date < entry_date:
+                    messages.error(request, '❌ La fecha de salida no puede ser anterior a la fecha de ingreso.')
+                    return redirect('workshop:order_detail', order_id=order_id)
+            except (ValueError, KeyError) as e:
+                logger.error(f"Error validando fechas: {e}")
+                messages.error(request, '❌ Error al validar las fechas. Por favor, verifique los datos.')
+                return redirect('workshop:order_detail', order_id=order_id)
     
     success = OrderService.update_order(order_id, workshop_id, data, user_id)
     
