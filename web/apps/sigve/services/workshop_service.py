@@ -79,6 +79,10 @@ class WorkshopService(SigveBaseService):
         
         # Mapeo de campos y sus mensajes de error
         field_mapping = {
+            'name': {
+                'keywords': ['name', 'nombre'],
+                'message': 'Este nombre de taller ya está registrado.'
+            },
             'phone': {
                 'keywords': ['phone', 'teléfono', 'telefono'],
                 'message': 'Este número de teléfono ya está registrado en otro taller.'
@@ -111,7 +115,9 @@ class WorkshopService(SigveBaseService):
             if constraint_match:
                 constraint_name = constraint_match.group(1).lower()
                 # Mapear nombres de constraints comunes
-                if 'phone' in constraint_name:
+                if 'name' in constraint_name:
+                    return {'field': 'name', 'message': field_mapping['name']['message']}
+                elif 'phone' in constraint_name:
                     return {'field': 'phone', 'message': field_mapping['phone']['message']}
                 elif 'email' in constraint_name:
                     return {'field': 'email', 'message': field_mapping['email']['message']}
@@ -140,6 +146,15 @@ class WorkshopService(SigveBaseService):
         """
         client = SigveBaseService.get_client()
         errors = {}
+        
+        # Verificar nombre duplicado
+        if data.get('name'):
+            query = client.table("workshop").select("id, name").eq("name", data['name'])
+            if exclude_id:
+                query = query.neq("id", exclude_id)
+            existing = query.execute()
+            if existing.data and len(existing.data) > 0:
+                errors['name'] = 'Este nombre de taller ya está registrado.'
         
         # Verificar teléfono duplicado
         if data.get('phone'):
