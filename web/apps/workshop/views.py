@@ -132,18 +132,52 @@ def vehicle_create_api(request):
     form = VehicleCreateForm(request.POST)
     
     if not form.is_valid():
+        # Convertir errores de formulario a formato consistente
+        errors = {}
+        for field, field_errors in form.errors.items():
+            if isinstance(field_errors, list):
+                errors[field] = field_errors
+            else:
+                errors[field] = [str(field_errors)]
+        
         return JsonResponse({
             'success': False,
-            'errors': form.errors
+            'errors': errors
         }, status=400)
     
-    vehicle_data = form.cleaned_data
-    vehicle = VehicleService.create_vehicle(vehicle_data)
+    vehicle_data = form.cleaned_data.copy()
+    
+    # Convertir campos opcionales vacíos a None (VIN y engine_number ahora son obligatorios)
+    optional_fields = ['fuel_type_id', 'transmission_type_id']
+    for field in optional_fields:
+        if field in vehicle_data and (vehicle_data[field] == '' or vehicle_data[field] is None):
+            vehicle_data[field] = None
+    
+    # Asegurar que engine_number y vin no sean None (ya están validados en el formulario)
+    if 'engine_number' in vehicle_data:
+        vehicle_data['engine_number'] = vehicle_data['engine_number'].strip() if vehicle_data['engine_number'] else None
+    if 'vin' in vehicle_data:
+        vehicle_data['vin'] = vehicle_data['vin'].strip() if vehicle_data['vin'] else None
+    
+    vehicle, duplicate_errors = VehicleService.create_vehicle(vehicle_data)
+    
+    if duplicate_errors:
+        # Convertir errores de duplicación a formato de arrays
+        errors = {}
+        for field, error_msg in duplicate_errors.items():
+            errors[field] = [error_msg] if isinstance(error_msg, str) else error_msg
+        
+        return JsonResponse({
+            'success': False,
+            'errors': errors
+        }, status=400)
     
     if not vehicle:
         return JsonResponse({
             'success': False,
-            'error': 'No se pudo crear el vehículo. Inténtalo nuevamente.'
+            'errors': {
+                'general': ['No se pudo crear el vehículo. Inténtalo nuevamente.']
+            }
         }, status=500)
     
     # Obtener datos completos del vehículo recién creado (incluye estado)
@@ -173,9 +207,17 @@ def order_create_api(request):
     form = MaintenanceOrderForm(request.POST)
     
     if not form.is_valid():
+        # Convertir errores de formulario a formato consistente
+        errors = {}
+        for field, field_errors in form.errors.items():
+            if isinstance(field_errors, list):
+                errors[field] = field_errors
+            else:
+                errors[field] = [str(field_errors)]
+        
         return JsonResponse({
             'success': False,
-            'errors': form.errors
+            'errors': errors
         }, status=400)
     
     cleaned = form.cleaned_data
@@ -183,7 +225,9 @@ def order_create_api(request):
     if OrderService.has_active_order(cleaned['vehicle_id']):
         return JsonResponse({
             'success': False,
-            'error': 'El vehículo seleccionado ya cuenta con una orden activa en el taller.'
+            'errors': {
+                'vehicle_id': ['El vehículo seleccionado ya cuenta con una orden activa en el taller.']
+            }
         }, status=400)
     
     order_data = {
@@ -201,7 +245,7 @@ def order_create_api(request):
     if not order:
         return JsonResponse({
             'success': False,
-                'error': 'No se pudo crear la orden de mantención. Inténtalo nuevamente.'
+            'error': 'No se pudo crear la orden de mantención. Inténtalo nuevamente.'
         }, status=500)
     
     return JsonResponse({

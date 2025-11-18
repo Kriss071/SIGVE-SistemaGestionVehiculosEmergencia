@@ -6,6 +6,10 @@ class VehicleSearchForm(forms.Form):
     license_plate = forms.CharField(
         max_length=20,
         label="Patente",
+        error_messages={
+            'required': 'Por favor, ingresa una patente para buscar.',
+            'max_length': 'La patente no puede exceder 20 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: ABCD12',
@@ -19,6 +23,10 @@ class VehicleCreateForm(forms.Form):
     license_plate = forms.CharField(
         max_length=20,
         label="Patente",
+        error_messages={
+            'required': 'Por favor, ingresa una patente.',
+            'max_length': 'La patente no puede exceder 20 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: ABCD12'
@@ -27,6 +35,10 @@ class VehicleCreateForm(forms.Form):
     brand = forms.CharField(
         max_length=100,
         label="Marca",
+        error_messages={
+            'required': 'Por favor, ingresa la marca del vehículo.',
+            'max_length': 'La marca no puede exceder 100 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: Mercedes-Benz'
@@ -35,6 +47,10 @@ class VehicleCreateForm(forms.Form):
     model = forms.CharField(
         max_length=100,
         label="Modelo",
+        error_messages={
+            'required': 'Por favor, ingresa el modelo del vehículo.',
+            'max_length': 'El modelo no puede exceder 100 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: Atego 1725'
@@ -42,6 +58,12 @@ class VehicleCreateForm(forms.Form):
     )
     year = forms.IntegerField(
         label="Año",
+        error_messages={
+            'required': 'Por favor, ingresa el año del vehículo.',
+            'invalid': 'Por favor, ingresa un año válido (entre 1900 y 2100).',
+            'min_value': 'El año debe ser mayor o igual a 1900.',
+            'max_value': 'El año debe ser menor o igual a 2100.'
+        },
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: 2020',
@@ -51,16 +73,27 @@ class VehicleCreateForm(forms.Form):
     )
     fire_station_id = forms.IntegerField(
         label="Cuartel",
+        error_messages={
+            'required': 'Por favor, selecciona un cuartel.',
+            'invalid': 'Por favor, selecciona un cuartel válido.'
+        },
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     vehicle_type_id = forms.IntegerField(
         label="Tipo de Vehículo",
+        error_messages={
+            'required': 'Por favor, selecciona un tipo de vehículo.',
+            'invalid': 'Por favor, selecciona un tipo de vehículo válido.'
+        },
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     engine_number = forms.CharField(
         max_length=100,
         label="Número de Motor",
-        required=False,
+        error_messages={
+            'required': 'Por favor, ingresa el número de motor.',
+            'max_length': 'El número de motor no puede exceder 100 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Número de motor'
@@ -69,7 +102,10 @@ class VehicleCreateForm(forms.Form):
     vin = forms.CharField(
         max_length=100,
         label="VIN / Chasis",
-        required=False,
+        error_messages={
+            'required': 'Por favor, ingresa el número de chasis (VIN).',
+            'max_length': 'El número de chasis (VIN) no puede exceder 100 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Número de chasis'
@@ -85,16 +121,54 @@ class VehicleCreateForm(forms.Form):
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+    
+    def clean_license_plate(self):
+        """Valida y normaliza la patente."""
+        value = (self.cleaned_data.get('license_plate') or '').strip().upper()
+        if not value:
+            raise forms.ValidationError('Por favor, ingresa una patente.')
+        # Permitir letras, números y guiones, largo razonable
+        import re
+        if not re.fullmatch(r'[A-Z0-9\-]{4,20}', value):
+            raise forms.ValidationError('La patente debe contener 4 a 20 caracteres alfanuméricos o guiones.')
+        return value
+    
+    def clean_engine_number(self):
+        """Valida y normaliza el número de motor."""
+        value = (self.cleaned_data.get('engine_number') or '').strip()
+        if not value:
+            raise forms.ValidationError('Por favor, ingresa el número de motor.')
+        if len(value) > 100:
+            raise forms.ValidationError('El número de motor no puede exceder 100 caracteres.')
+        return value
+    
+    def clean_vin(self):
+        """Valida y normaliza el VIN."""
+        value = (self.cleaned_data.get('vin') or '').strip()
+        if not value:
+            raise forms.ValidationError('Por favor, ingresa el número de chasis (VIN).')
+        if len(value) > 100:
+            raise forms.ValidationError('El número de chasis (VIN) no puede exceder 100 caracteres.')
+        return value
 
 
 class MaintenanceOrderForm(forms.Form):
     """Formulario para crear/editar una orden de mantención."""
     vehicle_id = forms.IntegerField(
         label="Vehículo",
+        error_messages={
+            'required': 'Debe seleccionarse un vehículo.',
+            'invalid': 'El vehículo seleccionado no es válido.'
+        },
         widget=forms.HiddenInput()
     )
     mileage = forms.IntegerField(
         label="Kilometraje de Ingreso",
+        error_messages={
+            'required': 'Por favor, ingresa el kilometraje de ingreso.',
+            'invalid': 'Por favor, ingresa un kilometraje válido (número entero mayor o igual a 0).',
+            'min_value': 'El kilometraje no puede ser negativo.'
+        },
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: 50000',
@@ -103,10 +177,18 @@ class MaintenanceOrderForm(forms.Form):
     )
     maintenance_type_id = forms.IntegerField(
         label="Tipo de Mantención",
+        error_messages={
+            'required': 'Por favor, selecciona un tipo de mantención.',
+            'invalid': 'Por favor, selecciona un tipo de mantención válido.'
+        },
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     order_status_id = forms.IntegerField(
         label="Estado de la Orden",
+        error_messages={
+            'required': 'Por favor, selecciona un estado para la orden.',
+            'invalid': 'Por favor, selecciona un estado válido.'
+        },
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     assigned_mechanic_id = forms.CharField(
@@ -116,6 +198,10 @@ class MaintenanceOrderForm(forms.Form):
     )
     entry_date = forms.DateField(
         label="Fecha de Ingreso",
+        error_messages={
+            'required': 'Por favor, selecciona una fecha de ingreso.',
+            'invalid': 'Por favor, ingresa una fecha válida.'
+        },
         widget=forms.DateInput(attrs={
             'class': 'form-control',
             'type': 'date'
@@ -138,6 +224,22 @@ class MaintenanceOrderForm(forms.Form):
             'placeholder': 'Notas generales sobre la orden...'
         })
     )
+    
+    def clean_mileage(self):
+        """Valida que el kilometraje sea válido."""
+        mileage = self.cleaned_data.get('mileage')
+        if mileage is not None and mileage < 0:
+            raise forms.ValidationError('El kilometraje no puede ser negativo.')
+        return mileage
+    
+    def clean_entry_date(self):
+        """Valida que la fecha de ingreso sea válida."""
+        entry_date = self.cleaned_data.get('entry_date')
+        if entry_date:
+            from datetime import date
+            if entry_date > date.today():
+                raise forms.ValidationError('La fecha de ingreso no puede ser futura.')
+        return entry_date
 
 
 class MaintenanceTaskForm(forms.Form):

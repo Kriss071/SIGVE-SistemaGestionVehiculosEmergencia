@@ -111,6 +111,8 @@
                 populateSelect('selectStatus', data.order_statuses);
                 populateSelect('selectVehicleType', data.vehicle_catalog_data.vehicle_types);
                 populateSelect('selectFireStation', data.fire_stations);
+                populateSelect('selectFuelType', data.vehicle_catalog_data.fuel_types, true);
+                populateSelect('selectTransmissionType', data.vehicle_catalog_data.transmission_types, true);
 
                 // Setear fecha de hoy
                 document.getElementById('orderEntryDate').valueAsDate = new Date();
@@ -363,13 +365,233 @@
         }
 
         /**
+         * Limpia todos los errores del formulario
+         */
+        function clearFormErrors(formElement) {
+            if (!formElement) return;
+            
+            // Remover clases de error de Bootstrap
+            formElement.querySelectorAll('.is-invalid').forEach(field => {
+                field.classList.remove('is-invalid');
+            });
+            
+            // Limpiar mensajes de error dinámicos
+            formElement.querySelectorAll('.invalid-feedback[data-field-error]').forEach(feedback => {
+                feedback.remove();
+            });
+        }
+        
+        /**
+         * Muestra un error en un campo específico del formulario
+         * @param {string} fieldName - Nombre del campo
+         * @param {string} errorMessage - Mensaje de error a mostrar
+         * @param {HTMLElement} formElement - Formulario al que pertenece el campo
+         */
+        function showFieldError(fieldName, errorMessage, formElement) {
+            if (!formElement) return;
+            
+            const field = formElement.querySelector(`[name="${fieldName}"]`);
+            if (!field) return;
+            
+            // Agregar clase de error
+            field.classList.add('is-invalid');
+            
+            // Crear o actualizar mensaje de error
+            let feedback = formElement.querySelector(`.invalid-feedback[data-field-error="${fieldName}"]`);
+            if (!feedback) {
+                feedback = document.createElement('div');
+                feedback.className = 'invalid-feedback';
+                feedback.setAttribute('data-field-error', fieldName);
+                
+                // Insertar después del campo
+                const parent = field.closest('.mb-3') || field.parentElement;
+                if (parent) {
+                    parent.appendChild(feedback);
+                }
+            }
+            
+            feedback.textContent = errorMessage;
+        }
+        
+        /**
+         * Valida el formulario de vehículo y muestra errores en español
+         * @returns {boolean} true si el formulario es válido, false en caso contrario
+         */
+        function validateVehicleForm() {
+            clearFormErrors(vehicleForm);
+            
+            let isValid = true;
+            const requiredFields = vehicleForm.querySelectorAll('[required]');
+            
+            // Mensajes de error en español para campos requeridos
+            const errorMessages = {
+                'license_plate': 'Por favor, ingresa una patente.',
+                'brand': 'Por favor, ingresa la marca del vehículo.',
+                'model': 'Por favor, ingresa el modelo del vehículo.',
+                'year': 'Por favor, ingresa el año del vehículo.',
+                'fire_station_id': 'Por favor, selecciona un cuartel.',
+                'vehicle_type_id': 'Por favor, selecciona un tipo de vehículo.',
+                'engine_number': 'Por favor, ingresa el número de motor.',
+                'vin': 'Por favor, ingresa el número de chasis (VIN).'
+            };
+            
+            requiredFields.forEach(field => {
+                const fieldName = field.name;
+                const fieldValue = field.value.trim();
+                
+                // Para select, verificar que tenga un valor seleccionado
+                if (field.tagName === 'SELECT') {
+                    if (!fieldValue || fieldValue === '') {
+                        isValid = false;
+                        field.classList.add('is-invalid');
+                        const errorMsg = errorMessages[fieldName] || 'Este campo es obligatorio.';
+                        showFieldError(fieldName, errorMsg, vehicleForm);
+                    }
+                } else if (!fieldValue) {
+                    isValid = false;
+                    field.classList.add('is-invalid');
+                    const errorMsg = errorMessages[fieldName] || 'Este campo es obligatorio.';
+                    showFieldError(fieldName, errorMsg, vehicleForm);
+                }
+            });
+            
+            // Validar año si está presente
+            const yearField = vehicleForm.querySelector('[name="year"]');
+            if (yearField && yearField.value) {
+                const year = parseInt(yearField.value);
+                if (isNaN(year) || year < 1900 || year > 2100) {
+                    isValid = false;
+                    yearField.classList.add('is-invalid');
+                    showFieldError('year', 'Por favor, ingresa un año válido (entre 1900 y 2100).', vehicleForm);
+                }
+            }
+            
+            // Validar formato de patente
+            const licensePlateField = vehicleForm.querySelector('[name="license_plate"]');
+            if (licensePlateField && licensePlateField.value) {
+                const plate = licensePlateField.value.trim().toUpperCase();
+                const plateRegex = /^[A-Z0-9\-]{4,20}$/;
+                if (!plateRegex.test(plate)) {
+                    isValid = false;
+                    licensePlateField.classList.add('is-invalid');
+                    showFieldError('license_plate', 'La patente debe contener 4 a 20 caracteres alfanuméricos o guiones.', vehicleForm);
+                }
+            }
+            
+            // Validar longitud de engine_number
+            const engineNumberField = vehicleForm.querySelector('[name="engine_number"]');
+            if (engineNumberField && engineNumberField.value) {
+                const engineNumber = engineNumberField.value.trim();
+                if (engineNumber.length > 100) {
+                    isValid = false;
+                    engineNumberField.classList.add('is-invalid');
+                    showFieldError('engine_number', 'El número de motor no puede exceder 100 caracteres.', vehicleForm);
+                }
+            }
+            
+            // Validar longitud de VIN
+            const vinField = vehicleForm.querySelector('[name="vin"]');
+            if (vinField && vinField.value) {
+                const vin = vinField.value.trim();
+                if (vin.length > 100) {
+                    isValid = false;
+                    vinField.classList.add('is-invalid');
+                    showFieldError('vin', 'El número de chasis (VIN) no puede exceder 100 caracteres.', vehicleForm);
+                }
+            }
+            
+            if (!isValid) {
+                SIGVE.showNotification('Por favor, completa todos los campos obligatorios del vehículo correctamente.', 'error');
+            }
+            
+            return isValid;
+        }
+        
+        /**
+         * Valida el formulario de orden y muestra errores en español
+         * @returns {boolean} true si el formulario es válido, false en caso contrario
+         */
+        function validateOrderForm() {
+            clearFormErrors(orderForm);
+            
+            let isValid = true;
+            const requiredFields = orderForm.querySelectorAll('[required]');
+            
+            // Mensajes de error en español para campos requeridos
+            const errorMessages = {
+                'vehicle_id': 'Debe seleccionarse un vehículo.',
+                'mileage': 'Por favor, ingresa el kilometraje de ingreso.',
+                'maintenance_type_id': 'Por favor, selecciona un tipo de mantención.',
+                'order_status_id': 'Por favor, selecciona un estado para la orden.',
+                'entry_date': 'Por favor, selecciona una fecha de ingreso.'
+            };
+            
+            requiredFields.forEach(field => {
+                const fieldName = field.name;
+                const fieldValue = field.value.trim();
+                
+                // Para select, verificar que tenga un valor seleccionado
+                if (field.tagName === 'SELECT') {
+                    if (!fieldValue || fieldValue === '') {
+                        isValid = false;
+                        field.classList.add('is-invalid');
+                        const errorMsg = errorMessages[fieldName] || 'Este campo es obligatorio.';
+                        showFieldError(fieldName, errorMsg, orderForm);
+                    }
+                } else if (field.type === 'hidden') {
+                    // Para campos ocultos, verificar que tengan valor
+                    if (!fieldValue) {
+                        isValid = false;
+                        const errorMsg = errorMessages[fieldName] || 'Este campo es obligatorio.';
+                        SIGVE.showNotification(errorMsg, 'error');
+                    }
+                } else if (!fieldValue) {
+                    isValid = false;
+                    field.classList.add('is-invalid');
+                    const errorMsg = errorMessages[fieldName] || 'Este campo es obligatorio.';
+                    showFieldError(fieldName, errorMsg, orderForm);
+                }
+            });
+            
+            // Validar kilometraje si está presente
+            const mileageField = orderForm.querySelector('[name="mileage"]');
+            if (mileageField && mileageField.value) {
+                const mileage = parseInt(mileageField.value);
+                if (isNaN(mileage) || mileage < 0) {
+                    isValid = false;
+                    mileageField.classList.add('is-invalid');
+                    showFieldError('mileage', 'El kilometraje debe ser un número mayor o igual a 0.', orderForm);
+                }
+            }
+            
+            // Validar fecha de ingreso
+            const entryDateField = orderForm.querySelector('[name="entry_date"]');
+            if (entryDateField && entryDateField.value) {
+                const entryDate = new Date(entryDateField.value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (entryDate > today) {
+                    isValid = false;
+                    entryDateField.classList.add('is-invalid');
+                    showFieldError('entry_date', 'La fecha de ingreso no puede ser futura.', orderForm);
+                }
+            }
+            
+            if (!isValid) {
+                SIGVE.showNotification('Por favor, completa todos los campos obligatorios de la orden correctamente.', 'error');
+            }
+            
+            return isValid;
+        }
+        
+        /**
          * Envía el formulario de NUEVO VEHÍCULO
          */
         async function handleSubmitVehicle(e) {
             const submitBtn = e.target;
-            if (!vehicleForm.checkValidity()) {
-                vehicleForm.classList.add('was-validated');
-                SIGVE.showNotification('Por favor completa los campos obligatorios del vehículo.', 'warning');
+            
+            // Validar formulario manualmente para mostrar mensajes en español
+            if (!validateVehicleForm()) {
                 return;
             }
             
@@ -388,13 +610,29 @@
                     SIGVE.showNotification('Vehículo registrado. Ahora crea la orden.', 'success');
                     selectVehicle(data.vehicle); // ¡Pasa al siguiente paso!
                 } else {
-                    const error = data.errors
-                        ? Object.values(data.errors)[0][0]
-                        : (data.error || 'Error desconocido');
-                    SIGVE.showNotification(error, 'error');
+                    // Limpiar errores previos
+                    clearFormErrors(vehicleForm);
+                    
+                    // Mostrar errores del servidor
+                    if (data.errors) {
+                        // Errores de validación por campo
+                        for (const [field, errors] of Object.entries(data.errors)) {
+                            if (Array.isArray(errors) && errors.length > 0) {
+                                const errorMessage = errors[0];
+                                if (field === 'general' || field === '__all__') {
+                                    SIGVE.showNotification(errorMessage, 'error');
+                                } else {
+                                    showFieldError(field, errorMessage, vehicleForm);
+                                }
+                            }
+                        }
+                    } else {
+                        const error = data.error || 'Error desconocido al crear el vehículo.';
+                        SIGVE.showNotification(error, 'error');
+                    }
                 }
             } catch (error) {
-                SIGVE.showNotification('Error de red al crear vehículo', 'error');
+                SIGVE.showNotification('Error de red al crear vehículo. Verifica tu conexión.', 'error');
             } finally {
                 SIGVE.hideButtonLoading(submitBtn);
             }
@@ -405,9 +643,9 @@
          */
         async function handleSubmitOrder(e) {
             const submitBtn = e.target;
-            if (!orderForm.checkValidity()) {
-                orderForm.classList.add('was-validated');
-                SIGVE.showNotification('Por favor completa los campos obligatorios de la orden.', 'warning');
+            
+            // Validar formulario manualmente para mostrar mensajes en español
+            if (!validateOrderForm()) {
                 return;
             }
 
@@ -432,13 +670,29 @@
                     }
                     window.location.href = `/taller/orders/${data.order.id}/`;
                 } else {
-                    const error = data.errors
-                        ? Object.values(data.errors)[0][0]
-                        : (data.error || 'Error desconocido');
-                    SIGVE.showNotification(error, 'error');
+                    // Limpiar errores previos
+                    clearFormErrors(orderForm);
+                    
+                    // Mostrar errores del servidor
+                    if (data.errors) {
+                        // Errores de validación por campo
+                        for (const [field, errors] of Object.entries(data.errors)) {
+                            if (Array.isArray(errors) && errors.length > 0) {
+                                const errorMessage = errors[0];
+                                if (field === 'general' || field === '__all__') {
+                                    SIGVE.showNotification(errorMessage, 'error');
+                                } else {
+                                    showFieldError(field, errorMessage, orderForm);
+                                }
+                            }
+                        }
+                    } else {
+                        const error = data.error || 'Error desconocido al crear la orden.';
+                        SIGVE.showNotification(error, 'error');
+                    }
                 }
             } catch (error) {
-                SIGVE.showNotification('Error de red al crear la orden', 'error');
+                SIGVE.showNotification('Error de red al crear la orden. Verifica tu conexión.', 'error');
             } finally {
                 SIGVE.hideButtonLoading(submitBtn);
             }
@@ -457,6 +711,11 @@
             vehicleForm.reset();
             orderForm.classList.remove('was-validated');
             vehicleForm.classList.remove('was-validated');
+            
+            // Limpiar errores de validación
+            clearFormErrors(orderForm);
+            clearFormErrors(vehicleForm);
+            
             searchInput.value = '';
             searchResultsList.innerHTML = '';
             searchResultsContainer.style.display = 'none';

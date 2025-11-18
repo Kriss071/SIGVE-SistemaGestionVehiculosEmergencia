@@ -112,7 +112,7 @@
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">Año <span class="text-danger">*</span></label>
-                                    <input type="number" name="year" class="form-control" required>
+                                    <input type="number" name="year" class="form-control" min="1900" max="2100" placeholder="Ej: 2020" required>
                                 </div>
                             </div>
                             
@@ -126,6 +126,32 @@
                                     <label class="form-label">Cuartel <span class="text-danger">*</span></label>
                                     <select name="fire_station_id" id="selectFireStation" class="form-select" required>
                                         </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Número de Motor <span class="text-danger">*</span></label>
+                                    <input type="text" name="engine_number" class="form-control" placeholder="Número de motor" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">VIN / Chasis <span class="text-danger">*</span></label>
+                                    <input type="text" name="vin" class="form-control" placeholder="Número de chasis" required>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Tipo de Combustible</label>
+                                    <select name="fuel_type_id" id="selectFuelType" class="form-select">
+                                        <option value="">Seleccionar...</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Tipo de Transmisión</label>
+                                    <select name="transmission_type_id" id="selectTransmissionType" class="form-select">
+                                        <option value="">Seleccionar...</option>
+                                    </select>
                                 </div>
                             </div>
 
