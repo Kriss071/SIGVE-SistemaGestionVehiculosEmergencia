@@ -92,11 +92,19 @@ class FireStationForm(forms.Form):
     name = forms.CharField(
         max_length=255,
         label="Nombre del Cuartel",
+        error_messages={
+            'required': 'Por favor, ingresa un nombre para el cuartel.',
+            'max_length': 'El nombre del cuartel no puede exceder 255 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Primera Compañía'})
     )
     address = forms.CharField(
         max_length=255,
         label="Dirección",
+        error_messages={
+            'required': 'Por favor, ingresa una dirección.',
+            'max_length': 'La dirección no puede exceder 255 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control', 
             'placeholder': 'Ej: Calle Bomberos 456, Santiago, Chile',
@@ -107,16 +115,30 @@ class FireStationForm(forms.Form):
         max_digits=10,
         decimal_places=8,
         required=False,
+        error_messages={
+            'invalid': 'La latitud debe ser un número válido.',
+            'max_digits': 'La latitud no puede tener más de 10 dígitos.',
+            'max_decimal_places': 'La latitud no puede tener más de 8 decimales.'
+        },
         widget=forms.HiddenInput(attrs={'id': 'fire-station-latitude'})
     )
     longitude = forms.DecimalField(
         max_digits=11,
         decimal_places=8,
         required=False,
+        error_messages={
+            'invalid': 'La longitud debe ser un número válido.',
+            'max_digits': 'La longitud no puede tener más de 11 dígitos.',
+            'max_decimal_places': 'La longitud no puede tener más de 8 decimales.'
+        },
         widget=forms.HiddenInput(attrs={'id': 'fire-station-longitude'})
     )
     commune_id = forms.IntegerField(
         label="Comuna",
+        error_messages={
+            'required': 'Por favor, selecciona una comuna.',
+            'invalid': 'Por favor, selecciona una comuna válida.'
+        },
         widget=forms.Select(attrs={'class': 'form-select'})
     )
 

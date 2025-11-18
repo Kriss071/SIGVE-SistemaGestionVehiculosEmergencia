@@ -346,6 +346,7 @@ def fire_stations_list(request):
 @require_role("Admin SIGVE")
 def fire_station_create(request):
     """Crear un nuevo cuartel."""
+    logger.info("📥 Ingreso a la vista fire_station_create - método: %s", request.method)
     communes = FireStationService.get_all_communes()
     
     if request.method == 'POST':
@@ -353,7 +354,12 @@ def fire_station_create(request):
         source = request.POST.get('source', 'list')
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         
+        logger.debug("Datos POST recibidos: %s", request.POST)
+        logger.debug("Origen (source): %s | Es AJAX: %s", source, is_ajax)
+        
         if form.is_valid():
+            logger.info("✅ Formulario válido, preparando datos para creación de cuartel.")
+            
             data = {
                 'name': form.cleaned_data['name'],
                 'address': form.cleaned_data['address'],
@@ -362,24 +368,51 @@ def fire_station_create(request):
                 'longitude': float(form.cleaned_data['longitude']) if form.cleaned_data.get('longitude') else None
             }
             
-            fire_station = FireStationService.create_fire_station(data)
+            logger.debug("Datos limpios del formulario: %s", data)
+            
+            fire_station, duplicate_errors = FireStationService.create_fire_station(data)
+            logger.info("Resultado de FireStationService.create_fire_station: fire_station=%s, errors=%s", fire_station, duplicate_errors)
             
             if fire_station:
                 message = f'✅ Cuartel "{data["name"]}" creado correctamente.'
                 if is_ajax:
+                    logger.debug("Petición AJAX — devolviendo JsonResponse de éxito.")
                     messages.success(request, message)
                     return JsonResponse({
                         'success': True,
                         'reload_page': True
                     })
                 
+                logger.info("Petición normal — redirigiendo a lista de cuarteles.")
                 messages.success(request, message)
                 return redirect('sigve:fire_stations_list')
             else:
-                if is_ajax:
-                    return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el cuartel.']}})
-                messages.error(request, '❌ Error al crear el cuartel.')
+                logger.error("❌ Error al crear cuartel en FireStationService.")
+                # Si hay errores de duplicación, agregarlos al formulario
+                if duplicate_errors:
+                    for field, error_msg in duplicate_errors.items():
+                        if field == 'general':
+                            # Si es un error general, agregarlo como error no asociado a un campo
+                            form.add_error(None, error_msg if isinstance(error_msg, str) else error_msg[0])
+                        else:
+                            form.add_error(field, error_msg if isinstance(error_msg, str) else error_msg[0])
+                    
+                    # Manejar errores del formulario
+                    response = handle_form_errors(
+                        request,
+                        form,
+                        is_ajax,
+                        message='⚠️ Corrige los errores del formulario para crear el cuartel.'
+                    )
+                    if response:
+                        return response
+                else:
+                    # Error genérico
+                    if is_ajax:
+                        return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el cuartel.']}})
+                    messages.error(request, '❌ Error al crear el cuartel.')
         else:
+            logger.warning("⚠️ Formulario inválido: %s", form.errors)
             response = handle_form_errors(
                 request,
                 form,
@@ -389,6 +422,7 @@ def fire_station_create(request):
             if response:
                 return response
     else:
+        logger.info("📝 Petición GET — mostrando formulario vacío.")
         form = FireStationForm()
     
     context = {
@@ -398,6 +432,7 @@ def fire_station_create(request):
         'communes': communes
     }
     
+    logger.debug("Renderizando plantilla 'sigve/fire_station_form.html' con contexto: %s", context.keys())
     return render(request, 'sigve/fire_station_form.html', context)
 
 
@@ -428,9 +463,10 @@ def fire_station_edit(request, fire_station_id):
                 'longitude': float(form.cleaned_data['longitude']) if form.cleaned_data.get('longitude') else None
             }
             
-            success = FireStationService.update_fire_station(fire_station_id, data)
+            success, duplicate_errors = FireStationService.update_fire_station(fire_station_id, data)
             
             if success:
+                # Si viene del dashboard y es AJAX, devolver JSON (sin redirección)
                 if is_ajax:
                     messages.success(request, '✅ Cuartel actualizado correctamente.')
                     return JsonResponse({
@@ -438,12 +474,33 @@ def fire_station_edit(request, fire_station_id):
                         'reload_page': True
                     })
                 
+                # Si viene de la lista o no es AJAX, redirigir normalmente
                 messages.success(request, '✅ Cuartel actualizado correctamente.')
                 return redirect('sigve:fire_stations_list')
             else:
-                if is_ajax:
-                    return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el cuartel.']}})
-                messages.error(request, '❌ Error al actualizar el cuartel.')
+                # Si hay errores de duplicación, agregarlos al formulario
+                if duplicate_errors:
+                    for field, error_msg in duplicate_errors.items():
+                        if field == 'general':
+                            # Si es un error general, agregarlo como error no asociado a un campo
+                            form.add_error(None, error_msg if isinstance(error_msg, str) else error_msg[0])
+                        else:
+                            form.add_error(field, error_msg if isinstance(error_msg, str) else error_msg[0])
+                    
+                    # Manejar errores del formulario
+                    response = handle_form_errors(
+                        request,
+                        form,
+                        is_ajax,
+                        message='⚠️ Corrige los errores del formulario para actualizar el cuartel.'
+                    )
+                    if response:
+                        return response
+                else:
+                    # Error genérico
+                    if is_ajax:
+                        return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el cuartel.']}})
+                    messages.error(request, '❌ Error al actualizar el cuartel.')
         else:
             response = handle_form_errors(
                 request,

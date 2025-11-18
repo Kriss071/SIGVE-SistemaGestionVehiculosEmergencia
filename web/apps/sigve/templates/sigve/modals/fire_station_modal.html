@@ -31,8 +31,8 @@
                                placeholder="Ej: Primera Compañía"
                                required>
                         <small class="text-muted">Nombre oficial del cuartel de bomberos</small>
-                        <div class="invalid-feedback">
-                            Por favor, ingresa un nombre.
+                        <div class="invalid-feedback" data-field-error="name">
+                            Por favor, ingresa un nombre para el cuartel.
                         </div>
                     </div>
                     
@@ -45,7 +45,7 @@
                                placeholder="Ej: Calle Bomberos 456, Santiago, Chile"
                                required>
                         <small class="text-muted">Dirección completa del cuartel (incluye comuna y ciudad para mejor precisión)</small>
-                        <div class="invalid-feedback">
+                        <div class="invalid-feedback" data-field-error="address">
                             Por favor, ingresa una dirección.
                         </div>
                         <!-- Campos ocultos para coordenadas -->
@@ -62,7 +62,7 @@
                             {% endfor %}
                         </select>
                         <small class="text-muted">Comuna donde se ubica el cuartel</small>
-                        <div class="invalid-feedback">
+                        <div class="invalid-feedback" data-field-error="commune_id">
                             Por favor, selecciona una comuna.
                         </div>
                     </div>
