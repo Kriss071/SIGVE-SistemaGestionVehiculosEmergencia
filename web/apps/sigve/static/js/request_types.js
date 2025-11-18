@@ -80,33 +80,33 @@
          * Carga los datos del tipo de solicitud
          */
         function loadRequestTypeData(requestTypeId) {
-            fetch(`/sigve/api/request-types/${requestTypeId}/`)
+    fetch(`/sigve/api/request-types/${requestTypeId}/`)
                 .then(response => {
                     if (!response.ok) {
                          throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     return response.json();
                 })
-                .then(data => {
-                    if (data.success) {
+        .then(data => {
+            if (data.success) {
                         populateForm(data.request_type);
                         setupEditMode();
-                    } else {
+            } else {
                         throw new Error(data.error || 'Error al cargar el tipo de solicitud');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
                     if (window.SIGVE && window.SIGVE.showNotification) {
                         window.SIGVE.showNotification('Error al cargar los datos del tipo de solicitud', 'error');
                     } else {
-                        alert('Error al cargar los datos del tipo de solicitud.');
+            alert('Error al cargar los datos del tipo de solicitud.');
                     }
                     modalInstance.hide();
-                });
-        }
-        
-        /**
+        });
+}
+
+/**
          * Configura el modal para editar un tipo de solicitud
          */
         function setupEditMode() {
@@ -145,10 +145,10 @@
                         }
                     }
                 }
-            });
-        }
-        
-        /**
+    });
+}
+
+/**
          * Renderiza los botones del footer según el modo
          */
         function renderButtons(mode) {
@@ -179,8 +179,8 @@
          * Maneja el envío del formulario
          */
         function handleSubmit(e) {
-            e.preventDefault();
-            
+    e.preventDefault();
+    
             // Validar formulario manualmente para mostrar mensajes en español
             if (!validateForm()) {
                 return;
@@ -189,24 +189,18 @@
             const submitBtn = document.getElementById('requestTypeSubmitBtn');
             if (!submitBtn) return;
             
-            // Refactorizado para usar la utilidad global
-            if (window.SIGVE && window.SIGVE.showButtonLoading) {
-                window.SIGVE.showButtonLoading(submitBtn);
-            } else {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
-            }
-                
+            setButtonLoading(submitBtn, true);
+    
             // Enviar formulario
             const formData = new FormData(form);
-                
+    
             fetch(form.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
             .then(response => {
                 if (response.redirected) {
                     window.location.href = response.url;
@@ -221,24 +215,16 @@
                     throw new Error('La respuesta del servidor no es válida.');
                 }
             })
-            .then(data => {
+    .then(data => {
                 if (data) {
-                    if (data.success) {
-                        if (window.SIGVE && window.SIGVE.hideButtonLoading) {
-                            window.SIGVE.hideButtonLoading(submitBtn);
-                        } else {
-                            submitBtn.disabled = false;
-                            submitBtn.innerHTML = '<i class="bi bi-save"></i> Guardar';
-                        }
-                        modalInstance.hide();
-                        
+        if (data.success) {
+                        setButtonLoading(submitBtn, false);
+            modalInstance.hide();
                         setTimeout(() => {
                             window.location.reload();
                         }, 150);
                         return;
                     } else if (data.errors) {
-                        // Errores de validación
-                        // Limpiar errores previos
                         clearFormErrors();
                         
                         // Mostrar errores por campo
@@ -254,22 +240,19 @@
                             }
                             
                             if (field === 'general' || field === '__all__') {
+                                // Error general: mostrar como notificación
                                 if (window.SIGVE && window.SIGVE.showNotification) {
                                     window.SIGVE.showNotification(errorMessage, 'error');
                                 } else {
                                     alert(errorMessage);
                                 }
                             } else {
+                                // Error de campo específico: mostrar en el campo
                                 showFieldError(field, errorMessage);
                             }
                         }
                         
-                        if (window.SIGVE && window.SIGVE.hideButtonLoading) {
-                            window.SIGVE.hideButtonLoading(submitBtn);
-                        } else {
-                            submitBtn.disabled = false;
-                            submitBtn.innerHTML = '<i class="bi bi-save"></i> Guardar';
-                        }
+                        setButtonLoading(submitBtn, false);
                     }
                 }
             })
@@ -280,12 +263,7 @@
                 } else {
                     alert('Error al guardar el tipo de solicitud.');
                 }
-                if (window.SIGVE && window.SIGVE.hideButtonLoading) {
-                    window.SIGVE.hideButtonLoading(submitBtn);
-                } else {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="bi bi-save"></i> Guardar';
-                }
+                setButtonLoading(submitBtn, false);
             });
         }
         
@@ -319,12 +297,11 @@
                     return;
                 }
                 
-                // Validación especial para form_schema (debe ser JSON válido)
+                // Validaciones adicionales del lado del cliente (UX - feedback inmediato)
                 // Nota: La validación completa se hace en el servidor (forms.py)
                 if (fieldName === 'form_schema' && fieldValue) {
                     try {
                         const parsed = JSON.parse(fieldValue);
-                        // Validación básica de estructura (validación completa en servidor)
                         if (!parsed.fields || !Array.isArray(parsed.fields)) {
                             isValid = false;
                             field.classList.add('is-invalid');
@@ -343,11 +320,7 @@
                         showFieldError(fieldName, 'El esquema debe ser un JSON válido. Verifica la sintaxis (comas, llaves, comillas).');
                         return;
                     }
-                }
-                
-                // Validación para target_table (debe ser un nombre de tabla válido)
-                // Nota: La validación completa se hace en el servidor (forms.py)
-                if (fieldName === 'target_table' && fieldValue) {
+                } else if (fieldName === 'target_table' && fieldValue) {
                     if (!/^[a-z_][a-z0-9_]*$/.test(fieldValue)) {
                         isValid = false;
                         field.classList.add('is-invalid');
@@ -358,10 +331,11 @@
             });
             
             if (!isValid) {
+                const message = 'Por favor, completa todos los campos obligatorios correctamente.';
                 if (window.SIGVE && window.SIGVE.showNotification) {
-                    window.SIGVE.showNotification('Por favor, completa todos los campos obligatorios correctamente.', 'error');
+                    window.SIGVE.showNotification(message, 'error');
                 } else {
-                    alert('Por favor, completa todos los campos obligatorios correctamente.');
+                    alert(message);
                 }
             }
             
@@ -389,15 +363,8 @@
          * @param {string} errorMessage - Mensaje de error a mostrar
          */
         function showFieldError(fieldName, errorMessage) {
-            const fieldIdMap = {
-                'name': 'name',
-                'target_table': 'target_table',
-                'description': 'description',
-                'form_schema': 'form_schema'
-            };
-            
-            const fieldId = fieldIdMap[fieldName] || fieldName;
-            const field = document.getElementById(fieldId);
+            // Los IDs de los campos coinciden con sus nombres
+            const field = document.getElementById(fieldName);
             
             if (field) {
                 field.classList.add('is-invalid');
@@ -421,6 +388,27 @@
                     window.SIGVE.showNotification(errorMessage, 'error');
                 } else {
                     alert(errorMessage);
+                }
+            }
+        }
+        
+        /**
+         * Helper para manejar el estado del botón de envío
+         */
+        function setButtonLoading(button, loading) {
+            if (window.SIGVE && window.SIGVE.showButtonLoading && window.SIGVE.hideButtonLoading) {
+                if (loading) {
+                    window.SIGVE.showButtonLoading(button);
+                } else {
+                    window.SIGVE.hideButtonLoading(button);
+                }
+            } else {
+                if (loading) {
+                    button.disabled = true;
+                    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+                } else {
+                    button.disabled = false;
+                    button.innerHTML = '<i class="bi bi-save"></i> Guardar';
                 }
             }
         }
@@ -478,11 +466,11 @@
                         window.SIGVE.showNotification('Error al cargar el esquema: ' + data.error, 'error');
                     } else {
                         alert('Error al cargar el esquema: ' + data.error);
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
                 if (window.SIGVE && window.SIGVE.showNotification) {
                     window.SIGVE.showNotification('Error al cargar el esquema.', 'error');
                 } else {

@@ -1,8 +1,8 @@
-import logging
 import json
-from django.shortcuts import render, redirect
+import logging
 from django.contrib import messages
 from django.http import JsonResponse
+from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods
 from accounts.decorators import require_supabase_login, require_role
 
@@ -30,6 +30,19 @@ def handle_form_errors(request, form, is_ajax, *, message='⚠️ Corrige los er
         return JsonResponse({'success': False, 'errors': form.errors})
     messages.error(request, message)
     return None
+
+
+def format_service_errors(errors):
+    """
+    Convierte errores del servicio a formato de arrays para consistencia con Django forms.
+    
+    Args:
+        errors: Diccionario de errores del servicio (pueden ser strings o arrays)
+        
+    Returns:
+        Diccionario con errores formateados como arrays
+    """
+    return {k: [v] if isinstance(v, str) else v for k, v in errors.items()}
 
 
 # ===== DASHBOARD =====
@@ -1475,8 +1488,6 @@ def request_type_create(request):
     
     form = RequestTypeForm(request.POST)
     if form.is_valid():
-        import json
-        
         # El form_schema ya está validado en clean_form_schema, solo necesitamos parsearlo
         form_schema = json.loads(form.cleaned_data['form_schema'])
         
@@ -1494,17 +1505,14 @@ def request_type_create(request):
             if is_ajax:
                 messages.success(request, message)
                 return JsonResponse({'success': True, 'reload_page': True})
-            
             messages.success(request, message)
             return redirect('sigve:request_types_list')
         else:
             if is_ajax:
-                # Convertir errores a formato de arrays para consistencia con Django forms
-                formatted_errors = {k: [v] if isinstance(v, str) else v for k, v in errors.items()}
-                return JsonResponse({'success': False, 'errors': formatted_errors})
+                return JsonResponse({'success': False, 'errors': format_service_errors(errors)})
             # Mostrar el primer error encontrado
             if errors:
-                first_error = list(errors.values())[0] if errors else 'Error al crear el tipo de solicitud.'
+                first_error = list(errors.values())[0]
                 if isinstance(first_error, list):
                     first_error = first_error[0]
                 messages.error(request, f'❌ {first_error}')
@@ -1532,8 +1540,6 @@ def request_type_update(request, request_type_id):
     
     form = RequestTypeForm(request.POST)
     if form.is_valid():
-        import json
-        
         # El form_schema ya está validado en clean_form_schema, solo necesitamos parsearlo
         form_schema = json.loads(form.cleaned_data['form_schema'])
         
@@ -1551,17 +1557,14 @@ def request_type_update(request, request_type_id):
             if is_ajax:
                 messages.success(request, message)
                 return JsonResponse({'success': True, 'reload_page': True})
-            
             messages.success(request, message)
             return redirect('sigve:request_types_list')
         else:
             if is_ajax:
-                # Convertir errores a formato de arrays para consistencia con Django forms
-                formatted_errors = {k: [v] if isinstance(v, str) else v for k, v in errors.items()}
-                return JsonResponse({'success': False, 'errors': formatted_errors})
+                return JsonResponse({'success': False, 'errors': format_service_errors(errors)})
             # Mostrar el primer error encontrado
             if errors:
-                first_error = list(errors.values())[0] if errors else 'Error al actualizar el tipo de solicitud.'
+                first_error = list(errors.values())[0]
                 if isinstance(first_error, list):
                     first_error = first_error[0]
                 messages.error(request, f'❌ {first_error}')
