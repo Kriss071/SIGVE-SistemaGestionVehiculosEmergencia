@@ -513,6 +513,10 @@ class SupplierForm(forms.Form):
     name = forms.CharField(
         max_length=255,
         label="Nombre del Proveedor",
+        error_messages={
+            'required': 'Por favor, ingresa un nombre para el proveedor.',
+            'max_length': 'El nombre del proveedor no puede exceder 255 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: Distribuidora Local'
@@ -522,6 +526,9 @@ class SupplierForm(forms.Form):
         max_length=20,
         label="RUT",
         required=False,
+        error_messages={
+            'max_length': 'El RUT no puede exceder 20 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: 12345678-9'
@@ -531,6 +538,9 @@ class SupplierForm(forms.Form):
         max_length=255,
         label="Dirección",
         required=False,
+        error_messages={
+            'max_length': 'La dirección no puede exceder 255 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Dirección del proveedor'
@@ -540,6 +550,9 @@ class SupplierForm(forms.Form):
         max_length=20,
         label="Teléfono",
         required=False,
+        error_messages={
+            'max_length': 'El teléfono no puede exceder 20 caracteres.'
+        },
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: +56912345678'
@@ -548,11 +561,38 @@ class SupplierForm(forms.Form):
     email = forms.EmailField(
         label="Email",
         required=False,
+        error_messages={
+            'invalid': 'Por favor, ingresa un correo electrónico válido.',
+            'max_length': 'El correo electrónico no puede exceder 254 caracteres.'
+        },
         widget=forms.EmailInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: contacto@proveedor.cl'
         })
     )
+    
+    def clean(self):
+        """Limpia y valida los datos del formulario."""
+        cleaned_data = super().clean()
+        
+        # Convertir cadenas vacías a None para campos opcionales
+        rut = cleaned_data.get('rut')
+        if rut is not None and isinstance(rut, str) and rut.strip() == '':
+            cleaned_data['rut'] = None
+        
+        address = cleaned_data.get('address')
+        if address is not None and isinstance(address, str) and address.strip() == '':
+            cleaned_data['address'] = None
+        
+        phone = cleaned_data.get('phone')
+        if phone is not None and isinstance(phone, str) and phone.strip() == '':
+            cleaned_data['phone'] = None
+        
+        email = cleaned_data.get('email')
+        if email is not None and isinstance(email, str) and email.strip() == '':
+            cleaned_data['email'] = None
+        
+        return cleaned_data
 
 
 class EmployeeForm(forms.Form):

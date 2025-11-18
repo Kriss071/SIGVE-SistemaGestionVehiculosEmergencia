@@ -824,6 +824,7 @@ def suppliers_list(request):
 def supplier_create(request):
     """Crea un nuevo proveedor local del taller."""
     workshop_id = request.workshop_id
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     
     form = SupplierForm(request.POST)
     if form.is_valid():
@@ -835,13 +836,27 @@ def supplier_create(request):
             'email': form.cleaned_data.get('email')
         }
         
-        supplier = SupplierService.create_supplier(workshop_id, data)
+        supplier, errors = SupplierService.create_supplier(workshop_id, data)
         
         if supplier:
+            if is_ajax:
+                return JsonResponse({'success': True})
             messages.success(request, f'✅ Proveedor "{data["name"]}" creado correctamente.')
         else:
-            messages.error(request, '❌ Error al crear el proveedor.')
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': errors or {'general': ['Error al crear el proveedor.']}})
+            # Mostrar el primer error encontrado
+            if errors:
+                first_error = list(errors.values())[0]
+                if isinstance(first_error, list) and first_error:
+                    messages.error(request, f'❌ {first_error[0]}')
+                else:
+                    messages.error(request, '❌ Error al crear el proveedor.')
+            else:
+                messages.error(request, '❌ Error al crear el proveedor.')
     else:
+        if is_ajax:
+            return JsonResponse({'success': False, 'errors': form.errors})
         messages.error(request, '❌ Datos inválidos.')
     
     return redirect('workshop:suppliers_list')
@@ -876,6 +891,7 @@ def supplier_detail_api(request, supplier_id):
 def supplier_update(request, supplier_id):
     """Actualiza un proveedor local del taller."""
     workshop_id = request.workshop_id
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     
     form = SupplierForm(request.POST)
     if form.is_valid():
@@ -887,13 +903,27 @@ def supplier_update(request, supplier_id):
             'email': form.cleaned_data.get('email')
         }
         
-        success = SupplierService.update_supplier(supplier_id, workshop_id, data)
+        success, errors = SupplierService.update_supplier(supplier_id, workshop_id, data)
         
         if success:
+            if is_ajax:
+                return JsonResponse({'success': True})
             messages.success(request, '✅ Proveedor actualizado.')
         else:
-            messages.error(request, '❌ Error al actualizar (solo puedes editar proveedores locales).')
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': errors or {'general': ['Error al actualizar (solo puedes editar proveedores locales).']}})
+            # Mostrar el primer error encontrado
+            if errors:
+                first_error = list(errors.values())[0]
+                if isinstance(first_error, list) and first_error:
+                    messages.error(request, f'❌ {first_error[0]}')
+                else:
+                    messages.error(request, '❌ Error al actualizar (solo puedes editar proveedores locales).')
+            else:
+                messages.error(request, '❌ Error al actualizar (solo puedes editar proveedores locales).')
     else:
+        if is_ajax:
+            return JsonResponse({'success': False, 'errors': form.errors})
         messages.error(request, '❌ Datos inválidos.')
     
     return redirect('workshop:suppliers_list')

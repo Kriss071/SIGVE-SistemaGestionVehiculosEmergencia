@@ -100,28 +100,43 @@
             </div>
             
             <!-- Formulario -->
-            <form id="supplierForm" method="post" style="display: none;">
+            <form id="supplierForm" method="post" style="display: none;" novalidate>
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Nombre</label>
+                        <label class="form-label">Nombre <span class="text-danger">*</span></label>
                         <input type="text" name="name" id="id_name" class="form-control" required>
+                        <div class="invalid-feedback" data-field-error="name">
+                            Por favor, ingresa un nombre para el proveedor.
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">RUT</label>
                         <input type="text" name="rut" id="id_rut" class="form-control">
+                        <div class="invalid-feedback" data-field-error="rut">
+                            El RUT no puede exceder 20 caracteres.
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Dirección</label>
                         <input type="text" name="address" id="id_address" class="form-control">
+                        <div class="invalid-feedback" data-field-error="address">
+                            La dirección no puede exceder 255 caracteres.
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Teléfono</label>
                         <input type="text" name="phone" id="id_phone" class="form-control">
+                        <div class="invalid-feedback" data-field-error="phone">
+                            El teléfono no puede exceder 20 caracteres.
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Email</label>
                         <input type="email" name="email" id="id_email" class="form-control">
+                        <div class="invalid-feedback" data-field-error="email">
+                            Por favor, ingresa un correo electrónico válido.
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer" id="supplierModalFooter">

@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 from .base_service import WorkshopBaseService
 
 logger = logging.getLogger(__name__)
@@ -94,7 +94,59 @@ class SupplierService(WorkshopBaseService):
             return None
     
     @staticmethod
-    def create_supplier(workshop_id: int, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def _parse_duplicate_error(error: Exception) -> Optional[Dict[str, str]]:
+        """
+        Parsea un error de Supabase para identificar qué campo está duplicado en proveedores.
+        
+        Args:
+            error: La excepción capturada.
+            
+        Returns:
+            Diccionario con el campo duplicado y mensaje, o None si no es un error de duplicación.
+        """
+        error_msg = str(error).lower()
+        error_details = getattr(error, 'message', '') or error_msg
+        
+        # Mapeo de campos y sus mensajes de error
+        field_mapping = {
+            'name': {
+                'keywords': ['name', 'nombre'],
+                'message': 'Este nombre de proveedor ya está registrado.'
+            },
+            'rut': {
+                'keywords': ['rut'],
+                'message': 'Este RUT ya está registrado en otro proveedor.'
+            },
+            'phone': {
+                'keywords': ['phone', 'teléfono', 'telefono'],
+                'message': 'Este número de teléfono ya está registrado en otro proveedor.'
+            },
+            'email': {
+                'keywords': ['email', 'correo', 'e-mail'],
+                'message': 'Este correo electrónico ya está registrado en otro proveedor.'
+            }
+        }
+        
+        # Buscar el campo duplicado en el mensaje de error
+        for field, info in field_mapping.items():
+            for keyword in info['keywords']:
+                if keyword in error_details.lower():
+                    return {
+                        'field': field,
+                        'message': info['message']
+                    }
+        
+        # Si no se identifica un campo específico, verificar si es un error de constraint único
+        if 'unique constraint' in error_details or 'duplicate key' in error_details or '23505' in error_details:
+            return {
+                'field': 'general',
+                'message': 'Ya existe un registro con estos datos. Verifica que los datos sean únicos.'
+            }
+        
+        return None
+    
+    @staticmethod
+    def create_supplier(workshop_id: int, data: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, str]]]:
         """
         Crea un nuevo proveedor local del taller.
         
@@ -103,7 +155,7 @@ class SupplierService(WorkshopBaseService):
             data: Datos del proveedor (name, rut, address, phone, email).
             
         Returns:
-            Datos del proveedor creado o None.
+            Tupla (proveedor_creado, errores). Si hay errores, el primer elemento es None.
         """
         client = WorkshopBaseService.get_client()
         
@@ -121,14 +173,28 @@ class SupplierService(WorkshopBaseService):
             
             if result.data:
                 logger.info(f"✅ Proveedor local creado: {data['name']}")
-                return result.data[0] if isinstance(result.data, list) else result.data
-            return None
+                supplier = result.data[0] if isinstance(result.data, list) else result.data
+                return supplier, None
+            return None, {'general': ['Error al crear el proveedor.']}
         except Exception as e:
             logger.error(f"❌ Error creando proveedor: {e}", exc_info=True)
-            return None
+            
+            # Intentar parsear error de duplicación
+            duplicate_error = SupplierService._parse_duplicate_error(e)
+            if duplicate_error:
+                return None, {duplicate_error['field']: [duplicate_error['message']]}
+            
+            # Error genérico
+            error_msg = str(e)
+            if 'duplicate key value violates unique constraint' in error_msg or '23505' in error_msg:
+                duplicate_error = SupplierService._parse_duplicate_error(e)
+                if duplicate_error:
+                    return None, {duplicate_error['field']: [duplicate_error['message']]}
+            
+            return None, {'general': ['Error al crear el proveedor. Por favor, intenta nuevamente.']}
     
     @staticmethod
-    def update_supplier(supplier_id: int, workshop_id: int, data: Dict[str, Any]) -> bool:
+    def update_supplier(supplier_id: int, workshop_id: int, data: Dict[str, Any]) -> Tuple[bool, Optional[Dict[str, str]]]:
         """
         Actualiza un proveedor local del taller.
         
@@ -138,7 +204,7 @@ class SupplierService(WorkshopBaseService):
             data: Datos a actualizar.
             
         Returns:
-            True si se actualizó correctamente, False en caso contrario.
+            Tupla (éxito, errores). Si hay errores, el primer elemento es False.
         """
         client = WorkshopBaseService.get_client()
         
@@ -151,10 +217,23 @@ class SupplierService(WorkshopBaseService):
                 .execute()
             
             logger.info(f"✅ Proveedor {supplier_id} actualizado")
-            return True
+            return True, None
         except Exception as e:
             logger.error(f"❌ Error actualizando proveedor {supplier_id}: {e}", exc_info=True)
-            return False
+            
+            # Intentar parsear error de duplicación
+            duplicate_error = SupplierService._parse_duplicate_error(e)
+            if duplicate_error:
+                return False, {duplicate_error['field']: [duplicate_error['message']]}
+            
+            # Error genérico
+            error_msg = str(e)
+            if 'duplicate key value violates unique constraint' in error_msg or '23505' in error_msg:
+                duplicate_error = SupplierService._parse_duplicate_error(e)
+                if duplicate_error:
+                    return False, {duplicate_error['field']: [duplicate_error['message']]}
+            
+            return False, {'general': ['Error al actualizar el proveedor. Por favor, intenta nuevamente.']}
     
     @staticmethod
     def delete_supplier(supplier_id: int, workshop_id: int) -> bool:

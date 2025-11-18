@@ -38,6 +38,15 @@
             
             // Evento al enviar el formulario
             form.addEventListener('submit', handleSubmit);
+            
+            // Prevenir validación HTML5 nativa del navegador
+            form.addEventListener('invalid', function(e) {
+                e.preventDefault();
+                // La validación se manejará en handleSubmit
+            }, true);
+            
+            // Limpiar errores cuando el usuario empiece a escribir
+            setupFieldErrorClearing();
         }
         
         /**
@@ -232,18 +241,16 @@
          */
         function handleSubmit(e) {
             e.preventDefault();
+            
+            // Validar formulario manualmente para mostrar mensajes en español
+            if (!validateForm()) {
+                return;
+            }
                 
             const submitBtn = document.getElementById('supplierSubmitBtn');
             if (!submitBtn) return;
             
-            // Validar formulario
-            if (!form.checkValidity()) {
-                e.stopPropagation();
-                form.classList.add('was-validated');
-                return;
-            }
-            
-            // Deshabilitar botón y mostrar loading
+            // Mostrar indicador de carga
             submitBtn.disabled = true;
             const originalText = submitBtn.innerHTML;
             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
@@ -259,25 +266,199 @@
                 }
             })
             .then(response => {
-                // Si la respuesta es una redirección, recargar la página
+                // Si la respuesta es una redirección, la seguimos
                 if (response.redirected) {
                     window.location.href = response.url;
-                } else {
-                    return response.json();
+                    return null;
                 }
+                return response.json();
             })
             .then(data => {
-                if (data && data.success === false) {
-                    throw new Error(data.error || 'Error al guardar');
+                if (data) {
+                    if (data.success) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                        modalInstance.hide();
+                        
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 150);
+                        return;
+                    } else if (data.errors) {
+                        // Errores de validación
+                        // Limpiar errores previos
+                        clearFormErrors();
+                        
+                        // Mostrar errores por campo
+                        for (const [field, errors] of Object.entries(data.errors)) {
+                            if (Array.isArray(errors) && errors.length > 0) {
+                                const errorMessage = errors[0];
+                                
+                                if (field === 'general' || field === '__all__') {
+                                    if (window.SIGVE && window.SIGVE.showNotification) {
+                                        window.SIGVE.showNotification(errorMessage, 'error');
+                                    } else {
+                                        alert(errorMessage);
+                                    }
+                                } else {
+                                    showFieldError(field, errorMessage);
+                                }
+                            }
+                        }
+                        
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    }
                 }
-                // Si todo está bien, recargar la página
-                window.location.reload();
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error al guardar el proveedor: ' + error.message);
+                const errorMessage = 'Error al guardar el proveedor: ' + error.message;
+                if (window.SIGVE && window.SIGVE.showNotification) {
+                    window.SIGVE.showNotification(errorMessage, 'error');
+                } else {
+                    alert(errorMessage);
+                }
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
+            });
+        }
+        
+        /**
+         * Valida el formulario y muestra errores en español
+         * @returns {boolean} true si el formulario es válido, false en caso contrario
+         */
+        function validateForm() {
+            clearFormErrors();
+            
+            let isValid = true;
+            const requiredFields = form.querySelectorAll('[required]');
+            
+            // Mensajes de error en español para campos requeridos
+            const errorMessages = {
+                'name': 'Por favor, ingresa un nombre para el proveedor.'
+            };
+            
+            requiredFields.forEach(field => {
+                const fieldName = field.name;
+                const fieldValue = field.value.trim();
+                
+                if (!fieldValue) {
+                    isValid = false;
+                    field.classList.add('is-invalid');
+                    const errorMsg = errorMessages[fieldName] || 'Este campo es obligatorio.';
+                    showFieldError(fieldName, errorMsg);
+                }
+            });
+            
+            // Validar email si tiene valor
+            const emailField = document.getElementById('id_email');
+            if (emailField && emailField.value.trim()) {
+                const emailValue = emailField.value.trim();
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(emailValue)) {
+                    isValid = false;
+                    emailField.classList.add('is-invalid');
+                    showFieldError('email', 'Por favor, ingresa un correo electrónico válido.');
+                }
+            }
+            
+            if (!isValid) {
+                if (window.SIGVE && window.SIGVE.showNotification) {
+                    window.SIGVE.showNotification('Por favor, completa todos los campos obligatorios.', 'error');
+                } else {
+                    alert('Por favor, completa todos los campos obligatorios.');
+                }
+            }
+            
+            return isValid;
+        }
+        
+        /**
+         * Limpia todos los errores del formulario
+         */
+        function clearFormErrors() {
+            if (!form) return;
+            
+            // Remover clases de error de Bootstrap
+            form.querySelectorAll('.is-invalid').forEach(field => {
+                field.classList.remove('is-invalid');
+            });
+            
+            // Limpiar mensajes de error dinámicos
+            form.querySelectorAll('.invalid-feedback[data-field-error]').forEach(feedback => {
+                feedback.textContent = '';
+            });
+        }
+        
+        /**
+         * Muestra un error en un campo específico del formulario
+         * @param {string} fieldName - Nombre del campo (ej: 'name', 'rut', 'phone', 'email')
+         * @param {string} errorMessage - Mensaje de error a mostrar
+         */
+        function showFieldError(fieldName, errorMessage) {
+            if (!form) return;
+            
+            const fieldIdMap = {
+                'name': 'id_name',
+                'rut': 'id_rut',
+                'phone': 'id_phone',
+                'email': 'id_email',
+                'address': 'id_address'
+            };
+            
+            const fieldId = fieldIdMap[fieldName] || `id_${fieldName}`;
+            const field = document.getElementById(fieldId);
+            
+            if (field) {
+                field.classList.add('is-invalid');
+                
+                let feedback = field.parentElement.querySelector(`.invalid-feedback[data-field-error="${fieldName}"]`);
+                if (!feedback) {
+                    feedback = field.parentElement.querySelector('.invalid-feedback');
+                    if (feedback) {
+                        feedback.setAttribute('data-field-error', fieldName);
+                    } else {
+                        feedback = document.createElement('div');
+                        feedback.className = 'invalid-feedback';
+                        feedback.setAttribute('data-field-error', fieldName);
+                        field.parentElement.appendChild(feedback);
+                    }
+                }
+                feedback.textContent = errorMessage;
+            } else {
+                console.warn(`Campo no encontrado para mostrar error: ${fieldName}`);
+                alert(errorMessage);
+            }
+        }
+        
+        /**
+         * Configura la limpieza automática de errores cuando el usuario empiece a escribir
+         */
+        function setupFieldErrorClearing() {
+            if (!form) return;
+            
+            // Limpiar errores en campos cuando el usuario empiece a escribir
+            form.querySelectorAll('input, select, textarea').forEach(field => {
+                field.addEventListener('input', function() {
+                    if (this.classList.contains('is-invalid')) {
+                        this.classList.remove('is-invalid');
+                        const feedback = this.parentElement.querySelector(`.invalid-feedback[data-field-error="${this.name}"]`);
+                        if (feedback) {
+                            feedback.textContent = '';
+                        }
+                    }
+                });
+                
+                field.addEventListener('change', function() {
+                    if (this.classList.contains('is-invalid')) {
+                        this.classList.remove('is-invalid');
+                        const feedback = this.parentElement.querySelector(`.invalid-feedback[data-field-error="${this.name}"]`);
+                        if (feedback) {
+                            feedback.textContent = '';
+                        }
+                    }
+                });
             });
         }
         
@@ -307,10 +488,16 @@
          * Resetea el modal cuando se cierra
          */
         function resetModal() {
-            form.classList.remove('was-validated');
             currentMode = 'create';
             currentSupplierId = null;
             currentSupplierIsGlobal = false;
+            form.reset();
+            form.classList.remove('was-validated');
+            clearFormErrors();
+            setFieldsEnabled(true);
+            footer.innerHTML = '';
+            hideLoading();
+            showForm();
         }
         
         // Inicializar cuando el DOM esté listo
