@@ -91,9 +91,11 @@
                         <td>{{ order.vehicle.fire_station.name|default:"N/A" }}</td>
                         <td>
                             <span class="badge 
-                                {% if order.order_status.name == 'En Taller' %}bg-primary
-                                {% elif order.order_status.name == 'Completado' %}bg-success
-                                {% elif order.order_status.name == 'Pendiente' %}bg-warning
+                                {% if order.order_status.name == 'Cancelada' %}bg-danger
+                                {% elif order.order_status.name == 'En Espera de Repuestos' %}bg-warning text-dark
+                                {% elif order.order_status.name == 'En Taller' %}bg-primary
+                                {% elif order.order_status.name == 'Pendiente' %}bg-info
+                                {% elif order.order_status.name == 'Terminada' %}bg-success
                                 {% else %}bg-secondary{% endif %}">
                                 {{ order.order_status.name|default:"N/A" }}
                             </span>
