@@ -559,12 +559,19 @@ def spare_parts_list(request):
 @require_role("Admin SIGVE")
 def spare_part_create(request):
     """Crear un nuevo repuesto maestro."""
+    logger.info("📥 Ingreso a la vista spare_part_create - método: %s", request.method)
+    
     if request.method == 'POST':
         form = SparePartForm(request.POST)
         source = request.POST.get('source', 'list')
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         
+        logger.debug("Datos POST recibidos: %s", request.POST)
+        logger.debug("Origen (source): %s | Es AJAX: %s", source, is_ajax)
+        
         if form.is_valid():
+            logger.info("✅ Formulario válido, preparando datos para creación de repuesto.")
+            
             data = {
                 'name': form.cleaned_data['name'],
                 'sku': form.cleaned_data['sku'],
@@ -572,24 +579,51 @@ def spare_part_create(request):
                 'description': form.cleaned_data.get('description')
             }
             
-            spare_part = CatalogService.create_spare_part(data)
+            logger.debug("Datos limpios del formulario: %s", data)
+            
+            spare_part, duplicate_errors = CatalogService.create_spare_part(data)
+            logger.info("Resultado de CatalogService.create_spare_part: spare_part=%s, errors=%s", spare_part, duplicate_errors)
             
             if spare_part:
                 message = f'✅ Repuesto "{data["name"]}" creado correctamente.'
                 if is_ajax:
+                    logger.debug("Petición AJAX — devolviendo JsonResponse de éxito.")
                     messages.success(request, message)
                     return JsonResponse({
                         'success': True,
                         'reload_page': True
                     })
                 
+                logger.info("Petición normal — redirigiendo a lista de repuestos.")
                 messages.success(request, message)
                 return redirect('sigve:spare_parts_list')
             else:
-                if is_ajax:
-                    return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el repuesto.']}})
-                messages.error(request, '❌ Error al crear el repuesto.')
+                logger.error("❌ Error al crear repuesto en CatalogService.")
+                # Si hay errores de duplicación, agregarlos al formulario
+                if duplicate_errors:
+                    for field, error_msg in duplicate_errors.items():
+                        if field == 'general':
+                            # Si es un error general, agregarlo como error no asociado a un campo
+                            form.add_error(None, error_msg if isinstance(error_msg, str) else error_msg[0])
+                        else:
+                            form.add_error(field, error_msg if isinstance(error_msg, str) else error_msg[0])
+                    
+                    # Manejar errores del formulario
+                    response = handle_form_errors(
+                        request,
+                        form,
+                        is_ajax,
+                        message='⚠️ Corrige los errores del formulario para crear el repuesto.'
+                    )
+                    if response:
+                        return response
+                else:
+                    # Error genérico
+                    if is_ajax:
+                        return JsonResponse({'success': False, 'errors': {'general': ['Error al crear el repuesto.']}})
+                    messages.error(request, '❌ Error al crear el repuesto.')
         else:
+            logger.warning("⚠️ Formulario inválido: %s", form.errors)
             response = handle_form_errors(
                 request,
                 form,
@@ -599,6 +633,7 @@ def spare_part_create(request):
             if response:
                 return response
     else:
+        logger.info("📝 Petición GET — mostrando formulario vacío.")
         form = SparePartForm()
     
     context = {
@@ -607,6 +642,7 @@ def spare_part_create(request):
         'form': form
     }
     
+    logger.debug("Renderizando plantilla 'sigve/spare_part_form.html' con contexto: %s", context.keys())
     return render(request, 'sigve/spare_part_form.html', context)
 
 
@@ -635,9 +671,10 @@ def spare_part_edit(request, spare_part_id):
                 'description': form.cleaned_data.get('description')
             }
             
-            success = CatalogService.update_spare_part(spare_part_id, data)
+            success, duplicate_errors = CatalogService.update_spare_part(spare_part_id, data)
             
             if success:
+                # Si viene del dashboard y es AJAX, devolver JSON (sin redirección)
                 if is_ajax:
                     messages.success(request, '✅ Repuesto actualizado correctamente.')
                     return JsonResponse({
@@ -645,12 +682,33 @@ def spare_part_edit(request, spare_part_id):
                         'reload_page': True
                     })
                 
+                # Si viene de la lista o no es AJAX, redirigir normalmente
                 messages.success(request, '✅ Repuesto actualizado correctamente.')
                 return redirect('sigve:spare_parts_list')
             else:
-                if is_ajax:
-                    return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el repuesto.']}})
-                messages.error(request, '❌ Error al actualizar el repuesto.')
+                # Si hay errores de duplicación, agregarlos al formulario
+                if duplicate_errors:
+                    for field, error_msg in duplicate_errors.items():
+                        if field == 'general':
+                            # Si es un error general, agregarlo como error no asociado a un campo
+                            form.add_error(None, error_msg if isinstance(error_msg, str) else error_msg[0])
+                        else:
+                            form.add_error(field, error_msg if isinstance(error_msg, str) else error_msg[0])
+                    
+                    # Manejar errores del formulario
+                    response = handle_form_errors(
+                        request,
+                        form,
+                        is_ajax,
+                        message='⚠️ Corrige los errores del formulario para actualizar el repuesto.'
+                    )
+                    if response:
+                        return response
+                else:
+                    # Error genérico
+                    if is_ajax:
+                        return JsonResponse({'success': False, 'errors': {'general': ['Error al actualizar el repuesto.']}})
+                    messages.error(request, '❌ Error al actualizar el repuesto.')
         else:
             response = handle_form_errors(
                 request,

@@ -148,17 +148,28 @@ class SparePartForm(forms.Form):
     name = forms.CharField(
         max_length=255,
         label="Nombre del Repuesto",
+        error_messages={
+            'required': 'Por favor, ingresa un nombre para el repuesto.',
+            'max_length': 'El nombre del repuesto no puede exceder 255 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Filtro de Aceite'})
     )
     sku = forms.CharField(
         max_length=100,
         label="SKU (Código SIGVE)",
+        error_messages={
+            'required': 'Por favor, ingresa un SKU.',
+            'max_length': 'El SKU no puede exceder 100 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: FO-001'})
     )
     brand = forms.CharField(
         max_length=255,
         label="Marca",
         required=False,
+        error_messages={
+            'max_length': 'La marca no puede exceder 255 caracteres.'
+        },
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Mann Filter'})
     )
     description = forms.CharField(

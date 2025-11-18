@@ -1,6 +1,7 @@
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 from .base_service import SigveBaseService
+from supabase import PostgrestAPIError
 
 logger = logging.getLogger(__name__)
 
@@ -29,30 +30,178 @@ class CatalogService(SigveBaseService):
             return None
     
     @staticmethod
-    def create_spare_part(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Crea un nuevo repuesto maestro."""
+    def _parse_duplicate_error_spare_part(error: Exception) -> Optional[Dict[str, str]]:
+        """
+        Parsea un error de Supabase para identificar qué campo está duplicado en repuestos.
+        
+        Args:
+            error: La excepción capturada.
+            
+        Returns:
+            Diccionario con el campo duplicado y mensaje, o None si no es un error de duplicación.
+        """
+        error_msg = str(error).lower()
+        error_details = getattr(error, 'message', '') or error_msg
+        
+        # Mapeo de campos y sus mensajes de error
+        field_mapping = {
+            'name': {
+                'keywords': ['name', 'nombre'],
+                'message': 'Este nombre de repuesto ya está registrado.'
+            },
+            'sku': {
+                'keywords': ['sku', 'código', 'codigo'],
+                'message': 'Este SKU ya está registrado en otro repuesto.'
+            }
+        }
+        
+        # Buscar el campo duplicado en el mensaje de error
+        for field, info in field_mapping.items():
+            for keyword in info['keywords']:
+                if keyword in error_details.lower():
+                    return {
+                        'field': field,
+                        'message': info['message']
+                    }
+        
+        # Si no se identifica un campo específico, verificar si es un error de constraint único
+        if 'unique constraint' in error_details or 'duplicate key' in error_details or '23505' in error_details:
+            # Intentar extraer el nombre del constraint del mensaje
+            import re
+            constraint_match = re.search(r'unique constraint[^"]*"([^"]+)"', error_details, re.IGNORECASE)
+            if constraint_match:
+                constraint_name = constraint_match.group(1).lower()
+                # Mapear nombres de constraints comunes
+                if 'name' in constraint_name:
+                    return {'field': 'name', 'message': field_mapping['name']['message']}
+                elif 'sku' in constraint_name:
+                    return {'field': 'sku', 'message': field_mapping['sku']['message']}
+            
+            # Si no se puede identificar, retornar un error genérico
+            return {
+                'field': 'general',
+                'message': 'Ya existe un repuesto con estos datos. Verifica que el nombre y SKU sean únicos.'
+            }
+        
+        return None
+    
+    @staticmethod
+    def check_duplicates_spare_part(data: Dict[str, Any], exclude_id: Optional[int] = None) -> Dict[str, str]:
+        """
+        Verifica si hay duplicados antes de crear/actualizar un repuesto.
+        
+        Args:
+            data: Datos del repuesto a verificar.
+            exclude_id: ID del repuesto a excluir de la verificación (para edición).
+            
+        Returns:
+            Diccionario con errores por campo si hay duplicados, vacío si no hay.
+        """
         client = SigveBaseService.get_client()
+        errors = {}
+        
+        # Verificar nombre duplicado
+        if data.get('name'):
+            query = client.table("spare_part").select("id, name").eq("name", data['name'])
+            if exclude_id:
+                query = query.neq("id", exclude_id)
+            existing = query.execute()
+            if existing.data and len(existing.data) > 0:
+                errors['name'] = 'Este nombre de repuesto ya está registrado.'
+        
+        # Verificar SKU duplicado
+        if data.get('sku'):
+            query = client.table("spare_part").select("id, name").eq("sku", data['sku'])
+            if exclude_id:
+                query = query.neq("id", exclude_id)
+            existing = query.execute()
+            if existing.data and len(existing.data) > 0:
+                errors['sku'] = 'Este SKU ya está registrado en otro repuesto.'
+        
+        return errors
+    
+    @staticmethod
+    def create_spare_part(data: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, str]]]:
+        """
+        Crea un nuevo repuesto maestro.
+        
+        Args:
+            data: Datos del repuesto (name, sku, brand, description).
+            
+        Returns:
+            Tupla (repuesto_creado, errores):
+            - repuesto_creado: Datos del repuesto creado o None si hubo error.
+            - errores: Diccionario con errores por campo si hay duplicados, None si no hay errores.
+        """
+        client = SigveBaseService.get_client()
+        
+        # Verificar duplicados antes de intentar crear
+        duplicate_errors = CatalogService.check_duplicates_spare_part(data)
+        if duplicate_errors:
+            logger.warning(f"⚠️ Intento de crear repuesto con datos duplicados: {duplicate_errors}")
+            return None, duplicate_errors
+        
         try:
             result = client.table("spare_part").insert(data).execute()
             if result.data:
                 logger.info(f"✅ Repuesto creado: {data.get('name')}")
-                return result.data[0] if isinstance(result.data, list) else result.data
-            return None
+                return (result.data[0] if isinstance(result.data, list) else result.data, None)
+            return None, None
+        except PostgrestAPIError as e:
+            logger.error(f"❌ Error de API creando repuesto: {e.message}", exc_info=True)
+            # Intentar parsear el error de duplicación
+            duplicate_error = CatalogService._parse_duplicate_error_spare_part(e)
+            if duplicate_error:
+                return None, {duplicate_error['field']: duplicate_error['message']}
+            return None, {'general': ['Error al crear el repuesto. Por favor, intenta nuevamente.']}
         except Exception as e:
             logger.error(f"❌ Error creando repuesto: {e}", exc_info=True)
-            return None
+            # Intentar parsear el error de duplicación
+            duplicate_error = CatalogService._parse_duplicate_error_spare_part(e)
+            if duplicate_error:
+                return None, {duplicate_error['field']: duplicate_error['message']}
+            return None, {'general': ['Error al crear el repuesto. Por favor, intenta nuevamente.']}
     
     @staticmethod
-    def update_spare_part(spare_part_id: int, data: Dict[str, Any]) -> bool:
-        """Actualiza un repuesto existente."""
+    def update_spare_part(spare_part_id: int, data: Dict[str, Any]) -> Tuple[bool, Optional[Dict[str, str]]]:
+        """
+        Actualiza un repuesto existente.
+        
+        Args:
+            spare_part_id: ID del repuesto.
+            data: Datos a actualizar.
+            
+        Returns:
+            Tupla (éxito, errores):
+            - éxito: True si se actualizó correctamente, False en caso contrario.
+            - errores: Diccionario con errores por campo si hay duplicados, None si no hay errores.
+        """
         client = SigveBaseService.get_client()
+        
+        # Verificar duplicados antes de intentar actualizar
+        duplicate_errors = CatalogService.check_duplicates_spare_part(data, exclude_id=spare_part_id)
+        if duplicate_errors:
+            logger.warning(f"⚠️ Intento de actualizar repuesto {spare_part_id} con datos duplicados: {duplicate_errors}")
+            return False, duplicate_errors
+        
         try:
             client.table("spare_part").update(data).eq("id", spare_part_id).execute()
             logger.info(f"✅ Repuesto {spare_part_id} actualizado")
-            return True
+            return True, None
+        except PostgrestAPIError as e:
+            logger.error(f"❌ Error de API actualizando repuesto {spare_part_id}: {e.message}", exc_info=True)
+            # Intentar parsear el error de duplicación
+            duplicate_error = CatalogService._parse_duplicate_error_spare_part(e)
+            if duplicate_error:
+                return False, {duplicate_error['field']: duplicate_error['message']}
+            return False, {'general': ['Error al actualizar el repuesto. Por favor, intenta nuevamente.']}
         except Exception as e:
             logger.error(f"❌ Error actualizando repuesto {spare_part_id}: {e}", exc_info=True)
-            return False
+            # Intentar parsear el error de duplicación
+            duplicate_error = CatalogService._parse_duplicate_error_spare_part(e)
+            if duplicate_error:
+                return False, {duplicate_error['field']: duplicate_error['message']}
+            return False, {'general': ['Error al actualizar el repuesto. Por favor, intenta nuevamente.']}
     
     @staticmethod
     def delete_spare_part(spare_part_id: int) -> bool:
