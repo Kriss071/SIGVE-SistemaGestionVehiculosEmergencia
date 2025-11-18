@@ -779,10 +779,10 @@ def supplier_create(request):
             
             data = {
                 'name': form.cleaned_data['name'],
-                'rut': form.cleaned_data.get('rut'),
-                'address': form.cleaned_data.get('address'),
-                'phone': form.cleaned_data.get('phone'),
-                'email': form.cleaned_data.get('email'),
+                'rut': form.cleaned_data.get('rut') or None,
+                'address': form.cleaned_data.get('address') or None,
+                'phone': form.cleaned_data.get('phone') or None,
+                'email': form.cleaned_data.get('email') or None,
                 'workshop_id': None  # Proveedor global
             }
             
@@ -871,10 +871,10 @@ def supplier_edit(request, supplier_id):
         if form.is_valid():
             data = {
                 'name': form.cleaned_data['name'],
-                'rut': form.cleaned_data.get('rut'),
-                'address': form.cleaned_data.get('address'),
-                'phone': form.cleaned_data.get('phone'),
-                'email': form.cleaned_data.get('email')
+                'rut': form.cleaned_data.get('rut') or None,
+                'address': form.cleaned_data.get('address') or None,
+                'phone': form.cleaned_data.get('phone') or None,
+                'email': form.cleaned_data.get('email') or None
             }
             
             success, duplicate_errors = CatalogService.update_supplier(supplier_id, data)
