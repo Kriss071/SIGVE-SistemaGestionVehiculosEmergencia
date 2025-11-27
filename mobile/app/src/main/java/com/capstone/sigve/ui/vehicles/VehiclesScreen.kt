@@ -17,22 +17,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -42,7 +36,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -52,106 +45,56 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 fun VehiclesScreen(viewModel: VehiclesViewModel = hiltViewModel()) {
     val uiState by remember { derivedStateOf { viewModel.uiState } }
 
-
     // Estado para la barra de búsqueda (sin lógica real aún)
     var searchQuery by remember { mutableStateOf("") }
 
-    Scaffold(
-        topBar = {
-            TopBar()
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { /* Lógica de navegación se agregará aquí */ }
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Añadir Vehículo")
-            }
-        }
-    ) { paddingValues ->
-        Column(
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        // --- Barra de Búsqueda ---
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            label = { Text("Buscar por patente, marca...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize()
-        ) {
-            // --- Barra de Búsqueda ---
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                label = { Text("Buscar por patente, marca...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            )
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        )
 
-            when {
-                // Estado de Carga
-                uiState.isLoading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
+        when {
+            // Estado de Carga
+            uiState.isLoading -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
                 }
-                // Estado de Error
-                uiState.error != null -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Error: ${uiState.error}", color = MaterialTheme.colorScheme.error)
-                    }
+            }
+            // Estado de Error
+            uiState.error != null -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Error: ${uiState.error}", color = MaterialTheme.colorScheme.error)
                 }
-                // Estado de Éxito (la carga terminó y no hay error)
-                else -> {
-                    if (uiState.vehicles.isEmpty()) {
-                        // Si la lista está vacía, muestra el mensaje
-                        EmptyStateMessage(message = "No hay vehículos registrados todavía.")
-                    } else {
-                        // Si la lista tiene contenido, muestra la LazyColumn
-                        LazyColumn(
-                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 80.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(uiState.vehicles) { vehicle ->
-                                VehicleListItem(
-                                    patente = vehicle.license_plate,
-                                    details = "${vehicle.brand} - ${vehicle.model}",
-                                    onClick = { /* TODO: Navegar a detalles del vehículo */ }
-                                )
-                            }
+            }
+            // Estado de Éxito (la carga terminó y no hay error)
+            else -> {
+                if (uiState.vehicles.isEmpty()) {
+                    // Si la lista está vacía, muestra el mensaje
+                    EmptyStateMessage(message = "No hay vehículos registrados todavía.")
+                } else {
+                    // Si la lista tiene contenido, muestra la LazyColumn
+                    LazyColumn(
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 80.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(uiState.vehicles) { vehicle ->
+                            VehicleListItem(
+                                patente = vehicle.licensePlate,
+                                details = "${vehicle.brand} - ${vehicle.model}",
+                                onClick = { /* TODO: Navegar a detalles del vehículo */ }
+                            )
                         }
                     }
                 }
-            }
-
-
-        }
-    }
-}
-
-@Composable
-fun TopBar() {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(64.dp),
-        shadowElevation = 4.dp,
-        color = Color(0xFFDF2532)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                "Vehículos del Taller",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            IconButton(onClick = { /* Lógica de opciones */ }) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "Opciones",
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
             }
         }
     }

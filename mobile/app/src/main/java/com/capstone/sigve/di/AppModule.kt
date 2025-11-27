@@ -3,9 +3,10 @@ package com.capstone.sigve.di
 import android.content.Context
 import com.capstone.sigve.BuildConfig
 import com.capstone.sigve.data.repository.AuthRepositoryImpl
-import com.capstone.sigve.data.repository.SettingsRepository
+import com.capstone.sigve.data.repository.SettingsRepositoryImpl
 import com.capstone.sigve.data.repository.VehiclesRepositoryImpl
 import com.capstone.sigve.domain.repository.AuthRepository
+import com.capstone.sigve.domain.repository.SettingsRepository
 import com.capstone.sigve.domain.repository.VehiclesRepository
 import dagger.Module
 import dagger.Provides
@@ -46,7 +47,7 @@ object AppModule {
     @Provides
     @Singleton
     fun provideSettingsRepository(@ApplicationContext context: Context): SettingsRepository {
-        return SettingsRepository(context)
+        return SettingsRepositoryImpl(context)
     }
 
     @Provides
@@ -54,6 +55,4 @@ object AppModule {
     fun provideVehiclesRepository(client: SupabaseClient): VehiclesRepository {
         return VehiclesRepositoryImpl(client)
     }
-
-
 }

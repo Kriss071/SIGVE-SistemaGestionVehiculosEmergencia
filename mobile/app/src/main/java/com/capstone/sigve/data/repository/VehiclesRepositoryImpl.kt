@@ -1,5 +1,7 @@
 package com.capstone.sigve.data.repository
 
+import com.capstone.sigve.data.dto.VehicleDto
+import com.capstone.sigve.data.mapper.toDomainList
 import com.capstone.sigve.domain.model.Vehicle
 import com.capstone.sigve.domain.repository.VehiclesRepository
 import io.github.jan.supabase.SupabaseClient
@@ -12,8 +14,8 @@ class VehiclesRepositoryImpl @Inject constructor(
 
     override suspend fun getVehicles(): Result<List<Vehicle>> {
         return try {
-            val vehicle = client.postgrest["vehicle"].select().decodeList<Vehicle>()
-            Result.success(vehicle)
+            val vehicleDtos = client.postgrest["vehicle"].select().decodeList<VehicleDto>()
+            Result.success(vehicleDtos.toDomainList())
         } catch (e: Exception) {
             Result.failure(e)
         }

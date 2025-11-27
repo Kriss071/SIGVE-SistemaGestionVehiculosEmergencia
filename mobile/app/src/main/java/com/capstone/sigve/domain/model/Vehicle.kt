@@ -1,26 +1,23 @@
 package com.capstone.sigve.domain.model
 
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class Vehicle (
+data class Vehicle(
     val id: Int,
-    val license_plate: String,
+    val licensePlate: String,
     val brand: String,
     val model: String,
     val year: Int,
-    val engine_number: String?,
-    val vin: String?,
-    val mileage: Int?,
-    val mileage_last_updated: String?,
-    val oil_capacity_liters: Double?,
-    val registration_date: String?,
-    val next_revision_date: String?,
-    val fire_station_id: Int,
-    val vehicle_type_id: Int,
-    val vehicle_status_id: Int,
-    val fuel_type_id: Int?,
-    val transmission_type_id: Int?,
-    val oil_type_id: Int?,
-    val coolant_type_id: Int?
+    val engineNumber: String? = null,
+    val vin: String? = null,
+    val mileage: Int? = null,
+    val mileageLastUpdated: String? = null,
+    val oilCapacityLiters: Double? = null,
+    val registrationDate: String? = null,
+    val nextRevisionDate: String? = null,
+    val fireStationId: Int,
+    val vehicleTypeId: Int,
+    val vehicleStatusId: Int,
+    val fuelTypeId: Int? = null,
+    val transmissionTypeId: Int? = null,
+    val oilTypeId: Int? = null,
+    val coolantTypeId: Int? = null
 )

@@ -5,20 +5,24 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.capstone.sigve.domain.repository.AuthRepository
+import com.capstone.sigve.domain.usecase.auth.LoginUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val loginUseCase: LoginUseCase
 ) : ViewModel() {
 
     var uiState by mutableStateOf(LoginUiState())
+        private set
 
     var email by mutableStateOf("")
+        private set
+
     var password by mutableStateOf("")
+        private set
 
     fun onEmailChange(newEmail: String) {
         email = newEmail
@@ -36,7 +40,7 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             uiState = LoginUiState(isLoading = true)
 
-            val result = authRepository.signIn(email, password)
+            val result = loginUseCase(email, password)
 
             result.fold(
                 onSuccess = {

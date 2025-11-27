@@ -5,14 +5,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.capstone.sigve.domain.repository.VehiclesRepository
+import com.capstone.sigve.domain.usecase.vehicles.GetVehiclesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class VehiclesViewModel @Inject constructor(
-    private val vehiclesRepository: VehiclesRepository
+    private val getVehiclesUseCase: GetVehiclesUseCase
 ) : ViewModel() {
 
     var uiState by mutableStateOf(VehiclesUiState())
@@ -25,13 +25,15 @@ class VehiclesViewModel @Inject constructor(
     private fun loadVehicles() {
         viewModelScope.launch {
             uiState = uiState.copy(isLoading = true)
-            val result = vehiclesRepository.getVehicles()
-            uiState = result.fold(onSuccess = { vehicles ->
-                uiState.copy(isLoading = false, vehicles = vehicles)
-            }, onFailure = { error ->
-                uiState.copy(isLoading = false, error = error.message)
-            })
+            val result = getVehiclesUseCase()
+            uiState = result.fold(
+                onSuccess = { vehicles ->
+                    uiState.copy(isLoading = false, vehicles = vehicles)
+                },
+                onFailure = { error ->
+                    uiState.copy(isLoading = false, error = error.message)
+                }
+            )
         }
     }
-
 }

@@ -2,10 +2,15 @@ package com.capstone.sigve.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.capstone.sigve.data.repository.SettingsRepository
 import com.capstone.sigve.domain.model.AppColor
 import com.capstone.sigve.domain.model.AppTheme
 import com.capstone.sigve.domain.model.CustomColors
+import com.capstone.sigve.domain.usecase.settings.GetColorUseCase
+import com.capstone.sigve.domain.usecase.settings.GetCustomColorsUseCase
+import com.capstone.sigve.domain.usecase.settings.GetThemeUseCase
+import com.capstone.sigve.domain.usecase.settings.SetColorUseCase
+import com.capstone.sigve.domain.usecase.settings.SetCustomColorsUseCase
+import com.capstone.sigve.domain.usecase.settings.SetThemeUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -15,47 +20,41 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val settingsRepo: SettingsRepository
+    getThemeUseCase: GetThemeUseCase,
+    getColorUseCase: GetColorUseCase,
+    getCustomColorsUseCase: GetCustomColorsUseCase,
+    private val setThemeUseCase: SetThemeUseCase,
+    private val setColorUseCase: SetColorUseCase,
+    private val setCustomColorsUseCase: SetCustomColorsUseCase
 ) : ViewModel() {
 
-    private val _theme: StateFlow<AppTheme> = settingsRepo.themeFlow.stateIn(
+    val theme: StateFlow<AppTheme> = getThemeUseCase().stateIn(
         viewModelScope,
         SharingStarted.Eagerly,
         AppTheme.SYSTEM
     )
 
-    private val _color: StateFlow<AppColor> = settingsRepo.colorFlow.stateIn(
+    val color: StateFlow<AppColor> = getColorUseCase().stateIn(
         viewModelScope,
         SharingStarted.Eagerly,
         AppColor.DEFAULT
     )
 
-    private val _customColors: StateFlow<CustomColors> = settingsRepo.customColorsFlow.stateIn(
+    val customColors: StateFlow<CustomColors> = getCustomColorsUseCase().stateIn(
         viewModelScope,
         SharingStarted.Eagerly,
         CustomColors()
     )
 
-    // Getters
-    val theme: StateFlow<AppTheme>
-        get() = _theme
-
-    val color: StateFlow<AppColor>
-        get() = _color
-
-    val customColors: StateFlow<CustomColors>
-        get() = _customColors
-
-
     fun setTheme(theme: AppTheme) {
-        viewModelScope.launch { settingsRepo.setTheme(theme) }
+        viewModelScope.launch { setThemeUseCase(theme) }
     }
 
     fun setColor(color: AppColor) {
-        viewModelScope.launch { settingsRepo.setColor(color) }
+        viewModelScope.launch { setColorUseCase(color) }
     }
 
     fun setCustomColors(colors: CustomColors) {
-        viewModelScope.launch { settingsRepo.setCustomColors(colors) }
+        viewModelScope.launch { setCustomColorsUseCase(colors) }
     }
 }
