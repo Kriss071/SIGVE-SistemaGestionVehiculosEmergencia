@@ -58,7 +58,7 @@
                         <select class="form-select" name="commune_id" id="id_commune" required>
                             <option value="" selected disabled>Selecciona una comuna</option>
                             {% for commune in communes %}
-                                <option value="{{ commune.id }}">{{ commune.name }} ({{ commune.province.region.name }})</option>
+                                <option value="{{ commune.id }}">{{ commune.name }}{% if commune.region %} ({{ commune.region.name }}){% endif %}</option>
                             {% endfor %}
                         </select>
                         <small class="text-muted">Comuna donde se ubica el cuartel</small>

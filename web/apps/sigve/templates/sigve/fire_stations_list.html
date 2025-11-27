@@ -44,8 +44,8 @@
                         <td>{{ station.address }}</td>
                         <td>{{ station.commune.name|default:"—" }}</td>
                         <td>
-                            {% if station.commune.province.region %}
-                                {{ station.commune.province.region.name }}
+                            {% if station.commune.region %}
+                                {{ station.commune.region.name }}
                             {% else %}
                                 —
                             {% endif %}

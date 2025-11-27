@@ -21,7 +21,7 @@ class FireStationService(SigveBaseService):
         query = client.table("fire_station") \
             .select("""
                 *,
-                commune:commune_id(name, province:province_id(name, region:region_id(name)))
+                commune:commune_id(name, region:region_id(name))
             """) \
             .order("name")
         
@@ -58,7 +58,7 @@ class FireStationService(SigveBaseService):
             result = client.table("fire_station") \
                 .select("""
                     *,
-                    commune:commune_id(name, province:province_id(name, region:region_id(name)))
+                    commune:commune_id(name, region:region_id(name))
                 """) \
                 .eq("id", fire_station_id) \
                 .maybe_single() \
@@ -280,13 +280,13 @@ class FireStationService(SigveBaseService):
         Obtiene todas las comunas para formularios.
         
         Returns:
-            Lista de comunas con provincia y región.
+            Lista de comunas con región.
         """
         client = SigveBaseService.get_client()
         query = client.table("commune") \
             .select("""
                 *,
-                province:province_id(name, region:region_id(name))
+                region:region_id(name)
             """) \
             .order("name")
         

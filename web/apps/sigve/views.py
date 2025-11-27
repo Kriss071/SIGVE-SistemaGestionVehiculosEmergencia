@@ -1712,15 +1712,12 @@ def api_get_communes(request):
         commune_info = {
             'id': commune['id'],
             'name': commune['name'],
-            'province_name': commune.get('province', {}).get('name', '') if isinstance(commune.get('province'), dict) else '',
             'region_name': ''
         }
         
-        # Obtener la región desde la provincia
-        if isinstance(commune.get('province'), dict):
-            province_data = commune.get('province')
-            if isinstance(province_data.get('region'), dict):
-                commune_info['region_name'] = province_data.get('region', {}).get('name', '')
+        # Obtener la región directamente de la comuna
+        if isinstance(commune.get('region'), dict):
+            commune_info['region_name'] = commune.get('region', {}).get('name', '')
         
         communes_data.append(commune_info)
     
