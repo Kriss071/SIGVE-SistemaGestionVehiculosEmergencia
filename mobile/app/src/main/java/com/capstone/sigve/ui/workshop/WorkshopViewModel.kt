@@ -6,6 +6,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.capstone.sigve.domain.model.MaintenanceOrderStatus
+import com.capstone.sigve.domain.model.MaintenanceType
 import com.capstone.sigve.domain.usecase.auth.GetCurrentUserUseCase
 import com.capstone.sigve.domain.usecase.workshop.GetActiveMaintenanceOrdersUseCase
 import com.capstone.sigve.domain.usecase.workshop.GetWorkshopByIdUseCase
@@ -112,5 +114,35 @@ class WorkshopViewModel @Inject constructor(
         Log.d(TAG, "Refrescando datos...")
         loadWorkshopData()
     }
-}
 
+    // ========== Funciones de búsqueda y filtros ==========
+    
+    fun onSearchQueryChange(query: String) {
+        uiState = uiState.copy(searchQuery = query)
+    }
+
+    fun onStatusFilterChange(status: MaintenanceOrderStatus?) {
+        uiState = uiState.copy(selectedStatusFilter = status)
+    }
+
+    fun onMaintenanceTypeFilterChange(type: MaintenanceType?) {
+        uiState = uiState.copy(selectedMaintenanceTypeFilter = type)
+    }
+
+    fun onFireStationFilterChange(fireStation: String?) {
+        uiState = uiState.copy(selectedFireStationFilter = fireStation)
+    }
+
+    fun onToggleFilters() {
+        uiState = uiState.copy(isFilterExpanded = !uiState.isFilterExpanded)
+    }
+
+    fun onClearFilters() {
+        uiState = uiState.copy(
+            searchQuery = "",
+            selectedStatusFilter = null,
+            selectedMaintenanceTypeFilter = null,
+            selectedFireStationFilter = null
+        )
+    }
+}
