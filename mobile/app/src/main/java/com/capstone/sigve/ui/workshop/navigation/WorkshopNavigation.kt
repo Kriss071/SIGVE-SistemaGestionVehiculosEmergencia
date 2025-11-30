@@ -32,6 +32,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.capstone.sigve.ui.common.SigveTopAppBar
 import com.capstone.sigve.ui.settings.SettingsScreen
+import com.capstone.sigve.ui.workshop.MaintenanceScreen
 import com.capstone.sigve.ui.workshop.WorkshopHomeScreen
 
 sealed class WorkshopNavRoute(val route: String, val title: String, val icon: ImageVector) {
@@ -117,8 +118,7 @@ fun WorkshopNavigation(
                 WorkshopHomeScreen()
             }
             composable(WorkshopNavRoute.Maintenance.route) {
-                // TODO: Implementar pantalla de mantenciones
-                WorkshopHomeScreen()
+                MaintenanceScreen()
             }
             composable(WorkshopNavRoute.Inventory.route) {
                 // TODO: Implementar pantalla de inventario
