@@ -10,30 +10,38 @@ data class WorkshopUiState(
     val error: String? = null,
     val workshop: Workshop? = null,
     val activeOrders: List<MaintenanceOrder> = emptyList(),
+    val completedOrders: List<MaintenanceOrder> = emptyList(),
     
     // Campos de búsqueda y filtros
     val searchQuery: String = "",
     val selectedStatusFilter: MaintenanceOrderStatus? = null,
     val selectedMaintenanceTypeFilter: MaintenanceType? = null,
     val selectedFireStationFilter: String? = null,
-    val isFilterExpanded: Boolean = false
+    val isFilterExpanded: Boolean = false,
+    
+    // Toggle para mostrar órdenes completadas
+    val showCompletedOrders: Boolean = false
 ) {
     val workshopName: String
         get() = workshop?.name ?: "Taller"
     
-    // Opciones disponibles para filtros (extraídas de las órdenes cargadas)
+    // Lista combinada de órdenes según el toggle
+    private val allDisplayedOrders: List<MaintenanceOrder>
+        get() = if (showCompletedOrders) activeOrders + completedOrders else activeOrders
+    
+    // Opciones disponibles para filtros (extraídas de las órdenes mostradas)
     val availableStatuses: List<MaintenanceOrderStatus>
-        get() = activeOrders.map { it.status }.distinctBy { it.id }
+        get() = allDisplayedOrders.map { it.status }.distinctBy { it.id }
     
     val availableMaintenanceTypes: List<MaintenanceType>
-        get() = activeOrders.map { it.maintenanceType }.distinctBy { it.id }
+        get() = allDisplayedOrders.map { it.maintenanceType }.distinctBy { it.id }
     
     val availableFireStations: List<String>
-        get() = activeOrders.mapNotNull { it.vehicle.fireStation?.name }.distinct().sorted()
+        get() = allDisplayedOrders.mapNotNull { it.vehicle.fireStation?.name }.distinct().sorted()
     
     // Lista filtrada de órdenes
     val filteredOrders: List<MaintenanceOrder>
-        get() = activeOrders.filter { order ->
+        get() = allDisplayedOrders.filter { order ->
             val matchesSearch = searchQuery.isBlank() || 
                 order.vehicle.licensePlate.contains(searchQuery, ignoreCase = true) ||
                 order.vehicle.brand.contains(searchQuery, ignoreCase = true) ||
@@ -55,7 +63,13 @@ data class WorkshopUiState(
         get() = filteredOrders.size
     
     val totalOrdersCount: Int
+        get() = allDisplayedOrders.size
+    
+    val activeOrdersCount: Int
         get() = activeOrders.size
+    
+    val completedOrdersCount: Int
+        get() = completedOrders.size
     
     val hasActiveFilters: Boolean
         get() = searchQuery.isNotBlank() || 

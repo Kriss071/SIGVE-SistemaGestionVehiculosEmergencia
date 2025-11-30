@@ -27,9 +27,11 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Refresh
@@ -45,6 +47,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -67,10 +71,11 @@ import com.capstone.sigve.domain.model.MaintenanceOrderStatus
 import com.capstone.sigve.domain.model.MaintenanceType
 
 /**
- * Pantalla de Mantenciones - Lista de vehículos con órdenes activas
+ * Pantalla de Mantenciones - Lista de vehículos con órdenes activas y completadas
  */
 @Composable
 fun MaintenanceScreen(
+    onOrderClick: (Int) -> Unit = {},
     viewModel: WorkshopViewModel = hiltViewModel()
 ) {
     val uiState by remember { derivedStateOf { viewModel.uiState } }
@@ -86,6 +91,14 @@ fun MaintenanceScreen(
             filteredCount = uiState.vehicleCount,
             hasActiveFilters = uiState.hasActiveFilters,
             onRefresh = { viewModel.onRefresh() }
+        )
+
+        // Toggle de órdenes completadas
+        CompletedOrdersToggle(
+            showCompleted = uiState.showCompletedOrders,
+            completedCount = uiState.completedOrdersCount,
+            activeCount = uiState.activeOrdersCount,
+            onToggle = { viewModel.onToggleShowCompleted() }
         )
 
         // Barra de búsqueda
@@ -134,7 +147,7 @@ fun MaintenanceScreen(
                 )
             }
 
-            uiState.activeOrders.isEmpty() -> {
+            uiState.activeOrders.isEmpty() && uiState.completedOrders.isEmpty() -> {
                 EmptyVehiclesMessage()
             }
 
@@ -143,7 +156,10 @@ fun MaintenanceScreen(
             }
 
             else -> {
-                VehiclesList(orders = uiState.filteredOrders)
+                VehiclesList(
+                    orders = uiState.filteredOrders,
+                    onOrderClick = onOrderClick
+                )
             }
         }
     }
@@ -165,7 +181,7 @@ private fun MaintenanceHeader(
     ) {
         Column {
             Text(
-                text = "Vehículos en Taller",
+                text = "Órdenes de Mantención",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -173,7 +189,7 @@ private fun MaintenanceHeader(
                 text = if (hasActiveFilters) {
                     "$filteredCount de $totalCount orden${if (totalCount != 1) "es" else ""}"
                 } else {
-                    "$totalCount orden${if (totalCount != 1) "es" else ""} activa${if (totalCount != 1) "s" else ""}"
+                    "$totalCount orden${if (totalCount != 1) "es" else ""}"
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -186,6 +202,74 @@ private fun MaintenanceHeader(
             )
         }
     }
+}
+
+@Composable
+private fun CompletedOrdersToggle(
+    showCompleted: Boolean,
+    completedCount: Int,
+    activeCount: Int,
+    onToggle: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clickable { onToggle() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (showCompleted) 
+                Color(0xFF4CAF50).copy(alpha = 0.1f) 
+            else 
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = if (showCompleted) Icons.Default.History else Icons.Default.Build,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = if (showCompleted) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column {
+                    Text(
+                        text = if (showCompleted) "Todas las órdenes" else "Solo activas",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = if (completedCount > 0) {
+                            "$activeCount activas · $completedCount completadas"
+                        } else {
+                            "$activeCount activas · Sin órdenes completadas"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Switch(
+                checked = showCompleted,
+                onCheckedChange = { onToggle() },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color(0xFF4CAF50),
+                    checkedTrackColor = Color(0xFF4CAF50).copy(alpha = 0.5f)
+                )
+            )
+        }
+    }
+    Spacer(modifier = Modifier.height(8.dp))
 }
 
 @Composable
@@ -414,30 +498,49 @@ private fun getStatusColor(status: String): Color {
         "en taller" -> Color(0xFF4CAF50)
         "pendiente" -> Color(0xFFFF9800)
         "en espera de repuestos" -> Color(0xFF2196F3)
+        "completada" -> Color(0xFF9E9E9E)
         else -> MaterialTheme.colorScheme.primary
     }
 }
 
 @Composable
-private fun VehiclesList(orders: List<MaintenanceOrder>) {
+private fun VehiclesList(
+    orders: List<MaintenanceOrder>,
+    onOrderClick: (Int) -> Unit
+) {
     LazyColumn(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(orders, key = { it.id }) { order ->
-            VehicleOrderCard(order = order)
+            VehicleOrderCard(
+                order = order,
+                onClick = { onOrderClick(order.id) }
+            )
         }
     }
 }
 
 @Composable
-private fun VehicleOrderCard(order: MaintenanceOrder) {
+private fun VehicleOrderCard(
+    order: MaintenanceOrder,
+    onClick: () -> Unit
+) {
+    val isCompleted = !order.isActive
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { /* TODO: Navegar a detalle de orden */ },
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = if (isCompleted) {
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            )
+        } else {
+            CardDefaults.cardColors()
+        }
     ) {
         Column(
             modifier = Modifier
@@ -453,14 +556,22 @@ private fun VehicleOrderCard(order: MaintenanceOrder) {
                     modifier = Modifier
                         .size(48.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.secondaryContainer),
+                        .background(
+                            if (isCompleted) 
+                                MaterialTheme.colorScheme.surfaceVariant
+                            else 
+                                MaterialTheme.colorScheme.secondaryContainer
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.DirectionsCar,
+                        imageVector = if (isCompleted) Icons.Default.CheckCircle else Icons.Default.DirectionsCar,
                         contentDescription = null,
                         modifier = Modifier.size(28.dp),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                        tint = if (isCompleted) 
+                            Color(0xFF4CAF50)
+                        else 
+                            MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 }
 
@@ -538,6 +649,7 @@ private fun StatusBadge(status: String) {
         "en taller" -> Pair(Color(0xFF4CAF50), Color.White)
         "pendiente" -> Pair(Color(0xFFFF9800), Color.White)
         "en espera de repuestos" -> Pair(Color(0xFF2196F3), Color.White)
+        "completada" -> Pair(Color(0xFF9E9E9E), Color.White)
         else -> Pair(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant)
     }
 
@@ -573,13 +685,13 @@ private fun EmptyVehiclesMessage() {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "No hay vehículos en el taller",
+                text = "No hay órdenes de mantención",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center
             )
             Text(
-                text = "Los vehículos con órdenes activas aparecerán aquí",
+                text = "Las órdenes de mantención aparecerán aquí",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                 textAlign = TextAlign.Center

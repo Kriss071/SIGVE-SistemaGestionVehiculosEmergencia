@@ -26,13 +26,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.capstone.sigve.ui.common.SigveTopAppBar
 import com.capstone.sigve.ui.settings.SettingsScreen
 import com.capstone.sigve.ui.workshop.MaintenanceScreen
+import com.capstone.sigve.ui.workshop.OrderDetailScreen
 import com.capstone.sigve.ui.workshop.WorkshopHomeScreen
 
 sealed class WorkshopNavRoute(val route: String, val title: String, val icon: ImageVector) {
@@ -40,6 +43,11 @@ sealed class WorkshopNavRoute(val route: String, val title: String, val icon: Im
     data object Maintenance : WorkshopNavRoute("workshop_maintenance", "Mantenciones", Icons.Default.Build)
     data object Inventory : WorkshopNavRoute("workshop_inventory", "Inventario", Icons.Default.ShoppingCart)
     data object Settings : WorkshopNavRoute("workshop_settings", "Ajustes", Icons.Default.Settings)
+    
+    // Rutas sin ícono (no aparecen en bottom nav)
+    data object OrderDetail : WorkshopNavRoute("workshop_order_detail/{orderId}", "Detalle de Orden", Icons.Default.Build) {
+        fun createRoute(orderId: Int) = "workshop_order_detail/$orderId"
+    }
 
     companion object {
         val items = listOf(Home, Maintenance, Inventory, Settings)
@@ -58,53 +66,61 @@ fun WorkshopNavigation(
         WorkshopNavRoute.items.find { it.route == currentDestination?.route }
     }
     val currentTitle = currentScreen?.title ?: "Taller"
+    
+    // Determinar si estamos en una pantalla con bottom nav
+    val showBottomNav = currentDestination?.route in WorkshopNavRoute.items.map { it.route }
+    val showTopBar = currentDestination?.route in WorkshopNavRoute.items.map { it.route }
 
     var showMenu by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            SigveTopAppBar(title = currentTitle) {
-                IconButton(onClick = { showMenu = true }) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "Opciones",
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Cerrar Sesión") },
-                        onClick = {
-                            showMenu = false
-                            onLogout()
-                        },
-                        leadingIcon = {
-                            Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
-                        }
-                    )
+            if (showTopBar) {
+                SigveTopAppBar(title = currentTitle) {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Opciones",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Cerrar Sesión") },
+                            onClick = {
+                                showMenu = false
+                                onLogout()
+                            },
+                            leadingIcon = {
+                                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
+                            }
+                        )
+                    }
                 }
             }
         },
         bottomBar = {
-            NavigationBar {
-                WorkshopNavRoute.items.forEach { screen ->
-                    NavigationBarItem(
-                        icon = { Icon(screen.icon, contentDescription = screen.title) },
-                        label = { Text(screen.title) },
-                        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
-                        onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+            if (showBottomNav) {
+                NavigationBar {
+                    WorkshopNavRoute.items.forEach { screen ->
+                        NavigationBarItem(
+                            icon = { Icon(screen.icon, contentDescription = screen.title) },
+                            label = { Text(screen.title) },
+                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                            onClick = {
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -112,23 +128,43 @@ fun WorkshopNavigation(
         NavHost(
             navController = navController,
             startDestination = WorkshopNavRoute.Home.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier
         ) {
             composable(WorkshopNavRoute.Home.route) {
-                WorkshopHomeScreen()
+                androidx.compose.foundation.layout.Box(modifier = Modifier.padding(innerPadding)) {
+                    WorkshopHomeScreen()
+                }
             }
             composable(WorkshopNavRoute.Maintenance.route) {
-                MaintenanceScreen()
+                androidx.compose.foundation.layout.Box(modifier = Modifier.padding(innerPadding)) {
+                    MaintenanceScreen(
+                        onOrderClick = { orderId ->
+                            navController.navigate(WorkshopNavRoute.OrderDetail.createRoute(orderId))
+                        }
+                    )
+                }
             }
             composable(WorkshopNavRoute.Inventory.route) {
                 // TODO: Implementar pantalla de inventario
-                WorkshopHomeScreen()
+                androidx.compose.foundation.layout.Box(modifier = Modifier.padding(innerPadding)) {
+                    WorkshopHomeScreen()
+                }
             }
             composable(WorkshopNavRoute.Settings.route) {
-                SettingsScreen()
+                androidx.compose.foundation.layout.Box(modifier = Modifier.padding(innerPadding)) {
+                    SettingsScreen()
+                }
+            }
+            composable(
+                route = WorkshopNavRoute.OrderDetail.route,
+                arguments = listOf(
+                    navArgument("orderId") { type = NavType.IntType }
+                )
+            ) {
+                OrderDetailScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
         }
     }
 }
-
-

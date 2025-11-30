@@ -10,6 +10,7 @@ import com.capstone.sigve.domain.model.MaintenanceOrderStatus
 import com.capstone.sigve.domain.model.MaintenanceType
 import com.capstone.sigve.domain.usecase.auth.GetCurrentUserUseCase
 import com.capstone.sigve.domain.usecase.workshop.GetActiveMaintenanceOrdersUseCase
+import com.capstone.sigve.domain.usecase.workshop.GetAllMaintenanceOrdersUseCase
 import com.capstone.sigve.domain.usecase.workshop.GetWorkshopByIdUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -19,7 +20,8 @@ import javax.inject.Inject
 class WorkshopViewModel @Inject constructor(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val getWorkshopByIdUseCase: GetWorkshopByIdUseCase,
-    private val getActiveMaintenanceOrdersUseCase: GetActiveMaintenanceOrdersUseCase
+    private val getActiveMaintenanceOrdersUseCase: GetActiveMaintenanceOrdersUseCase,
+    private val getAllMaintenanceOrdersUseCase: GetAllMaintenanceOrdersUseCase
 ) : ViewModel() {
 
     companion object {
@@ -76,18 +78,24 @@ class WorkshopViewModel @Inject constructor(
                         }
                     )
 
-                    // Obtener órdenes activas del taller
-                    Log.d(TAG, "Obteniendo órdenes activas del taller...")
-                    val ordersResult = getActiveMaintenanceOrdersUseCase(workshopId)
+                    // Obtener TODAS las órdenes del taller
+                    Log.d(TAG, "Obteniendo todas las órdenes del taller...")
+                    val ordersResult = getAllMaintenanceOrdersUseCase(workshopId)
                     ordersResult.fold(
-                        onSuccess = { orders ->
-                            Log.d(TAG, "Órdenes activas obtenidas: ${orders.size}")
-                            orders.forEach { order ->
-                                Log.d(TAG, "  - Orden #${order.id}: ${order.vehicle.licensePlate} - ${order.status.name}")
-                            }
+                        onSuccess = { allOrders ->
+                            Log.d(TAG, "Órdenes totales obtenidas: ${allOrders.size}")
+                            
+                            // Separar órdenes activas y completadas
+                            val activeOrders = allOrders.filter { it.isActive }
+                            val completedOrders = allOrders.filter { !it.isActive }
+                            
+                            Log.d(TAG, "Órdenes activas: ${activeOrders.size}")
+                            Log.d(TAG, "Órdenes completadas: ${completedOrders.size}")
+                            
                             uiState = uiState.copy(
                                 isLoading = false,
-                                activeOrders = orders
+                                activeOrders = activeOrders,
+                                completedOrders = completedOrders
                             )
                         },
                         onFailure = { error ->
@@ -144,5 +152,9 @@ class WorkshopViewModel @Inject constructor(
             selectedMaintenanceTypeFilter = null,
             selectedFireStationFilter = null
         )
+    }
+    
+    fun onToggleShowCompleted() {
+        uiState = uiState.copy(showCompletedOrders = !uiState.showCompletedOrders)
     }
 }
