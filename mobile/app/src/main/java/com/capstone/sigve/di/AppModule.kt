@@ -5,9 +5,11 @@ import com.capstone.sigve.BuildConfig
 import com.capstone.sigve.data.repository.AuthRepositoryImpl
 import com.capstone.sigve.data.repository.SettingsRepositoryImpl
 import com.capstone.sigve.data.repository.VehiclesRepositoryImpl
+import com.capstone.sigve.data.repository.WorkshopRepositoryImpl
 import com.capstone.sigve.domain.repository.AuthRepository
 import com.capstone.sigve.domain.repository.SettingsRepository
 import com.capstone.sigve.domain.repository.VehiclesRepository
+import com.capstone.sigve.domain.repository.WorkshopRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -54,5 +56,11 @@ object AppModule {
     @Singleton
     fun provideVehiclesRepository(client: SupabaseClient): VehiclesRepository {
         return VehiclesRepositoryImpl(client)
+    }
+
+    @Provides
+    @Singleton
+    fun provideWorkshopRepository(client: SupabaseClient): WorkshopRepository {
+        return WorkshopRepositoryImpl(client)
     }
 }

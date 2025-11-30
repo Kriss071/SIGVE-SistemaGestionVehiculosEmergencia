@@ -27,7 +27,8 @@ com.capstone.sigve/
 │   └── usecase/          # Casos de uso organizados por feature
 │       ├── auth/         # Use cases de autenticación
 │       ├── settings/     # Use cases de configuración
-│       └── vehicles/     # Use cases de vehículos
+│       ├── vehicles/     # Use cases de vehículos
+│       └── workshop/     # Use cases de taller
 ├── ui/
 │   ├── admin/            # Módulo Admin SIGVE
 │   │   ├── navigation/   # Navegación del módulo Admin
@@ -41,7 +42,9 @@ com.capstone.sigve/
 │   ├── settings/         # Feature de configuración (compartido)
 │   ├── workshop/         # Módulo Taller (Admin Taller + Mecánico)
 │   │   ├── navigation/   # Navegación del módulo Workshop
-│   │   └── WorkshopHomeScreen.kt
+│   │   ├── WorkshopHomeScreen.kt
+│   │   ├── WorkshopViewModel.kt
+│   │   └── WorkshopUiState.kt
 │   ├── theme/            # Tema de la aplicación
 │   └── vehicles/         # [DEPRECADO] - Migrar a módulos específicos
 ├── MainActivity.kt
@@ -348,16 +351,54 @@ object AppModule {
 | `fire_station` | Cuarteles de bomberos |
 | `workshop` | Talleres mecánicos |
 | `maintenance_order` | Órdenes de mantención |
+| `maintenance_order_status` | Estados de órdenes (Pendiente, En Taller, En Espera de Repuestos, Completada) |
+| `maintenance_type` | Tipos de mantención |
 
 ### Patrón de uso con Joins
 ```kotlin
-// Select con foreign key join
+// Select con foreign key join simple
 client.postgrest["user_profile"]
     .select(columns = Columns.raw("*, role(*)")) {
         filter { eq("id", userId) }
     }
     .decodeSingle<UserProfileDto>()
+
+// Select con múltiples joins anidados
+client.postgrest["maintenance_order"]
+    .select(columns = Columns.raw("""
+        id, entry_date, mileage,
+        vehicle:vehicle_id(id, license_plate, brand, model, year, 
+            fire_station:fire_station_id(id, name)),
+        maintenance_order_status:order_status_id(id, name),
+        maintenance_type:maintenance_type_id(id, name)
+    """)) {
+        filter { eq("workshop_id", workshopId) }
+    }
+    .decodeList<MaintenanceOrderDto>()
 ```
+
+---
+
+## Módulo Workshop (Taller)
+
+### Funcionalidades Implementadas
+- Mostrar nombre del taller del usuario
+- Listar vehículos con órdenes activas
+- Estados activos: "Pendiente", "En Taller", "En Espera de Repuestos"
+
+### Modelos de Dominio
+```kotlin
+data class Workshop(val id: Int, val name: String, ...)
+data class MaintenanceOrder(val id: Int, val vehicle: VehicleSummary, val status: MaintenanceOrderStatus, ...)
+data class MaintenanceOrderStatus(val id: Int, val name: String) {
+    val isActive: Boolean get() = name in listOf("Pendiente", "En Taller", "En Espera de Repuestos")
+}
+data class VehicleSummary(val licensePlate: String, val brand: String, val fireStation: FireStation?)
+```
+
+### Use Cases
+- `GetWorkshopByIdUseCase` - Obtener información del taller
+- `GetActiveMaintenanceOrdersUseCase` - Obtener órdenes activas del taller
 
 ---
 
@@ -427,12 +468,15 @@ client.postgrest["user_profile"]
 - [x] Estructura de 3 módulos principales
 - [x] Logout por módulo
 - [x] Join con tabla role para obtener nombre del rol
+- [x] **Workshop**: Pantalla de inicio con nombre del taller
+- [x] **Workshop**: Listado de vehículos con órdenes activas
 
 ### Pendiente 📋
 - [ ] **Admin SIGVE**: Gestión global del sistema
-- [ ] **Workshop**: Mantenciones
+- [ ] **Workshop**: Detalle de orden de mantención
+- [ ] **Workshop**: Crear/editar órdenes
 - [ ] **Workshop**: Inventario de repuestos
-- [ ] **FireStation**: Listado de vehículos
+- [ ] **FireStation**: Listado de vehículos del cuartel
 - [ ] **FireStation**: Historial de mantenciones
 - [ ] Detalle de vehículo
 - [ ] Agregar/editar vehículo

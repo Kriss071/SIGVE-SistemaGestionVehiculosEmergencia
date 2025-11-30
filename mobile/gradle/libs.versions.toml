@@ -27,6 +27,9 @@ ktor = "3.0.0"
 # Serialization
 serialization-json = "1.8.1"
 
+# Icons
+material-icon = "1.7.8"
+
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -64,6 +67,8 @@ ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.r
 # Serialization
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization-json" }
 
+# Icons
+material-icon = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "material-icon"}
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
