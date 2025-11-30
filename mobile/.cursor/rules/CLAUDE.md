@@ -29,14 +29,63 @@ com.capstone.sigve/
 │       ├── settings/     # Use cases de configuración
 │       └── vehicles/     # Use cases de vehículos
 ├── ui/
+│   ├── admin/            # Módulo Admin SIGVE
+│   │   ├── navigation/   # Navegación del módulo Admin
+│   │   └── AdminHomeScreen.kt
 │   ├── auth/             # Feature de autenticación
 │   ├── common/           # Componentes compartidos
-│   ├── navigation/       # Configuración de navegación
-│   ├── settings/         # Feature de configuración
-│   ├── theme/            # Tema de la aplicación (colores, tipografía)
-│   └── vehicles/         # Feature de vehículos
+│   ├── firestation/      # Módulo Jefe de Cuartel (Fire Station)
+│   │   ├── navigation/   # Navegación del módulo Fire Station
+│   │   └── FireStationHomeScreen.kt
+│   ├── navigation/       # Navegación raíz de la app
+│   ├── settings/         # Feature de configuración (compartido)
+│   ├── workshop/         # Módulo Taller (Admin Taller + Mecánico)
+│   │   ├── navigation/   # Navegación del módulo Workshop
+│   │   └── WorkshopHomeScreen.kt
+│   ├── theme/            # Tema de la aplicación
+│   └── vehicles/         # [DEPRECADO] - Migrar a módulos específicos
 ├── MainActivity.kt
 └── SigveApplication.kt
+```
+
+---
+
+## Sistema de Roles y Módulos
+
+### Roles de Usuario (desde BD tabla `role`)
+| Rol | Módulo | Descripción |
+|-----|--------|-------------|
+| Admin SIGVE | ADMIN | Administración global del sistema |
+| Admin Taller | WORKSHOP | Gestión del taller mecánico |
+| Mecánico | WORKSHOP | Trabajo en mantenciones |
+| Jefe Cuartel | FIRE_STATION | Gestión de vehículos del cuartel |
+
+### Modelo de Rol
+```kotlin
+// El rol se obtiene de la BD mediante join con user_profile
+data class Role(
+    val id: Int,
+    val name: String,       // "Admin SIGVE", "Admin Taller", "Mecánico", "Jefe Cuartel"
+    val description: String?
+)
+
+// Determinar módulo según nombre del rol
+fun Role.getAppModule(): AppModule = when (name.lowercase()) {
+    "admin sigve" -> AppModule.ADMIN
+    "admin taller", "mecánico", "mecanico" -> AppModule.WORKSHOP
+    "jefe cuartel" -> AppModule.FIRE_STATION
+    else -> AppModule.WORKSHOP
+}
+```
+
+### Rutas de Navegación
+```kotlin
+sealed class RootNavRoute(val route: String) {
+    data object Login : RootNavRoute("login_screen")
+    data object AdminModule : RootNavRoute("admin_module")
+    data object WorkshopModule : RootNavRoute("workshop_module")
+    data object FireStationModule : RootNavRoute("fire_station_module")
+}
 ```
 
 ---
@@ -47,20 +96,20 @@ com.capstone.sigve/
 - **Clases**: PascalCase (`VehiclesViewModel`, `AuthRepository`)
 - **Funciones**: camelCase (`loadVehicles`, `onLoginClicked`)
 - **Constantes**: SCREAMING_SNAKE_CASE (`THEME_KEY`, `CUSTOM_PRIMARY`)
-- **Paquetes**: minúsculas sin separadores (`mainScreenBottomNav`)
+- **Paquetes**: minúsculas sin separadores (`firestation`, `workshop`)
 - **Archivos Composable**: PascalCase igual que la función principal (`VehiclesScreen.kt`)
 - **UiState**: Sufijo `UiState` para clases de estado (`LoginUiState`, `VehiclesUiState`)
 
 ### ViewModels
 - Usar anotación `@HiltViewModel`
-- Inyectar dependencias vía constructor con `@Inject`
+- Inyectar Use Cases vía constructor con `@Inject`
 - Exponer estado UI como `mutableStateOf` o `StateFlow`
 - Los métodos públicos deben empezar con `on` para eventos (`onLoginClicked`, `onEmailChange`)
 
 ```kotlin
 @HiltViewModel
 class ExampleViewModel @Inject constructor(
-    private val repository: ExampleRepository
+    private val getDataUseCase: GetDataUseCase
 ) : ViewModel() {
     var uiState by mutableStateOf(ExampleUiState())
         private set
@@ -101,8 +150,8 @@ class ExampleRepositoryImpl @Inject constructor(
 ) : ExampleRepository {
     override suspend fun getData(): Result<List<Item>> {
         return try {
-            val data = client.postgrest["table"].select().decodeList<Item>()
-            Result.success(data)
+            val dtos = client.postgrest["table"].select().decodeList<ItemDto>()
+            Result.success(dtos.toDomainList())
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -129,15 +178,16 @@ data class Vehicle(
 - Ubicar en `data/dto/`
 - Usar `@Serializable` para interacción con Supabase
 - Nombres de campos en snake_case para coincidir con la base de datos
+- Para joins, incluir el DTO relacionado como propiedad
 
 ```kotlin
-// data/dto/VehicleDto.kt
+// data/dto/UserProfileDto.kt
 @Serializable
-data class VehicleDto(
-    val id: Int,
-    val license_plate: String,
-    val brand: String,
-    val model: String
+data class UserProfileDto(
+    val id: String,
+    val first_name: String,
+    val role: RoleDto,  // Join con tabla role
+    val workshop_id: Int? = null
 )
 ```
 
@@ -200,22 +250,65 @@ fun ExampleScreen(viewModel: ExampleViewModel = hiltViewModel()) {
 
 ## Navegación
 
+### Estructura de Navegación
+```
+AppNavigation (Raíz)
+├── LoginScreen
+├── AdminNavigation (Admin SIGVE)
+│   ├── AdminHomeScreen
+│   └── SettingsScreen
+├── WorkshopNavigation (Admin Taller + Mecánico)
+│   ├── WorkshopHomeScreen
+│   ├── MaintenanceScreen (TODO)
+│   ├── InventoryScreen (TODO)
+│   └── SettingsScreen
+└── FireStationNavigation (Jefe Cuartel)
+    ├── FireStationHomeScreen
+    ├── VehiclesScreen (TODO)
+    ├── HistoryScreen (TODO)
+    └── SettingsScreen
+```
+
 ### Configuración
 - Usar Navigation Compose
 - Definir rutas como `sealed class` con `data object`
-- Navegación principal en `AppNavigation.kt`
-- Bottom Navigation en `MainScreenNavigation.kt`
+- Cada módulo tiene su propia navegación interna
 
 ```kotlin
-sealed class ExampleRoute(val route: String) {
-    data object Home: ExampleRoute("home_screen")
-    data object Detail: ExampleRoute("detail_screen/{id}")
+sealed class WorkshopNavRoute(val route: String, val title: String, val icon: ImageVector) {
+    data object Home : WorkshopNavRoute("workshop_home", "Inicio", Icons.Default.Home)
+    data object Maintenance : WorkshopNavRoute("workshop_maintenance", "Mantenciones", Icons.Default.Build)
+    
+    companion object {
+        val items = listOf(Home, Maintenance, Inventory, Settings)
+    }
 }
 ```
 
-### Bottom Navigation
-- Definir ítems en `BottomNavDestinations.kt`
-- Usar `BottomNavItem` data class
+---
+
+## Autenticación
+
+### Flujo de Login
+1. Usuario ingresa credenciales
+2. `LoginUseCase` autentica con Supabase Auth
+3. Se obtiene `UserProfile` con join a tabla `role`
+4. Se determina el módulo según `role.name`
+5. Se navega al módulo correspondiente
+
+### Query con Join para UserProfile
+```kotlin
+client.postgrest["user_profile"]
+    .select(columns = Columns.raw("*, role(*)")) {
+        filter { eq("id", userId) }
+    }
+    .decodeSingle<UserProfileDto>()
+```
+
+### Cierre de Sesión
+- Cada módulo tiene botón de logout en el menú
+- `LogoutUseCase` cierra sesión en Supabase
+- Se navega de vuelta a `LoginScreen`
 
 ---
 
@@ -246,20 +339,24 @@ object AppModule {
 - URL y Key en `local.properties` (NO commitear)
 - Acceder via `BuildConfig.SUPABASE_URL` y `BuildConfig.SUPABASE_KEY`
 
-### Módulos instalados
-- `Auth` para autenticación
-- `Postgrest` para base de datos
+### Tablas Principales
+| Tabla | Descripción |
+|-------|-------------|
+| `user_profile` | Perfiles de usuario con rol |
+| `role` | Catálogo de roles (Admin SIGVE, Admin Taller, Mecánico, Jefe Cuartel) |
+| `vehicle` | Vehículos de emergencia |
+| `fire_station` | Cuarteles de bomberos |
+| `workshop` | Talleres mecánicos |
+| `maintenance_order` | Órdenes de mantención |
 
-### Patrón de uso
+### Patrón de uso con Joins
 ```kotlin
-// Autenticación
-client.auth.signInWith(Email) {
-    email = "user@example.com"
-    password = "password"
-}
-
-// Consultas
-client.postgrest["table_name"].select().decodeList<Model>()
+// Select con foreign key join
+client.postgrest["user_profile"]
+    .select(columns = Columns.raw("*, role(*)")) {
+        filter { eq("id", userId) }
+    }
+    .decodeSingle<UserProfileDto>()
 ```
 
 ---
@@ -299,7 +396,7 @@ client.postgrest["table_name"].select().decodeList<Model>()
 
 ## Idioma
 
-- **Código**: Inglés (nombres de clases, funciones, variables)
+- **Código**: Inglés (nombres de clases, funciones, variables, paquetes)
 - **UI/Strings**: Español (textos visibles al usuario)
 - **Comentarios**: Español preferido
 
@@ -315,19 +412,35 @@ client.postgrest["table_name"].select().decodeList<Model>()
 6. **Composables pequeños** - extraer componentes reutilizables
 7. **Usar `remember`** para estados locales en Composables
 8. **LaunchedEffect** para efectos secundarios en Compose
+9. **Usar Use Cases** para lógica de negocio entre ViewModel y Repository
+10. **Roles desde BD** - Obtener roles dinámicamente de la tabla `role`
 
 ---
 
 ## Features Actuales
 
-- [x] Autenticación (Login)
-- [x] Listado de vehículos
-- [x] Configuración de tema (claro/oscuro)
+### Implementado ✅
+- [x] Autenticación (Login con roles desde BD)
+- [x] Navegación basada en roles (Admin, Workshop, FireStation)
+- [x] Configuración de tema (claro/oscuro/sistema)
 - [x] Personalización de colores
-- [ ] Mantenciones
-- [ ] Gestión de taller
+- [x] Estructura de 3 módulos principales
+- [x] Logout por módulo
+- [x] Join con tabla role para obtener nombre del rol
+
+### Pendiente 📋
+- [ ] **Admin SIGVE**: Gestión global del sistema
+- [ ] **Workshop**: Mantenciones
+- [ ] **Workshop**: Inventario de repuestos
+- [ ] **FireStation**: Listado de vehículos
+- [ ] **FireStation**: Historial de mantenciones
 - [ ] Detalle de vehículo
-- [ ] Agregar vehículo
+- [ ] Agregar/editar vehículo
+
+### Deprecado ⚠️
+- `ui/vehicles/` - Migrar funcionalidad a módulos específicos
+- `ui/taller/` - Renombrado a `ui/workshop/`
+- `ui/cuartel/` - Renombrado a `ui/firestation/`
 
 ---
 
@@ -343,4 +456,3 @@ client.postgrest["table_name"].select().decodeList<Model>()
 # Limpiar build
 ./gradlew clean
 ```
-

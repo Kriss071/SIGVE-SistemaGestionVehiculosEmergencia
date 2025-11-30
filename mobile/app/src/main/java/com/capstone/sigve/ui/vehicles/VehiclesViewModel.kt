@@ -10,6 +10,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * @deprecated Este ViewModel será reemplazado por ViewModels específicos de cada módulo.
+ */
+@Deprecated("Usar ViewModels específicos de cada módulo")
 @HiltViewModel
 class VehiclesViewModel @Inject constructor(
     private val getVehiclesUseCase: GetVehiclesUseCase

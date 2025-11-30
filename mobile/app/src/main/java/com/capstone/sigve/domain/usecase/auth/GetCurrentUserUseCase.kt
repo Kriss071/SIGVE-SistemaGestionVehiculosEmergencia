@@ -4,11 +4,12 @@ import com.capstone.sigve.domain.model.UserProfile
 import com.capstone.sigve.domain.repository.AuthRepository
 import javax.inject.Inject
 
-class LoginUseCase @Inject constructor(
+class GetCurrentUserUseCase @Inject constructor(
     private val authRepository: AuthRepository
 ) {
-    suspend operator fun invoke(email: String, password: String): Result<UserProfile> {
-        return authRepository.signIn(email, password)
+    suspend operator fun invoke(): Result<UserProfile> {
+        return authRepository.getCurrentUserProfile()
     }
 }
+
 

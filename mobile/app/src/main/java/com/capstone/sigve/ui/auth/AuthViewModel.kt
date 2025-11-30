@@ -43,8 +43,11 @@ class AuthViewModel @Inject constructor(
             val result = loginUseCase(email, password)
 
             result.fold(
-                onSuccess = {
-                    uiState = LoginUiState(loginSuccess = true)
+                onSuccess = { userProfile ->
+                    uiState = LoginUiState(
+                        userProfile = userProfile,
+                        navigateTo = userProfile.appModule
+                    )
                 },
                 onFailure = { error ->
                     uiState = LoginUiState(error = error.message ?: "Error desconocido")
@@ -53,7 +56,7 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun onLoginSuccessShown() {
-        uiState = uiState.copy(loginSuccess = false)
+    fun onNavigationHandled() {
+        uiState = uiState.copy(navigateTo = null)
     }
 }

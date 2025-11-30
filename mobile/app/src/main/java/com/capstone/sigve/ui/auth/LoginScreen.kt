@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.capstone.sigve.R
+import com.capstone.sigve.domain.model.AppModule
 import com.capstone.sigve.ui.navigation.RootNavRoute
 
 @Composable
@@ -43,20 +44,24 @@ fun LoginScreen(
     navController: NavController,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
-
     val uiState = viewModel.uiState
     val context = LocalContext.current
 
-
-    LaunchedEffect(key1 = uiState.loginSuccess) {
-        if (uiState.loginSuccess) {
-            navController.navigate(RootNavRoute.MainScreen.route) {
-                popUpTo(RootNavRoute.LoginScreen.route) {
+    // Navegar según el módulo/rol del usuario
+    LaunchedEffect(key1 = uiState.navigateTo) {
+        uiState.navigateTo?.let { module ->
+            val destination = when (module) {
+                AppModule.ADMIN -> RootNavRoute.AdminModule.route
+                AppModule.WORKSHOP -> RootNavRoute.WorkshopModule.route
+                AppModule.FIRE_STATION -> RootNavRoute.FireStationModule.route
+            }
+            navController.navigate(destination) {
+                popUpTo(RootNavRoute.Login.route) {
                     inclusive = true
                 }
             }
+            viewModel.onNavigationHandled()
         }
-        viewModel.onLoginSuccessShown()
     }
 
     LaunchedEffect(key1 = uiState.error) {

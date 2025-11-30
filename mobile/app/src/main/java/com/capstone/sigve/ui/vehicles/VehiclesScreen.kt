@@ -41,6 +41,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
+/**
+ * @deprecated Esta pantalla será reemplazada por las vistas específicas de cada módulo.
+ * - Para Cuartel: usar CuartelHomeScreen
+ * - Para Taller: la gestión de vehículos se integrará en el módulo Taller
+ */
+@Deprecated("Usar las vistas específicas de cada módulo (Admin, Taller, Cuartel)")
 @Composable
 fun VehiclesScreen(viewModel: VehiclesViewModel = hiltViewModel()) {
     val uiState by remember { derivedStateOf { viewModel.uiState } }

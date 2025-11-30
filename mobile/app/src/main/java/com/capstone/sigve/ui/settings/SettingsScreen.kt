@@ -54,7 +54,7 @@ import com.capstone.sigve.ui.theme.LightRedColors
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
-    innerPadding: PaddingValues
+    innerPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     val theme by viewModel.theme.collectAsState()
     val color by viewModel.color.collectAsState()
@@ -70,7 +70,7 @@ fun SettingsScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .padding(innerPadding)
-            .padding(top = 28.dp, start = 16.dp, end = 16.dp),
+            .padding(top = 16.dp, start = 16.dp, end = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
