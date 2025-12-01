@@ -4,10 +4,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -35,8 +35,8 @@ import com.capstone.sigve.ui.firestation.FireStationHomeScreen
 import com.capstone.sigve.ui.settings.SettingsScreen
 
 sealed class FireStationNavRoute(val route: String, val title: String, val icon: ImageVector) {
-    data object Home : FireStationNavRoute("firestation_home", "Inicio", Icons.Default.Home)
-    data object Vehicles : FireStationNavRoute("firestation_vehicles", "Vehículos", Icons.Default.ShoppingCart)
+    data object Home : FireStationNavRoute("firestation_home", "Dashboard", Icons.Default.Home)
+    data object Vehicles : FireStationNavRoute("firestation_vehicles", "Vehículos", Icons.Default.DirectionsCar)
     data object History : FireStationNavRoute("firestation_history", "Historial", Icons.Default.DateRange)
     data object Settings : FireStationNavRoute("firestation_settings", "Ajustes", Icons.Default.Settings)
 

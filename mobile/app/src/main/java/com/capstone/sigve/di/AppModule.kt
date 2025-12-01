@@ -3,10 +3,12 @@ package com.capstone.sigve.di
 import android.content.Context
 import com.capstone.sigve.BuildConfig
 import com.capstone.sigve.data.repository.AuthRepositoryImpl
+import com.capstone.sigve.data.repository.FireStationRepositoryImpl
 import com.capstone.sigve.data.repository.SettingsRepositoryImpl
 import com.capstone.sigve.data.repository.VehiclesRepositoryImpl
 import com.capstone.sigve.data.repository.WorkshopRepositoryImpl
 import com.capstone.sigve.domain.repository.AuthRepository
+import com.capstone.sigve.domain.repository.FireStationRepository
 import com.capstone.sigve.domain.repository.SettingsRepository
 import com.capstone.sigve.domain.repository.VehiclesRepository
 import com.capstone.sigve.domain.repository.WorkshopRepository
@@ -62,5 +64,11 @@ object AppModule {
     @Singleton
     fun provideWorkshopRepository(client: SupabaseClient): WorkshopRepository {
         return WorkshopRepositoryImpl(client)
+    }
+
+    @Provides
+    @Singleton
+    fun provideFireStationRepository(client: SupabaseClient): FireStationRepository {
+        return FireStationRepositoryImpl(client)
     }
 }
