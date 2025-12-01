@@ -6,6 +6,7 @@ package com.capstone.sigve.domain.model
 data class WorkshopInventoryItem(
     val id: Int,
     val sparePart: SparePart,
+    val supplier: Supplier? = null,
     val quantity: Int,
     val currentCost: Double,
     val location: String? = null,
@@ -16,5 +17,7 @@ data class WorkshopInventoryItem(
     
     val isAvailable: Boolean
         get() = quantity > 0
+    
+    val totalValue: Double
+        get() = quantity * currentCost
 }
-

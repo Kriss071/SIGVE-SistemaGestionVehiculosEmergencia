@@ -6,6 +6,8 @@ import com.capstone.sigve.domain.model.MaintenanceOrderStatus
 import com.capstone.sigve.domain.model.MaintenanceTask
 import com.capstone.sigve.domain.model.MaintenanceType
 import com.capstone.sigve.domain.model.Mechanic
+import com.capstone.sigve.domain.model.SparePart
+import com.capstone.sigve.domain.model.Supplier
 import com.capstone.sigve.domain.model.TaskType
 import com.capstone.sigve.domain.model.Workshop
 import com.capstone.sigve.domain.model.WorkshopInventoryItem
@@ -99,4 +101,46 @@ interface WorkshopRepository {
      * Elimina un repuesto de una tarea
      */
     suspend fun removePartFromTask(partId: Int): Result<Unit>
+    
+    // ========== Métodos de Inventario ==========
+    
+    /**
+     * Obtiene el catálogo maestro de repuestos (todos los spare_part)
+     */
+    suspend fun getMasterSpareParts(): Result<List<SparePart>>
+    
+    /**
+     * Obtiene los proveedores disponibles para un taller
+     */
+    suspend fun getSuppliers(workshopId: Int): Result<List<Supplier>>
+    
+    /**
+     * Crea un nuevo ítem de inventario
+     */
+    suspend fun createInventoryItem(
+        workshopId: Int,
+        sparePartId: Int,
+        supplierId: Int?,
+        quantity: Int,
+        currentCost: Double,
+        location: String?,
+        workshopSku: String?
+    ): Result<WorkshopInventoryItem>
+    
+    /**
+     * Actualiza un ítem de inventario
+     */
+    suspend fun updateInventoryItem(
+        inventoryId: Int,
+        supplierId: Int?,
+        quantity: Int,
+        currentCost: Double,
+        location: String?,
+        workshopSku: String?
+    ): Result<Unit>
+    
+    /**
+     * Elimina un ítem de inventario
+     */
+    suspend fun deleteInventoryItem(inventoryId: Int): Result<Unit>
 }

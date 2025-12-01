@@ -34,6 +34,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.capstone.sigve.ui.common.SigveTopAppBar
 import com.capstone.sigve.ui.settings.SettingsScreen
+import com.capstone.sigve.ui.workshop.InventoryScreen
 import com.capstone.sigve.ui.workshop.MaintenanceScreen
 import com.capstone.sigve.ui.workshop.OrderDetailScreen
 import com.capstone.sigve.ui.workshop.WorkshopHomeScreen
@@ -145,9 +146,8 @@ fun WorkshopNavigation(
                 }
             }
             composable(WorkshopNavRoute.Inventory.route) {
-                // TODO: Implementar pantalla de inventario
                 androidx.compose.foundation.layout.Box(modifier = Modifier.padding(innerPadding)) {
-                    WorkshopHomeScreen()
+                    InventoryScreen()
                 }
             }
             composable(WorkshopNavRoute.Settings.route) {

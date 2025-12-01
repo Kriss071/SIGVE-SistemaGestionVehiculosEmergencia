@@ -3,14 +3,18 @@ package com.capstone.sigve.data.repository
 import android.util.Log
 import com.capstone.sigve.data.dto.CreateMaintenanceTaskDto
 import com.capstone.sigve.data.dto.CreateMaintenanceTaskPartDto
+import com.capstone.sigve.data.dto.CreateWorkshopInventoryDto
 import com.capstone.sigve.data.dto.MaintenanceOrderDetailDto
 import com.capstone.sigve.data.dto.MaintenanceOrderDto
 import com.capstone.sigve.data.dto.MaintenanceOrderStatusDto
 import com.capstone.sigve.data.dto.MaintenanceTaskDto
 import com.capstone.sigve.data.dto.MaintenanceTypeDto
 import com.capstone.sigve.data.dto.MechanicDto
+import com.capstone.sigve.data.dto.SparePartDto
+import com.capstone.sigve.data.dto.SupplierDto
 import com.capstone.sigve.data.dto.TaskTypeDto
 import com.capstone.sigve.data.dto.UpdateMaintenanceOrderDto
+import com.capstone.sigve.data.dto.UpdateWorkshopInventoryDto
 import com.capstone.sigve.data.dto.WorkshopDto
 import com.capstone.sigve.data.dto.WorkshopInventoryDto
 import com.capstone.sigve.data.mapper.toDomain
@@ -22,6 +26,8 @@ import com.capstone.sigve.domain.model.MaintenanceOrderStatus
 import com.capstone.sigve.domain.model.MaintenanceTask
 import com.capstone.sigve.domain.model.MaintenanceType
 import com.capstone.sigve.domain.model.Mechanic
+import com.capstone.sigve.domain.model.SparePart
+import com.capstone.sigve.domain.model.Supplier
 import com.capstone.sigve.domain.model.TaskType
 import com.capstone.sigve.domain.model.Workshop
 import com.capstone.sigve.domain.model.WorkshopInventoryItem
@@ -268,7 +274,8 @@ class WorkshopRepositoryImpl @Inject constructor(
                 current_cost,
                 location,
                 workshop_sku,
-                spare_part:spare_part_id(id, name, sku, brand, description)
+                spare_part:spare_part_id(id, name, sku, brand, description),
+                supplier:supplier_id(id, name, rut, address, phone, email)
             """.trimIndent()
             
             val inventory = client.postgrest["workshop_inventory"]
@@ -432,6 +439,143 @@ class WorkshopRepositoryImpl @Inject constructor(
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Error al eliminar repuesto: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    // ========== Métodos de Inventario ==========
+
+    override suspend fun getMasterSpareParts(): Result<List<SparePart>> {
+        return try {
+            Log.d(TAG, "Obteniendo catálogo maestro de repuestos")
+            
+            val spareParts = client.postgrest["spare_part"]
+                .select()
+                .decodeList<SparePartDto>()
+            
+            Log.d(TAG, "Repuestos maestros obtenidos: ${spareParts.size}")
+            Result.success(spareParts.toDomainList())
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al obtener repuestos maestros: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getSuppliers(workshopId: Int): Result<List<Supplier>> {
+        return try {
+            Log.d(TAG, "Obteniendo proveedores para taller ID: $workshopId")
+            
+            // Obtener proveedores globales (workshop_id = null) y del taller específico
+            val suppliers = client.postgrest["supplier"]
+                .select()
+                .decodeList<SupplierDto>()
+            
+            // Filtrar: proveedores globales o del taller específico
+            val filteredSuppliers = suppliers // Por ahora todos los proveedores
+            
+            Log.d(TAG, "Proveedores obtenidos: ${filteredSuppliers.size}")
+            Result.success(filteredSuppliers.toDomainList())
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al obtener proveedores: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun createInventoryItem(
+        workshopId: Int,
+        sparePartId: Int,
+        supplierId: Int?,
+        quantity: Int,
+        currentCost: Double,
+        location: String?,
+        workshopSku: String?
+    ): Result<WorkshopInventoryItem> {
+        return try {
+            Log.d(TAG, "Creando ítem de inventario para taller ID: $workshopId, repuesto ID: $sparePartId")
+            
+            val createData = CreateWorkshopInventoryDto(
+                spare_part_id = sparePartId,
+                workshop_id = workshopId,
+                supplier_id = supplierId,
+                quantity = quantity,
+                current_cost = currentCost,
+                location = location,
+                workshop_sku = workshopSku
+            )
+            
+            val selectColumns = """
+                id,
+                quantity,
+                current_cost,
+                location,
+                workshop_sku,
+                spare_part:spare_part_id(id, name, sku, brand, description),
+                supplier:supplier_id(id, name, rut, address, phone, email)
+            """.trimIndent()
+            
+            val inventoryDto = client.postgrest["workshop_inventory"]
+                .insert(createData) {
+                    select(columns = Columns.raw(selectColumns))
+                }
+                .decodeSingle<WorkshopInventoryDto>()
+            
+            Log.d(TAG, "Ítem de inventario creado: #${inventoryDto.id}")
+            Result.success(inventoryDto.toDomain())
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al crear ítem de inventario: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateInventoryItem(
+        inventoryId: Int,
+        supplierId: Int?,
+        quantity: Int,
+        currentCost: Double,
+        location: String?,
+        workshopSku: String?
+    ): Result<Unit> {
+        return try {
+            Log.d(TAG, "Actualizando ítem de inventario ID: $inventoryId")
+            
+            val updateData = UpdateWorkshopInventoryDto(
+                supplier_id = supplierId,
+                quantity = quantity,
+                current_cost = currentCost,
+                location = location,
+                workshop_sku = workshopSku
+            )
+            
+            client.postgrest["workshop_inventory"]
+                .update(updateData) {
+                    filter {
+                        eq("id", inventoryId)
+                    }
+                }
+            
+            Log.d(TAG, "Ítem de inventario actualizado exitosamente")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al actualizar ítem de inventario: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun deleteInventoryItem(inventoryId: Int): Result<Unit> {
+        return try {
+            Log.d(TAG, "Eliminando ítem de inventario ID: $inventoryId")
+            
+            client.postgrest["workshop_inventory"]
+                .delete {
+                    filter {
+                        eq("id", inventoryId)
+                    }
+                }
+            
+            Log.d(TAG, "Ítem de inventario eliminado exitosamente")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al eliminar ítem de inventario: ${e.message}", e)
             Result.failure(e)
         }
     }

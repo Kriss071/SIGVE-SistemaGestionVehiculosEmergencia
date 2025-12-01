@@ -7,6 +7,7 @@ fun WorkshopInventoryDto.toDomain(): WorkshopInventoryItem {
     return WorkshopInventoryItem(
         id = id,
         sparePart = spare_part.toDomain(),
+        supplier = supplier?.toDomain(),
         quantity = quantity,
         currentCost = current_cost,
         location = location,
@@ -15,4 +16,3 @@ fun WorkshopInventoryDto.toDomain(): WorkshopInventoryItem {
 }
 
 fun List<WorkshopInventoryDto>.toDomainList(): List<WorkshopInventoryItem> = map { it.toDomain() }
-
