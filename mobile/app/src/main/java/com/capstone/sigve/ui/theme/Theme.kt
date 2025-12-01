@@ -1,115 +1,118 @@
 package com.capstone.sigve.ui.theme
 
-import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import com.capstone.sigve.domain.model.AppColor
-import com.capstone.sigve.domain.model.CustomColors
 
-/* Other default colors to override
-background = Color(0xFFFFFBFE),
-surface = Color(0xFFFFFBFE),
-onPrimary = Color.White,
-onSecondary = Color.White,
-onTertiary = Color.White,
-onBackground = Color(0xFF1C1B1F),
-onSurface = Color(0xFF1C1B1F),
-*/
-
-val LightDefaultColors = lightColorScheme(
-    primary = Color(0xFF6200EE),
-    secondary = Color(0xFF03DAC6),
-    tertiary = Color(0xFFBB86FC),
-    background = Color(0xFFE7E7E7)
+/**
+ * Esquema de colores para tema claro
+ * Diseñado para SIGVE - Sistema de Gestión de Vehículos de Emergencia
+ */
+private val LightColorScheme = lightColorScheme(
+    // Colores primarios - Rojo bomberos
+    primary = FireRed,
+    onPrimary = OnPrimaryLight,
+    primaryContainer = FireRedLight,
+    onPrimaryContainer = OnPrimaryContainerLight,
+    
+    // Colores secundarios - Gris profesional
+    secondary = SlateGray,
+    onSecondary = OnSecondaryLight,
+    secondaryContainer = SlateGrayLight,
+    onSecondaryContainer = OnSecondaryContainerLight,
+    
+    // Colores terciarios - Verde éxito
+    tertiary = SuccessGreen,
+    onTertiary = OnTertiaryLight,
+    tertiaryContainer = SuccessGreenLight,
+    onTertiaryContainer = OnTertiaryContainerLight,
+    
+    // Error
+    error = ErrorRed,
+    onError = OnErrorLight,
+    errorContainer = ErrorRedContainer,
+    onErrorContainer = OnErrorContainerLight,
+    
+    // Fondos y superficies
+    background = BackgroundLight,
+    onBackground = OnBackgroundLight,
+    surface = SurfaceLight,
+    onSurface = OnSurfaceLight,
+    surfaceVariant = SurfaceVariantLight,
+    onSurfaceVariant = OnSurfaceVariantLight,
+    
+    // Bordes
+    outline = OutlineLight,
+    outlineVariant = OutlineVariantLight,
+    
+    // Otros
+    inverseSurface = SurfaceDark,
+    inverseOnSurface = OnSurfaceDark,
+    inversePrimary = FireRedDark,
+    scrim = OnBackgroundLight
 )
 
-val DarkDefaultColors = darkColorScheme(
-    primary = Color(0xFFBB86FC),
-    secondary = Color(0xFF03DAC6),
-    tertiary = Color(0xFF6200EE),
-    background = Color(0xFF343434)
+/**
+ * Esquema de colores para tema oscuro
+ */
+private val DarkColorScheme = darkColorScheme(
+    // Colores primarios - Rojo bomberos (ajustado para oscuro)
+    primary = FireRedDark,
+    onPrimary = OnPrimaryDark,
+    primaryContainer = FireRedDarkContainer,
+    onPrimaryContainer = OnPrimaryContainerDark,
+    
+    // Colores secundarios - Gris profesional
+    secondary = SlateGrayDark,
+    onSecondary = OnSecondaryDark,
+    secondaryContainer = SlateGrayDarkContainer,
+    onSecondaryContainer = OnSecondaryContainerDark,
+    
+    // Colores terciarios - Verde éxito
+    tertiary = SuccessGreenDark,
+    onTertiary = OnTertiaryDark,
+    tertiaryContainer = SuccessGreenDarkContainer,
+    onTertiaryContainer = OnTertiaryContainerDark,
+    
+    // Error
+    error = ErrorRedDark,
+    onError = OnErrorDark,
+    errorContainer = ErrorRedDarkContainer,
+    onErrorContainer = OnErrorContainerDark,
+    
+    // Fondos y superficies
+    background = BackgroundDark,
+    onBackground = OnBackgroundDark,
+    surface = SurfaceDark,
+    onSurface = OnSurfaceDark,
+    surfaceVariant = SurfaceVariantDark,
+    onSurfaceVariant = OnSurfaceVariantDark,
+    
+    // Bordes
+    outline = OutlineDark,
+    outlineVariant = OutlineVariantDark,
+    
+    // Otros
+    inverseSurface = SurfaceLight,
+    inverseOnSurface = OnSurfaceLight,
+    inversePrimary = FireRed,
+    scrim = OnBackgroundDark
 )
 
-val LightBlueColors = lightColorScheme(
-    primary = Color(0xFF0D47A1),
-    secondary = Color(0xFF1976D2),
-    tertiary = Color(0xFF64B5F6),
-    background = Color(0xFFE7E7E7)
-)
-
-val DarkBlueColors = darkColorScheme(
-    primary = Color(0xFF64B5F6),
-    secondary = Color(0xFF1976D2),
-    tertiary = Color(0xFF0D47A1),
-    background = Color(0xFF343434)
-)
-
-val LightGreenColors = lightColorScheme(
-    primary = Color(0xFF4CAF50),
-    secondary = Color(0xFF5500FF),
-    tertiary = Color(0xFF7D5260),
-    background = Color(0xFFE7E7E7)
-)
-
-val DarkGreenColors = darkColorScheme(
-    primary = Color(0xFF7D5260),
-    secondary = Color(0xFF625B71),
-    tertiary = Color(0xFF4CAF50),
-    background = Color(0xFF343434)
-)
-
-val LightRedColors = lightColorScheme(
-    primary = Color(0xFFF44336),
-    secondary = Color(0xFF625B71),
-    tertiary = Color(0xFF7D5260),
-    background = Color(0xFFE7E7E7)
-)
-
-val DarkRedColors = darkColorScheme(
-    primary = Color(0xFF7D5260),
-    secondary = Color(0xFF625B71),
-    tertiary = Color(0xFFF44336),
-    background = Color(0xFF343434)
-)
-
+/**
+ * Tema principal de SIGVE
+ * 
+ * @param darkTheme Si es true, usa el tema oscuro
+ * @param content Contenido de la aplicación
+ */
 @Composable
 fun SIGVETheme(
-    darkTheme: Boolean,
-    appColor: AppColor,
-    customColors: CustomColors,
+    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-
-    val colorScheme = when (appColor) {
-        AppColor.DEFAULT -> if (darkTheme) DarkDefaultColors else LightDefaultColors
-        AppColor.BLUE -> if (darkTheme) DarkBlueColors else LightBlueColors
-        AppColor.GREEN -> if (darkTheme) DarkGreenColors else LightGreenColors
-        AppColor.RED -> if (darkTheme) DarkRedColors else LightRedColors
-
-        AppColor.CUSTOM -> if (darkTheme) {
-            darkColorScheme(
-                primary = Color(customColors.primary),
-                secondary = Color(customColors.secondary),
-                tertiary = Color(customColors.tertiary),
-                background = Color(customColors.background)
-            )
-        } else {
-            lightColorScheme(
-                primary = Color(customColors.primary),
-                secondary = Color(customColors.secondary),
-                tertiary = Color(customColors.tertiary),
-                background = Color(customColors.background)
-            )
-        }
-    }
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,

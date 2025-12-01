@@ -126,7 +126,7 @@ fun OrderDetailScreen(
                         text = uiState.order?.let { "Orden #${it.id}" } ?: "Detalle de Orden",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 },
                 navigationIcon = {
@@ -134,7 +134,7 @@ fun OrderDetailScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver",
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 },
@@ -144,13 +144,13 @@ fun OrderDetailScreen(
                             Icon(
                                 Icons.Default.Refresh,
                                 contentDescription = "Refrescar",
-                                tint = Color.White
+                                tint = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color(0xFFDF2532)
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             )
         },
@@ -344,7 +344,7 @@ private fun CompletedOrderBanner() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF4CAF50).copy(alpha = 0.1f)
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
         )
     ) {
         Row(
@@ -356,7 +356,7 @@ private fun CompletedOrderBanner() {
             Icon(
                 imageVector = Icons.Default.Lock,
                 contentDescription = null,
-                tint = Color(0xFF4CAF50),
+                tint = MaterialTheme.colorScheme.tertiary,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
@@ -365,7 +365,7 @@ private fun CompletedOrderBanner() {
                     text = "Orden Completada",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4CAF50)
+                    color = MaterialTheme.colorScheme.tertiary
                 )
                 Text(
                     text = "Esta orden ha sido cerrada y no puede ser modificada",
@@ -439,7 +439,7 @@ private fun VehicleInfoCard(order: MaintenanceOrderDetail) {
                 InfoChip(
                     icon = Icons.Default.LocalFireDepartment,
                     text = order.vehicle.fireStationName,
-                    iconTint = Color(0xFFDF2532)
+                    iconTint = MaterialTheme.colorScheme.primary
                 )
                 InfoChip(
                     icon = Icons.Default.Speed,

@@ -272,8 +272,8 @@ private fun InventoryHeader(
                     title = "Alerta",
                     value = "${lowStockItems + outOfStockItems}",
                     subtitle = "bajo stock",
-                    backgroundColor = Color(0xFFFF9800).copy(alpha = 0.2f),
-                    valueColor = Color(0xFFFF9800)
+                    backgroundColor = MaterialTheme.colorScheme.errorContainer,
+                    valueColor = MaterialTheme.colorScheme.error
                 )
             }
         }

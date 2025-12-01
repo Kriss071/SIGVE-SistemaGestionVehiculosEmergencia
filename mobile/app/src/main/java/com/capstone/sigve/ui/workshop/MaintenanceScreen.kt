@@ -219,7 +219,7 @@ private fun CompletedOrdersToggle(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (showCompleted) 
-                Color(0xFF4CAF50).copy(alpha = 0.1f) 
+                MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f) 
             else 
                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         )
@@ -239,7 +239,7 @@ private fun CompletedOrdersToggle(
                     imageVector = if (showCompleted) Icons.Default.History else Icons.Default.Build,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
-                    tint = if (showCompleted) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary
+                    tint = if (showCompleted) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Column {
@@ -263,8 +263,8 @@ private fun CompletedOrdersToggle(
                 checked = showCompleted,
                 onCheckedChange = { onToggle() },
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = Color(0xFF4CAF50),
-                    checkedTrackColor = Color(0xFF4CAF50).copy(alpha = 0.5f)
+                    checkedThumbColor = MaterialTheme.colorScheme.tertiary,
+                    checkedTrackColor = MaterialTheme.colorScheme.tertiaryContainer
                 )
             )
         }
@@ -352,7 +352,7 @@ private fun SearchBar(
                         .align(Alignment.TopEnd)
                         .size(10.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFDF2532))
+                        .background(MaterialTheme.colorScheme.error)
                 )
             }
         }
@@ -463,7 +463,7 @@ private fun FiltersPanel(
                                         imageVector = Icons.Default.LocalFireDepartment,
                                         contentDescription = null,
                                         modifier = Modifier.size(18.dp),
-                                        tint = Color(0xFFDF2532)
+                                        tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
                             } else null
@@ -558,7 +558,7 @@ private fun VehicleOrderCard(
                         .clip(RoundedCornerShape(8.dp))
                         .background(
                             if (isCompleted) 
-                                MaterialTheme.colorScheme.surfaceVariant
+                                MaterialTheme.colorScheme.tertiaryContainer
                             else 
                                 MaterialTheme.colorScheme.secondaryContainer
                         ),
@@ -569,7 +569,7 @@ private fun VehicleOrderCard(
                         contentDescription = null,
                         modifier = Modifier.size(28.dp),
                         tint = if (isCompleted) 
-                            Color(0xFF4CAF50)
+                            MaterialTheme.colorScheme.onTertiaryContainer
                         else 
                             MaterialTheme.colorScheme.onSecondaryContainer
                     )
@@ -609,7 +609,7 @@ private fun VehicleOrderCard(
                         imageVector = Icons.Default.LocalFireDepartment,
                         contentDescription = null,
                         modifier = Modifier.size(14.dp),
-                        tint = Color(0xFFDF2532)
+                        tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(

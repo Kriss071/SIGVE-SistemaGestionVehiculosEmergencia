@@ -7,7 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.capstone.sigve.domain.model.AppTheme
 import com.capstone.sigve.ui.navigation.AppNavigation
 import com.capstone.sigve.ui.settings.SettingsViewModel
@@ -23,8 +23,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             val theme by settingsViewModel.theme.collectAsState()
-            val color by settingsViewModel.color.collectAsState()
-            val customColors by settingsViewModel.customColors.collectAsState()
             val isSystemDark = isSystemInDarkTheme()
 
             val isDarkTheme = when (theme) {
@@ -33,15 +31,9 @@ class MainActivity : ComponentActivity() {
                 AppTheme.SYSTEM -> isSystemDark
             }
 
-            SIGVETheme(
-                darkTheme = isDarkTheme,
-                appColor = color,
-                customColors = customColors
-            ) {
+            SIGVETheme(darkTheme = isDarkTheme) {
                 AppNavigation()
             }
         }
     }
 }
-
-
