@@ -12,3 +12,5 @@ class GetFireStationVehiclesUseCase @Inject constructor(
     }
 }
 
+
+

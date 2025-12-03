@@ -89,30 +89,45 @@ class FireStationRepositoryImpl @Inject constructor(
         return try {
             Log.d(TAG, "Obteniendo vehículos con órdenes activas del cuartel: $fireStationId")
             
-            // Consulta para obtener órdenes activas con información del vehículo y taller
+            // Primero obtener los IDs de los vehículos del cuartel
+            val vehicleIds = client.postgrest["vehicle"]
+                .select(columns = Columns.raw("id")) {
+                    filter {
+                        eq("fire_station_id", fireStationId)
+                    }
+                }
+                .decodeList<VehicleIdDto>()
+                .map { it.id }
+            
+            if (vehicleIds.isEmpty()) {
+                Log.d(TAG, "No hay vehículos en el cuartel")
+                return Result.success(emptyMap())
+            }
+            
+            // Consulta para obtener órdenes activas de esos vehículos
+            // Usamos una consulta con join para obtener órdenes de vehículos del cuartel
             val selectColumns = """
                 vehicle_id,
                 workshop:workshop_id(name),
-                maintenance_order_status:order_status_id(name)
+                maintenance_order_status:order_status_id(name),
+                vehicle:vehicle_id(fire_station_id)
             """.trimIndent()
             
-            val orders = client.postgrest["maintenance_order"]
-                .select(columns = Columns.raw(selectColumns)) {
-                    filter {
-                        // Filtrar por vehículos del cuartel a través de un join
-                        // Usamos una subconsulta o RPC, pero por simplicidad obtenemos todos y filtramos
-                    }
-                }
+            // Obtener todas las órdenes y filtrar por vehículos del cuartel en memoria
+            // (Supabase no permite filtrar directamente en joins anidados de esta manera)
+            val allOrders = client.postgrest["maintenance_order"]
+                .select(columns = Columns.raw(selectColumns))
                 .decodeList<MaintenanceOrderForVehicleDto>()
             
-            // Filtrar solo órdenes activas (sin exit_date o estados activos)
+            // Filtrar por vehículos del cuartel y estados activos
             val activeStatuses = listOf("pendiente", "en taller", "en espera de repuestos")
-            val vehiclesInMaintenance = orders
+            val vehiclesInMaintenance = allOrders
                 .filter { order ->
+                    order.vehicle_id in vehicleIds &&
                     order.maintenance_order_status?.name?.lowercase() in activeStatuses
                 }
                 .associate { it.vehicle_id to it.workshop?.name }
-
+            
             Log.d(TAG, "Vehículos en mantención: ${vehiclesInMaintenance.size}")
             Result.success(vehiclesInMaintenance)
         } catch (e: Exception) {
@@ -170,7 +185,8 @@ class FireStationRepositoryImpl @Inject constructor(
 private data class MaintenanceOrderForVehicleDto(
     val vehicle_id: Int,
     val workshop: WorkshopNameDto? = null,
-    val maintenance_order_status: StatusNameDto? = null
+    val maintenance_order_status: StatusNameDto? = null,
+    val vehicle: VehicleFireStationDto? = null
 )
 
 @Serializable
@@ -178,4 +194,10 @@ private data class WorkshopNameDto(val name: String)
 
 @Serializable
 private data class StatusNameDto(val name: String)
+
+@Serializable
+private data class VehicleIdDto(val id: Int)
+
+@Serializable
+private data class VehicleFireStationDto(val fire_station_id: Int)
 

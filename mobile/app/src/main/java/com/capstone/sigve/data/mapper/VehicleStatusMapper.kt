@@ -13,3 +13,5 @@ fun VehicleStatusDto.toDomain(): VehicleStatus {
 
 fun List<VehicleStatusDto>.toDomainList(): List<VehicleStatus> = map { it.toDomain() }
 
+
+

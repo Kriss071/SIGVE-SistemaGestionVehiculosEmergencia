@@ -6,31 +6,27 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.capstone.sigve.domain.usecase.auth.GetCurrentUserUseCase
-import com.capstone.sigve.domain.usecase.firestation.GetFireStationByIdUseCase
-import com.capstone.sigve.domain.usecase.firestation.GetFireStationStatsUseCase
 import com.capstone.sigve.domain.usecase.firestation.GetFireStationVehiclesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class FireStationDashboardViewModel @Inject constructor(
+class FireStationVehiclesViewModel @Inject constructor(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
-    private val getFireStationByIdUseCase: GetFireStationByIdUseCase,
-    private val getFireStationVehiclesUseCase: GetFireStationVehiclesUseCase,
-    private val getFireStationStatsUseCase: GetFireStationStatsUseCase
+    private val getFireStationVehiclesUseCase: GetFireStationVehiclesUseCase
 ) : ViewModel() {
 
-    var uiState by mutableStateOf(FireStationDashboardUiState())
+    var uiState by mutableStateOf(FireStationVehiclesUiState())
         private set
 
     private var fireStationId: Int? = null
 
     init {
-        loadDashboardData()
+        loadVehicles()
     }
 
-    private fun loadDashboardData() {
+    private fun loadVehicles() {
         viewModelScope.launch {
             uiState = uiState.copy(isLoading = true, error = null)
             
@@ -55,38 +51,26 @@ class FireStationDashboardViewModel @Inject constructor(
                 return@launch
             }
             
-            // Cargar datos del cuartel en paralelo
-            val fireStationDeferred = getFireStationByIdUseCase(fireStationId!!)
-            val vehiclesDeferred = getFireStationVehiclesUseCase(fireStationId!!)
-            val statsDeferred = getFireStationStatsUseCase(fireStationId!!)
+            // Cargar vehículos del cuartel
+            val vehiclesResult = getFireStationVehiclesUseCase(fireStationId!!)
             
-            // Procesar resultados
-            val fireStationResult = fireStationDeferred
-            val vehiclesResult = vehiclesDeferred
-            val statsResult = statsDeferred
-            
-            if (fireStationResult.isFailure) {
-                uiState = uiState.copy(
+            uiState = if (vehiclesResult.isSuccess) {
+                uiState.copy(
                     isLoading = false,
-                    error = "Error al cargar cuartel: ${fireStationResult.exceptionOrNull()?.message}"
+                    vehicles = vehiclesResult.getOrThrow(),
+                    error = null
                 )
-                return@launch
+            } else {
+                uiState.copy(
+                    isLoading = false,
+                    error = "Error al cargar vehículos: ${vehiclesResult.exceptionOrNull()?.message}"
+                )
             }
-            
-            uiState = uiState.copy(
-                isLoading = false,
-                fireStation = fireStationResult.getOrNull(),
-                vehicles = vehiclesResult.getOrDefault(emptyList()),
-                stats = statsResult.getOrDefault(uiState.stats),
-                error = if (vehiclesResult.isFailure || statsResult.isFailure) {
-                    "Algunos datos no se pudieron cargar completamente"
-                } else null
-            )
         }
     }
 
     fun onRefresh() {
-        loadDashboardData()
+        loadVehicles()
     }
 
     fun onSearchQueryChange(query: String) {

@@ -9,3 +9,5 @@ data class VehicleStatusDto(
     val description: String? = null
 )
 
+
+

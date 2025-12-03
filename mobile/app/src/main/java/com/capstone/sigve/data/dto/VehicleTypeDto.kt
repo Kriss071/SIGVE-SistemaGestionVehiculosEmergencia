@@ -9,3 +9,5 @@ data class VehicleTypeDto(
     val description: String? = null
 )
 
+
+

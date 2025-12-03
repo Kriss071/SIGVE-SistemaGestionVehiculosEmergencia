@@ -32,6 +32,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.capstone.sigve.ui.common.SigveTopAppBar
 import com.capstone.sigve.ui.firestation.FireStationHomeScreen
+import com.capstone.sigve.ui.firestation.FireStationVehiclesScreen
 import com.capstone.sigve.ui.settings.SettingsScreen
 
 sealed class FireStationNavRoute(val route: String, val title: String, val icon: ImageVector) {
@@ -117,8 +118,7 @@ fun FireStationNavigation(
                 FireStationHomeScreen()
             }
             composable(FireStationNavRoute.Vehicles.route) {
-                // TODO: Implementar pantalla de vehículos del cuartel
-                FireStationHomeScreen()
+                FireStationVehiclesScreen()
             }
             composable(FireStationNavRoute.History.route) {
                 // TODO: Implementar pantalla de historial

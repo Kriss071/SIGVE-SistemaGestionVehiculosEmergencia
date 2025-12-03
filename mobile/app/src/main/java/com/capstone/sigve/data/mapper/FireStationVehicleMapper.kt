@@ -24,3 +24,5 @@ fun FireStationVehicleDto.toDomain(
 
 fun List<FireStationVehicleDto>.toDomainList(): List<FireStationVehicle> = map { it.toDomain() }
 
+
+

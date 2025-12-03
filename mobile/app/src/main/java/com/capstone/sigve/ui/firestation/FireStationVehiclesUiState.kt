@@ -1,17 +1,13 @@
 package com.capstone.sigve.ui.firestation
 
-import com.capstone.sigve.domain.model.FireStation
-import com.capstone.sigve.domain.model.FireStationDashboardStats
 import com.capstone.sigve.domain.model.FireStationVehicle
 
 /**
- * Estado de la UI del dashboard del cuartel
+ * Estado de la UI de la pantalla de vehículos del cuartel
  */
-data class FireStationDashboardUiState(
+data class FireStationVehiclesUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
-    val fireStation: FireStation? = null,
-    val stats: FireStationDashboardStats = FireStationDashboardStats(),
     val vehicles: List<FireStationVehicle> = emptyList(),
     val searchQuery: String = "",
     val selectedStatusFilter: String? = null

@@ -26,3 +26,5 @@ interface FireStationRepository {
     suspend fun getVehiclesWithActiveMaintenanceOrders(fireStationId: Int): Result<Map<Int, String?>>
 }
 
+
+
