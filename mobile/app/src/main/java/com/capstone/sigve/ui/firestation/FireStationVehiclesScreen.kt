@@ -55,13 +55,16 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.capstone.sigve.domain.model.FireStationVehicle
+import com.capstone.sigve.ui.firestation.navigation.FireStationNavRoute
 
 /**
  * Pantalla de listado de vehículos del cuartel
  */
 @Composable
 fun FireStationVehiclesScreen(
+    navController: NavController? = null,
     viewModel: FireStationVehiclesViewModel = hiltViewModel()
 ) {
     val uiState by remember { derivedStateOf { viewModel.uiState } }
@@ -86,7 +89,10 @@ fun FireStationVehiclesScreen(
                     uiState = uiState,
                     onRefresh = { viewModel.onRefresh() },
                     onSearchQueryChange = viewModel::onSearchQueryChange,
-                    onStatusFilterChange = viewModel::onStatusFilterChange
+                    onStatusFilterChange = viewModel::onStatusFilterChange,
+                    onVehicleClick = { vehicleId ->
+                        navController?.navigate(FireStationNavRoute.History.createRoute(vehicleId))
+                    }
                 )
             }
         }
@@ -157,7 +163,8 @@ private fun VehiclesListContent(
     uiState: FireStationVehiclesUiState,
     onRefresh: () -> Unit,
     onSearchQueryChange: (String) -> Unit,
-    onStatusFilterChange: (String?) -> Unit
+    onStatusFilterChange: (String?) -> Unit,
+    onVehicleClick: (Int) -> Unit
 ) {
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
@@ -206,7 +213,10 @@ private fun VehiclesListContent(
                 }
                 
                 items(vehicles, key = { it.id }) { vehicle ->
-                    VehicleCard(vehicle = vehicle)
+                    VehicleCard(
+                        vehicle = vehicle,
+                        onClick = { onVehicleClick(vehicle.id) }
+                    )
                 }
             }
         }
@@ -312,9 +322,14 @@ private fun SearchAndFiltersSection(
 }
 
 @Composable
-private fun VehicleCard(vehicle: FireStationVehicle) {
+private fun VehicleCard(
+    vehicle: FireStationVehicle,
+    onClick: () -> Unit = {}
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {

@@ -3,14 +3,21 @@ package com.capstone.sigve.data.repository
 import android.util.Log
 import com.capstone.sigve.data.dto.FireStationDto
 import com.capstone.sigve.data.dto.FireStationVehicleDto
+import com.capstone.sigve.data.dto.VehicleMaintenanceOrderHistoryDto
+import com.capstone.sigve.data.dto.VehicleStatusLogDto
 import com.capstone.sigve.data.mapper.toDomain
+import com.capstone.sigve.data.mapper.toDomainHistoryList
+import com.capstone.sigve.data.mapper.toDomainList
 import com.capstone.sigve.domain.model.FireStation
 import com.capstone.sigve.domain.model.FireStationDashboardStats
 import com.capstone.sigve.domain.model.FireStationVehicle
+import com.capstone.sigve.domain.model.VehicleHistory
+import com.capstone.sigve.domain.model.VehicleHistoryItem
 import com.capstone.sigve.domain.repository.FireStationRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
 
@@ -178,6 +185,107 @@ class FireStationRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun getVehicleHistory(vehicleId: Int): Result<VehicleHistory> {
+        return try {
+            Log.d(TAG, "Obteniendo historial del vehículo ID: $vehicleId")
+            
+            // 1. Obtener información básica del vehículo
+            val vehicleSelectColumns = """
+                id,
+                license_plate,
+                brand,
+                model,
+                year
+            """.trimIndent()
+            
+            val vehicleDto = client.postgrest["vehicle"]
+                .select(columns = Columns.raw(vehicleSelectColumns)) {
+                    filter {
+                        eq("id", vehicleId)
+                    }
+                }
+                .decodeSingle<VehicleBasicInfoDto>()
+            
+            // 2. Obtener logs de cambio de estado
+            val statusLogSelectColumns = """
+                id,
+                vehicle_id,
+                changed_by_user_id,
+                change_date,
+                reason,
+                vehicle_status:vehicle_status_id(id, name, description),
+                changed_by_user:changed_by_user_id(first_name, last_name)
+            """.trimIndent()
+            
+            val statusLogDtos = try {
+                client.postgrest["vehicle_status_log"]
+                    .select(columns = Columns.raw(statusLogSelectColumns)) {
+                        filter {
+                            eq("vehicle_id", vehicleId)
+                        }
+                        order(
+                            "change_date", order = Order.DESCENDING
+                        )
+                    }
+                    .decodeList<VehicleStatusLogDto>()
+            } catch (e: Exception) {
+                Log.w(TAG, "Error al obtener logs de estado: ${e.message}", e)
+                emptyList<VehicleStatusLogDto>()
+            }
+            
+            // 3. Obtener órdenes de mantención
+            val maintenanceOrderSelectColumns = """
+                id,
+                entry_date,
+                exit_date,
+                mileage,
+                total_cost,
+                observations,
+                workshop:workshop_id(name),
+                maintenance_order_status:order_status_id(id, name, description),
+                maintenance_type:maintenance_type_id(id, name, description),
+                assigned_mechanic:assigned_mechanic_id(first_name, last_name)
+            """.trimIndent()
+            
+            val maintenanceOrderDtos = try {
+                client.postgrest["maintenance_order"]
+                    .select(columns = Columns.raw(maintenanceOrderSelectColumns)) {
+                        filter {
+                            eq("vehicle_id", vehicleId)
+                        }
+                        order("entry_date", order = Order.DESCENDING)
+                    }
+                    .decodeList<VehicleMaintenanceOrderHistoryDto>()
+            } catch (e: Exception) {
+                Log.w(TAG, "Error al obtener órdenes de mantención: ${e.message}", e)
+                emptyList<VehicleMaintenanceOrderHistoryDto>()
+            }
+            
+            // 4. Convertir a modelos de dominio
+            val statusLogs = statusLogDtos.toDomainList()
+            val maintenanceOrders = maintenanceOrderDtos.toDomainHistoryList()
+            
+            // 5. Combinar en items de historial
+            val historyItems = mutableListOf<VehicleHistoryItem>()
+            historyItems.addAll(statusLogs.map { VehicleHistoryItem.StatusChange(it) })
+            historyItems.addAll(maintenanceOrders.map { VehicleHistoryItem.MaintenanceOrder(it) })
+            
+            // 6. Crear objeto VehicleHistory
+            val vehicleHistory = VehicleHistory(
+                vehicleId = vehicleId,
+                vehicleLicensePlate = vehicleDto.license_plate,
+                vehicleDisplayName = "${vehicleDto.brand} ${vehicleDto.model} (${vehicleDto.year})",
+                items = historyItems
+            )
+            
+            Log.d(TAG, "Historial obtenido: ${historyItems.size} items")
+            Result.success(vehicleHistory)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al obtener historial: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
 }
 
 // DTOs auxiliares para consultas internas
@@ -200,4 +308,13 @@ private data class VehicleIdDto(val id: Int)
 
 @Serializable
 private data class VehicleFireStationDto(val fire_station_id: Int)
+
+@Serializable
+private data class VehicleBasicInfoDto(
+    val id: Int,
+    val license_plate: String,
+    val brand: String,
+    val model: String,
+    val year: Int
+)
 
